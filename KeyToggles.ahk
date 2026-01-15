@@ -338,8 +338,8 @@ RegisterHotkeys()
 
 	; Enabled only for toggle and hold modes
 	Hotkey, %aimKey%, aimLabel, % bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off"
-	Hotkey, %crouchKey%, crouchLabel, % bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off"
-	Hotkey, %sprintKey%, sprintLabel, % bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off"
+	Hotkey, %crouchKey%, crouchLabel, % bCrouchMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_HOLD ? "On" : "Off"
+	Hotkey, %sprintKey%, sprintLabel, % bSprintMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_HOLD ? "On" : "Off"
 
 	; Enabled only for autofire mode
 	Hotkey, %aimAutofireKey%, aimLabel, % bAimMode == KEY_MODE_AUTOFIRE ? "On" : "Off"
