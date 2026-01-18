@@ -6,7 +6,6 @@
 ; add cursor lock? (https://www.autohotkey.com/boards/viewtopic.php?t=66966)
 ; add overlay
 ; fix toggle off not working when physically holding toggle keys
-; merge similar functions
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 
 #MaxThreadsPerHotkey 1     ; Prevent accidental double-presses.
@@ -40,117 +39,86 @@ global bRestoreAutofireSprinting := false
 global bToggleKeysSnapshotTaken := false
 global windowID := 0
 
-init()
+Init()
 return
 
-init()
+Init()
 {
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
 	SetTimer(OnFocusChanged, nFocusCheckDelay)
 }
 
-aimLabel(pThisHotkey)
+OnKeyPress(pThisHotkey)
 {
 	global
+	
+	local pThisHotkeyTrimmed := LTrim(pThisHotkey, "*$")
+	local lKeyMode := 0
 
-	;OutputDebug(A_ThisFunc "::" A_ThisHotkey " begin")
+	switch pThisHotkeyTrimmed
+	{
+		case aimKey, aimAutofireKey:
+			lKeyMode := bAimMode
+		case crouchKey, crouchAutofireKey:
+			lKeyMode := bCrouchMode
+		case sprintKey, sprintAutofireKey:
+			lKeyMode := bSprintMode
+	}
 
-	switch bAimMode
+	;OutputDebug(A_ThisFunc "::" pThisHotkey " lKeyMode(" lKeyMode ")")
+
+	switch lKeyMode
 	{
 		case KEY_MODE_TOGGLE:
-			lIsMouseButton := IsMouseButton(A_ThisHotkey)
+			lIsMouseButton := IsMouseButton(pThisHotkeyTrimmed)
 			lIsMouseOverWindow := IsMouseOverWindow(windowID)
-			; OutputDebug(A_ThisFunc "::" A_ThisHotkey " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
+			; OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
 
 			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and was enabled
 			if (lIsMouseButton && !lIsMouseOverWindow)
 			{
-				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " outside window")
-				SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
+				;OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " outside window")
+				SendClickOutsideWindow(pThisHotkeyTrimmed)
 			}
 			; Otherwise toggle the key
 			else
 			{
-				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " inside window")
-				KeyToggle(aimKey, !bAiming, true)
+				;OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " inside window")
+
+				if (pThisHotkeyTrimmed == aimKey)
+					KeyToggle(aimKey, !bAiming, true)
+				else if(pThisHotkeyTrimmed == crouchKey)
+					KeyToggle(crouchKey, !bCrouching, true)
+				else if(pThisHotkeyTrimmed == sprintKey)
+					KeyToggle(sprintKey, !bSprinting, true)
 			}
 		case KEY_MODE_HOLD:
-			KeyHold(aimKey)
+			KeyHold(pThisHotkeyTrimmed)
+		; Based on https://autohotkey.com/board/topic/64576-the-definitive-autofire-thread/?p=407264
 		case KEY_MODE_AUTOFIRE:
-			; Based on https://autohotkey.com/board/topic/64576-the-definitive-autofire-thread/?p=407264
-			bAutofireAiming := !bAutofireAiming
-			SetTimer(fnAutofireAim, bAutofireAiming ? nAutofireKeyDelay : 0)
-			KeyWait(aimAutofireKey)
+			if (pThisHotkeyTrimmed == aimAutofireKey)
+			{
+				bAutofireAiming := !bAutofireAiming
+				SetTimer(fnAutofireAim, bAutofireAiming ? nAutofireKeyDelay : 0)
+			}
+			else if (pThisHotkeyTrimmed == crouchAutofireKey)
+			{
+				bAutofireCrouching := !bAutofireCrouching
+				SetTimer(fnAutofireCrouch, bAutofireCrouching ? nAutofireKeyDelay : 0)
+			}
+			else if (pThisHotkeyTrimmed == sprintAutofireKey)
+			{
+				bAutofireSprinting := !bAutofireSprinting
+				SetTimer(fnAutofireSprint, bAutofireSprinting ? nAutofireKeyDelay : 0)
+			}
+
+			KeyWait(pThisHotkeyTrimmed)
 	}
 }
 
-crouchLabel(pThisHotkey)
-{
-	global
 
-	;OutputDebug(A_ThisFunc "::" A_ThisHotkey " begin")
-	;OutputDebug(A_ThisFunc "::" A_ThisHotkey " bCrouchMode(" bCrouchMode ")")
-
-	switch bCrouchMode
-	{
-		case KEY_MODE_TOGGLE:
-			lIsMouseButton := IsMouseButton(A_ThisHotkey)
-			lIsMouseOverWindow := IsMouseOverWindow(windowID)
-			OutputDebug(A_ThisFunc "::" A_ThisHotkey " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
-
-			if (lIsMouseButton && !lIsMouseOverWindow)
-			{
-				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " outside window")
-				SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
-			}
-			else
-			{
-				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " inside window")
-				KeyToggle(crouchKey, !bCrouching, true)
-			}
-		case KEY_MODE_HOLD:
-			KeyHold(crouchKey)
-		case KEY_MODE_AUTOFIRE:
-			bAutofireCrouching := !bAutofireCrouching
-			SetTimer(fnAutofireCrouch, bAutofireCrouching ? nAutofireKeyDelay : 0)
-			KeyWait(crouchAutofireKey)
-	}
-}
-
-sprintLabel(pThisHotkey)
-{
-	global
-
-	;OutputDebug(A_ThisFunc "::" A_ThisHotkey " begin")
-
-	switch bSprintMode
-	{
-		case KEY_MODE_TOGGLE:
-			lIsMouseButton := IsMouseButton(A_ThisHotkey)
-			lIsMouseOverWindow := IsMouseOverWindow(windowID)
-			; OutputDebug(A_ThisFunc "::" A_ThisHotkey " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
-
-			if (lIsMouseButton && !lIsMouseOverWindow)
-			{
-				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " outside window")
-				SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
-			}
-			else
-			{
-				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " inside window")
-				KeyToggle(sprintKey, !bSprinting, true)
-			}
-		case KEY_MODE_HOLD:
-			KeyHold(sprintKey)
-		case KEY_MODE_AUTOFIRE:
-			bAutofireSprinting := !bAutofireSprinting
-			SetTimer(fnAutofireSprint, bAutofireSprinting ? nAutofireKeyDelay : 0)
-			KeyWait(sprintAutofireKey)
-	}
-}
-
-KeyAutofire(pAutofireKey, *)
+KeyAutofire(pAutofireKey)
 {
 	OutputDebug(A_ThisFunc "::begin")
 
@@ -220,7 +188,7 @@ HookWindow()
 
 IsMouseButton(pKey)
 {
-	mouseButtonsList := "LButton MButton RButton XButton1 XButton2 *$LButton *$MButton *$RButton *$XButton1 *$XButton2"
+	mouseButtonsList := "LButton MButton RButton XButton1 XButton2"
 	return InStr(mouseButtonsList, pKey) != false
 }
 
@@ -266,11 +234,11 @@ OnFocusChanged()
 		OutputDebug(A_ThisFunc "::restoreAutofireStates(" bRestoreAutofireAiming ", " bRestoreAutofireCrouching ", " bRestoreAutofireSprinting ")")
 
 		if (bRestoreAutofireAiming)
-			aimLabel(aimAutofireKey)
+			OnKeyPress(aimAutofireKey)
 		if (bRestoreAutofireCrouching)
-			crouchLabel(crouchAutofireKey)
+			OnKeyPress(crouchAutofireKey)
 		if (bRestoreAutofireSprinting)
-			sprintLabel(sprintAutofireKey)
+			OnKeyPress(sprintAutofireKey)
 	}
 
 	; Restore toggle states
@@ -356,14 +324,14 @@ RegisterHotkeys()
 {
 	HotIfWinActive("ahk_group windowIDGroup")
 	; Enabled only for toggle and hold modes
-	Hotkey("*$" aimKey, aimLabel, bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off")
-	Hotkey("*$" crouchKey, crouchLabel, bCrouchMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_HOLD ? "On" : "Off")
-	Hotkey("*$" sprintKey, sprintLabel, bSprintMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" aimKey, OnKeyPress, bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" crouchKey, OnKeyPress, bCrouchMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" sprintKey, OnKeyPress, bSprintMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_HOLD ? "On" : "Off")
 
 	; Enabled only for autofire mode
-	Hotkey("*$" aimAutofireKey, aimLabel, bAimMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
-	Hotkey("*$" crouchAutofireKey, crouchLabel, bCrouchMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
-	Hotkey("*$" sprintAutofireKey, sprintLabel, bSprintMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
+	Hotkey("*$" aimAutofireKey, OnKeyPress, bAimMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
+	Hotkey("*$" crouchAutofireKey, OnKeyPress, bCrouchMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
+	Hotkey("*$" sprintAutofireKey, OnKeyPress, bSprintMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
 
 	; Fixes issues when pressing system keys while toggle keys are modifiers and are enabled
 	Hotkey("*$" "!Tab", SendAltTab, bFixSystemKeys ? "On" : "Off")
