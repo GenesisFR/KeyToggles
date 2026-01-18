@@ -40,7 +40,20 @@ global bToggleKeysSnapshotTaken := false
 global windowID := 0
 
 Init()
-return
+
+; Exit script
+ExitFunc(pExitReason, pExitCode)
+{
+	OutputDebug(A_ThisFunc "::pExitReason(" pExitReason ") pExitCode(" pExitCode ")")
+	ReleaseAllKeys()
+}
+
+; Display an error message and exit
+ExitWithErrorMessage(pErrorMessage)
+{
+	MsgBox(pErrorMessage, "Error", 16)
+	ExitApp(1)
+}
 
 Init()
 {
@@ -117,6 +130,39 @@ OnKeyPress(pThisHotkey)
 	}
 }
 
+HookWindow()
+{
+	global
+
+	; Make the hotkeys active only for a specific window
+	windowID := WinGetID(sWindowName)
+	OutputDebug(A_ThisFunc "::WinGet(" windowID ")")
+	GroupAdd("windowIDGroup", "ahk_id " windowID)
+
+	if (windowID && bShowNotifications)
+	{
+		local lWindowName := WinGetTitle(windowID)
+		TrayTip(configFileNameTrimmed, "The window `"" . lWindowName . "`" has been hooked.")
+	}
+}
+
+IsMouseButton(pKey)
+{
+	mouseButtonsList := "LButton MButton RButton XButton1 XButton2"
+	return InStr(mouseButtonsList, pKey) != false
+}
+
+IsMouseOver(pWinTitle)
+{
+	MouseGetPos(, , &winID)
+	return WinExist(pWinTitle . " ahk_id " . winID)
+}
+
+IsMouseOverWindow(pHwnd)
+{
+	MouseGetPos(, , &mouseWindowID)
+	return pHwnd == mouseWindowID
+}
 
 KeyAutofire(pAutofireKey)
 {
@@ -168,40 +214,6 @@ KeyToggle(pKey, pToggling, pWait := false)
 		KeyWait(pKey)
 
 	;OutputDebug(A_ThisFunc "::end")
-}
-
-HookWindow()
-{
-	global
-
-	; Make the hotkeys active only for a specific window
-	windowID := WinGetID(sWindowName)
-	OutputDebug(A_ThisFunc "::WinGet(" windowID ")")
-	GroupAdd("windowIDGroup", "ahk_id " windowID)
-
-	if (windowID && bShowNotifications)
-	{
-		local lWindowName := WinGetTitle(windowID)
-		TrayTip(configFileNameTrimmed, "The window `"" . lWindowName . "`" has been hooked.")
-	}
-}
-
-IsMouseButton(pKey)
-{
-	mouseButtonsList := "LButton MButton RButton XButton1 XButton2"
-	return InStr(mouseButtonsList, pKey) != false
-}
-
-IsMouseOver(pWinTitle)
-{
-	MouseGetPos(, , &winID)
-	return WinExist(pWinTitle . " ahk_id " . winID)
-}
-
-IsMouseOverWindow(pHwnd)
-{
-	MouseGetPos(, , &mouseWindowID)
-	return pHwnd == mouseWindowID
 }
 
 ; Hook the window and register hotkeys if necessary, disable toggles on focus lost and optionally restore them on focus
@@ -492,20 +504,6 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 
 	if (pReleaseKeys)
 		ReleaseAllKeys()
-}
-
-; Exit script
-ExitFunc(pExitReason, pExitCode)
-{
-	OutputDebug(A_ThisFunc "::pExitReason(" pExitReason ") pExitCode(" pExitCode ")")
-	ReleaseAllKeys()
-}
-
-; Display an error message and exit
-ExitWithErrorMessage(pErrorMessage)
-{
-	MsgBox(pErrorMessage, "Error", 16)
-	ExitApp(1)
 }
 
 ; Fixes an issue where you couldn't click outside the window while toggle keys are mouse buttons and are enabled
