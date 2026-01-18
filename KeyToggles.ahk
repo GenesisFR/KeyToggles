@@ -6,7 +6,6 @@
 ; add cursor lock? (https://www.autohotkey.com/boards/viewtopic.php?t=66966)
 ; add overlay
 ; fix toggle off not working when physically holding toggle keys
-; implement super global variables
 ; merge similar functions
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 
@@ -21,22 +20,22 @@ SetWorkingDir(A_ScriptDir) ; Ensures a consistent starting directory.
 OnExit(ExitFunc)
 
 ; Constants
-KEY_MODE_TOGGLE := 1
-KEY_MODE_HOLD := 2
-KEY_MODE_AUTOFIRE := 3
+global KEY_MODE_TOGGLE := 1
+global KEY_MODE_HOLD := 2
+global KEY_MODE_AUTOFIRE := 3
 
 ; Initialize state variables
-bAiming := false
-bCrouching := false
-bSprinting := false
-bAutofireAiming := false
-bAutofireCrouching := false
-bAutofireSprinting := false
-bRestoreAiming := false
-bRestoreCrouching := false
-bRestoreSprinting := false
-bToggleKeysSnapshotTaken := false
-windowID := 0
+global bAiming := false
+global bCrouching := false
+global bSprinting := false
+global bAutofireAiming := false
+global bAutofireCrouching := false
+global bAutofireSprinting := false
+global bRestoreAiming := false
+global bRestoreCrouching := false
+global bRestoreSprinting := false
+global bToggleKeysSnapshotTaken := false
+global windowID := 0
 
 init()
 return
@@ -150,8 +149,6 @@ sprintLabel(pThisHotkey)
 
 AimAutofire()
 {
-	global
-
 	;OutputDebug(A_ThisFunc "::begin")
 	SendKey(aimKey, nKeyDelay)
 	;OutputDebug(A_ThisFunc "::end")
@@ -159,8 +156,6 @@ AimAutofire()
 
 AimHold()
 {
-	global
-
 	;OutputDebug(A_ThisFunc "::begin")
 	SendKey(aimKey, nKeyDelay)
 	KeyWait(aimKey)
@@ -187,8 +182,6 @@ AimToggle(pAiming, pWait := false)
 
 CrouchAutofire()
 {
-	global
-
 	;OutputDebug(A_ThisFunc "::begin")
 	SendKey(crouchKey, nKeyDelay)
 	;OutputDebug(A_ThisFunc "::end")
@@ -196,15 +189,11 @@ CrouchAutofire()
 
 CrouchHold()
 {
-	global
-
-	OutputDebug(A_ThisFunc "::begin")
+	;OutputDebug(A_ThisFunc "::begin")
 	SendKey(crouchKey, nKeyDelay)
-	OutputDebug(A_ThisFunc "::KeyWait begin")
 	KeyWait(crouchKey)
-	OutputDebug(A_ThisFunc "::KeyWait end")
 	SendKey(crouchKey, nKeyDelay)
-	OutputDebug(A_ThisFunc "::end")
+	;OutputDebug(A_ThisFunc "::end")
 }
 
 CrouchToggle(pCrouching, pWait := false)
@@ -226,7 +215,6 @@ CrouchToggle(pCrouching, pWait := false)
 
 HookWindow()
 {
-	; All the variables below are declared as global so they can be used in the whole script
 	global
 
 	; Make the hotkeys active only for a specific window
@@ -317,7 +305,6 @@ OnFocusChanged()
 
 ReadConfigFile()
 {
-	; All the variables below are declared as global so they can be used in the whole script
 	global
 
 	SplitPath(A_ScriptName, , , , &configFileNameTrimmed)
@@ -358,8 +345,6 @@ ReadConfigFile()
 
 RegisterHotkeys()
 {
-	global
-
 	HotIfWinActive("ahk_group windowIDGroup")
 	; Enabled only for toggle and hold modes
 	Hotkey("*$" aimKey, aimLabel, bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off")
@@ -403,8 +388,6 @@ ReleaseAllKeys()
 
 RestartAsAdminIfNeeded()
 {
-	global
-
 	; Restart the script as admin
 	if (bRunAsAdmin && !A_IsAdmin)
 	{
@@ -505,14 +488,11 @@ SendWindows(pThisHotkey)
 
 ShouldRestoreTogglesOnFocus()
 {
-	global
 	return bRestoreTogglesOnFocus && (bAimMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " windowID) != 0)
 }
 
 SprintAutofire()
 {
-	global
-
 	;OutputDebug(A_ThisFunc "::begin")
 	SendKey(sprintKey, nKeyDelay)
 	;OutputDebug(A_ThisFunc "::end")
@@ -520,8 +500,6 @@ SprintAutofire()
 
 SprintHold()
 {
-	global
-
 	;OutputDebug(A_ThisFunc "::begin")
 	SendKey(sprintKey, nKeyDelay)
 	KeyWait(sprintKey)
@@ -580,8 +558,6 @@ ExitWithErrorMessage(pErrorMessage)
 *$XButton1::
 *$XButton2::
 {
-	;global
-
 	if (!IsMouseOverWindow(windowID))
 	{
 		;OutputDebug(A_ThisHotkey "::outside window")
@@ -607,7 +583,6 @@ ExitWithErrorMessage(pErrorMessage)
 ; Suspend script (useful when in menus)
 *!F12:: ; ALT+F12
 {
-	global
 	Suspend()
 
 	; Single beep when suspended
