@@ -2,8 +2,13 @@
 
 ; TODO
 ; add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
+; add autofire hold mode
+; add cursor lock? (https://www.autohotkey.com/boards/viewtopic.php?t=66966)
 ; add overlay
+; fix toggle off not working when physically holding toggle keys
+; implement super global variables
 ; merge similar functions
+; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 
 #MaxThreadsPerHotkey 1           ; Prevent accidental double-presses.
 #NoEnv                           ; Recommended for performance and compatibility with future AutoHotkey releases.
@@ -58,11 +63,14 @@ switch bAimMode
 		if (isMouseButton && !isMouseOverWindow)
 		{
 			;OutputDebug, %A_ThisLabel%::%A_ThisHotkey% outside window
-			SendClick(A_ThisHotkey)
+			SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
 		}
 		; Otherwise toggle the key
 		else
+		{
+			;OutputDebug, %A_ThisLabel%::%A_ThisHotkey% inside window
 			AimToggle(!bAiming, true)
+		}
 	case KEY_MODE_HOLD:
 		AimHold()
 	case KEY_MODE_AUTOFIRE:
@@ -88,10 +96,13 @@ switch bCrouchMode
 		if (isMouseButton && !isMouseOverWindow)
 		{
 			;OutputDebug, %A_ThisLabel%::%A_ThisHotkey% outside window
-			SendClick(A_ThisHotkey)
+			SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
 		}
 		else
+		{
+			;OutputDebug, %A_ThisLabel%::%A_ThisHotkey% inside window
 			CrouchToggle(!bCrouching, true)
+		}
 	case KEY_MODE_HOLD:
 		CrouchHold()
 	case KEY_MODE_AUTOFIRE:
@@ -116,10 +127,13 @@ switch bSprintMode
 		if (isMouseButton && !isMouseOverWindow)
 		{
 			;OutputDebug, %A_ThisLabel%::%A_ThisHotkey% outside window
-			SendClick(A_ThisHotkey)
+			SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
 		}
 		else
+		{
+			;OutputDebug, %A_ThisLabel%::%A_ThisHotkey% inside window
 			SprintToggle(!bSprinting, true)
+		}
 	case KEY_MODE_HOLD:
 		SprintHold()
 	case KEY_MODE_AUTOFIRE:
@@ -158,7 +172,7 @@ AimToggle(pAiming, pWait := false)
 	bAiming := pAiming
 	;OutputDebug, %A_ThisFunc%::bAiming(%bAiming%)
 
-	SendInput % bAiming ? "{" . aimKey . " down}" : "{" . aimKey . " up}"
+	SendInput % bAiming ? "{Blind}{" . aimKey . " down}" : "{Blind}{" . aimKey . " up}"
 
 	if (pWait)
 		KeyWait, %aimKey%
@@ -190,11 +204,10 @@ CrouchToggle(pCrouching, pWait := false)
 {
 	global
 
-	;OutputDebug, %A_ThisFunc%::begin
 	bCrouching := pCrouching
 	;OutputDebug, %A_ThisFunc%::bCrouching(%bCrouching%)
 
-	SendInput % bCrouching ? "{" . crouchKey . " down}" : "{" . crouchKey . " up}"
+	SendInput % bCrouching ? "{Blind}{" . crouchKey . " down}" : "{Blind}{" . crouchKey . " up}"
 
 	if (pWait)
 		KeyWait, %crouchKey%
@@ -211,7 +224,6 @@ HookWindow()
 	WinGet, windowID, ID, %sWindowName%
 	OutputDebug, %A_ThisFunc%::WinGet(%windowID%)
 	GroupAdd, windowIDGroup, ahk_id %windowID%
-	Hotkey, IfWinActive, ahk_group windowIDGroup
 
 	if (windowID && bShowNotifications)
 		TrayTip, %configFileNameTrimmed%, % "The window """ . sWindowName . """ has been hooked."
@@ -219,7 +231,7 @@ HookWindow()
 
 IsMouseButton(pKey)
 {
-	mouseButtonsList := "LButton MButton RButton XButton1 XButton2"
+	mouseButtonsList := "LButton MButton RButton XButton1 XButton2 *$LButton *$MButton *$RButton *$XButton1 *$XButton2"
 	return InStr(mouseButtonsList, pKey) != false
 }
 
@@ -336,10 +348,11 @@ RegisterHotkeys()
 {
 	global
 
+	Hotkey, IfWinActive, ahk_group windowIDGroup
 	; Enabled only for toggle and hold modes
-	Hotkey, %aimKey%, aimLabel, % bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off"
-	Hotkey, %crouchKey%, crouchLabel, % bCrouchMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_HOLD ? "On" : "Off"
-	Hotkey, %sprintKey%, sprintLabel, % bSprintMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_HOLD ? "On" : "Off"
+	Hotkey, % "*$" . aimKey, aimLabel, % bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off"
+	Hotkey, % "*$" . crouchKey, crouchLabel, % bCrouchMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_HOLD ? "On" : "Off"
+	Hotkey, % "*$" . sprintKey, sprintLabel, % bSprintMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_HOLD ? "On" : "Off"
 
 	; Enabled only for autofire mode
 	Hotkey, %aimAutofireKey%, aimLabel, % bAimMode == KEY_MODE_AUTOFIRE ? "On" : "Off"
@@ -351,6 +364,7 @@ RegisterHotkeys()
 	Hotkey, Escape, SendEscape, % bFixSystemKeys ? "On" : "Off"
 	Hotkey, LWin, SendWindows, % bFixSystemKeys ? "On" : "Off"
 	Hotkey, RWin, SendWindows, % bFixSystemKeys ? "On" : "Off"
+	Hotkey, IfWinActive
 }
 
 ReleaseAllKeys()
@@ -412,7 +426,7 @@ SendAltTab()
 	;OutputDebug, %A_ThisFunc%::end
 }
 
-SendClick(pKey)
+SendClickOutsideWindow(pKey)
 {
 	;OutputDebug, %A_ThisFunc%::begin
 
@@ -447,7 +461,7 @@ SendEscape()
 
 SendKey(pKey, pSleepMs := 0, pWait := false)
 {
-	SendInput % "{" . pKey . " down}"
+	SendInput % "{Blind}{" . pKey . " down}"
 
 	if (pSleepMs > 0)
 		Sleep, %pSleepMs%
@@ -455,7 +469,7 @@ SendKey(pKey, pSleepMs := 0, pWait := false)
 	if (pWait)
 		KeyWait, %pKey%
 
-	SendInput % "{" . pKey . " up}"
+	SendInput % "{Blind}{" . pKey . " up}"
 }
 
 SendWindows()
@@ -508,7 +522,7 @@ SprintToggle(pSprinting, pWait := false)
 	bSprinting := pSprinting
 	;OutputDebug, %A_ThisFunc%::bSprinting(%bSprinting%)
 
-	SendInput % bSprinting ? "{" . sprintKey . " down}" : "{" . sprintKey . " up}"
+	SendInput % bSprinting ? "{Blind}{" . sprintKey . " down}" : "{Blind}{" . sprintKey . " up}"
 
 	if (pWait)
 		KeyWait, %sprintKey%
@@ -551,20 +565,20 @@ ExitWithErrorMessage(pErrorMessage)
 
 ; Fixes an issue where you couldn't click outside the window while toggle keys are mouse buttons and are enabled
 #IfWinActive ahk_group windowIDGroup
-LButton::
-MButton::
-RButton::
-XButton1::
-XButton2::
+*$LButton::
+*$MButton::
+*$RButton::
+*$XButton1::
+*$XButton2::
 if (!IsMouseOverWindow(windowID))
 {
 	;OutputDebug, %A_ThisHotkey%::outside window
-	SendClick(A_ThisHotkey)
+	SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
 }
 else
 {
 	;OutputDebug, %A_ThisHotkey%::inside window
-	SendKey(A_ThisHotkey, 0, true)
+	SendKey(LTrim(A_ThisHotkey, "*$"), 0, true)
 }
 
 return
@@ -572,20 +586,20 @@ return
 
 #If bDebugMode
 ; Exit script
-!F10:: ; ALT+F10
+*!F10:: ; ALT+F10
 Suspend, Permit
 ExitApp
 return
 
 ; Reload script
-!F11:: ; ALT+F11
+*!F11:: ; ALT+F11
 Suspend, Permit
 Reload
 return
 #If
 
 ; Suspend script (useful when in menus)
-!F12:: ; ALT+F12
+*!F12:: ; ALT+F12
 Suspend
 
 ; Single beep when suspended
