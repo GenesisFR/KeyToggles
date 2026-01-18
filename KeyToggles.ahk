@@ -226,7 +226,11 @@ HookWindow()
 	GroupAdd, windowIDGroup, ahk_id %windowID%
 
 	if (windowID && bShowNotifications)
-		TrayTip, %configFileNameTrimmed%, % "The window """ . sWindowName . """ has been hooked."
+	{
+		local lWindowName := ""
+		WinGetTitle, lWindowName, ahk_id %windowID%
+		TrayTip, %configFileNameTrimmed%, % "The window """ . lWindowName . """ has been hooked."
+	}
 }
 
 IsMouseButton(pKey)
