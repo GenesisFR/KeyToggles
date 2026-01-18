@@ -204,6 +204,7 @@ CrouchToggle(pCrouching, pWait := false)
 {
 	global
 
+	;OutputDebug, %A_ThisFunc%::begin
 	bCrouching := pCrouching
 	;OutputDebug, %A_ThisFunc%::bCrouching(%bCrouching%)
 
@@ -417,7 +418,8 @@ SendAltTab()
 	;OutputDebug, %A_ThisFunc%::begin
 
 	; Take a snapshot of the toggle states
-	TakeToggleKeysSnapshot()
+	if (ShouldRestoreTogglesOnFocus())
+		TakeToggleKeysSnapshot()
 
 	; Check if modifier keys are physically pressed to handle Ctrl+Alt+Tab, Shift+Alt+Tab and Ctrl+Shift+Alt+Tab
 	if (GetKeyState("Control", "P"))
@@ -435,8 +437,10 @@ SendClickOutsideWindow(pKey)
 	;OutputDebug, %A_ThisFunc%::begin
 
 	; Take a snapshot of the toggle states
-	TakeToggleKeysSnapshot()
+	if (ShouldRestoreTogglesOnFocus())
+		TakeToggleKeysSnapshot(false)
 
+	ReleaseAllKeys()
 	SendKey(pKey, 0, true)
 
 	;OutputDebug, %A_ThisFunc%::end
@@ -447,7 +451,8 @@ SendEscape()
 	;OutputDebug, %A_ThisFunc%::begin
 
 	; Take a snapshot of the toggle states
-	TakeToggleKeysSnapshot()
+	if (ShouldRestoreTogglesOnFocus())
+		TakeToggleKeysSnapshot()
 
 	; Check if modifier keys are physically pressed to handle Ctrl+Escape and Ctrl+Shift+Escape
 	if (GetKeyState("Control", "P"))
@@ -481,7 +486,8 @@ SendWindows()
 	;OutputDebug, %A_ThisFunc%::begin
 
 	; Take a snapshot of the toggle states
-	TakeToggleKeysSnapshot()
+	if (ShouldRestoreTogglesOnFocus())
+		TakeToggleKeysSnapshot()
 
 	; Check if modifier keys are physically pressed to handle Shift+Win
 	if (GetKeyState("Shift", "P"))
@@ -495,7 +501,7 @@ SendWindows()
 ShouldRestoreTogglesOnFocus()
 {
 	global
-	return bRestoreTogglesOnFocus && bAimMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_TOGGLE && WinExist(sWindowName)
+	return bRestoreTogglesOnFocus && (bAimMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " windowID) != 0)
 }
 
 SprintAutofire()
@@ -538,13 +544,12 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 {
 	global
 
-	if (ShouldRestoreTogglesOnFocus())
-	{
-		bRestoreAiming := bAiming
-		bRestoreCrouching := bCrouching
-		bRestoreSprinting := bSprinting
-		bToggleKeysSnapshotTaken := true
-	}
+	OutputDebug, %A_ThisFunc%
+
+	bRestoreAiming := bAiming
+	bRestoreCrouching := bCrouching
+	bRestoreSprinting := bSprinting
+	bToggleKeysSnapshotTaken := true
 
 	if (pReleaseKeys)
 		ReleaseAllKeys()
@@ -554,10 +559,7 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 ExitFunc(pExitReason, pExitCode)
 {
 	;OutputDebug, %A_ThisFunc%::pExitReason(%pExitReason%) pExitCode(%pExitCode%)
-
-	; Only release keys if the script is closed from the tray menu or reloaded/replaced
-	if (pExitReason != "Exit")
-		ReleaseAllKeys()
+	ReleaseAllKeys()
 }
 
 ; Display an error message and exit
