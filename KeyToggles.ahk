@@ -8,7 +8,6 @@
 ; fix toggle off not working when physically holding toggle keys
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 
-#MaxThreadsPerHotkey 1     ; Prevent accidental double-presses.
 #Requires Autohotkey v2.0  ; Display an error and quit if this version requirement is not met.
 #SingleInstance force      ; Allow only a single instance of the script to run.
 ;#UseHook                   ; Allow listening for non-modifier keys.
@@ -37,7 +36,12 @@ global bRestoreAutofireAiming := false
 global bRestoreAutofireCrouching := false
 global bRestoreAutofireSprinting := false
 global bToggleKeysSnapshotTaken := false
-global windowID := 0
+global nWindowID := 0
+
+; Functors
+global fnAutofireAim := 0
+global fnAutofireCrouch := 0
+global fnAutofireSprint := 0
 
 Init()
 
@@ -62,86 +66,18 @@ Init()
 	SetTimer(OnFocusChanged, nFocusCheckDelay)
 }
 
-OnKeyPress(pThisHotkey)
-{
-	global
-	
-	local pThisHotkeyTrimmed := LTrim(pThisHotkey, "*$")
-	local lKeyMode := 0
-
-	switch pThisHotkeyTrimmed
-	{
-		case aimKey, aimAutofireKey:
-			lKeyMode := bAimMode
-		case crouchKey, crouchAutofireKey:
-			lKeyMode := bCrouchMode
-		case sprintKey, sprintAutofireKey:
-			lKeyMode := bSprintMode
-	}
-
-	;OutputDebug(A_ThisFunc "::" pThisHotkey " lKeyMode(" lKeyMode ")")
-
-	switch lKeyMode
-	{
-		case KEY_MODE_TOGGLE:
-			lIsMouseButton := IsMouseButton(pThisHotkeyTrimmed)
-			lIsMouseOverWindow := IsMouseOverWindow(windowID)
-			; OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
-
-			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and was enabled
-			if (lIsMouseButton && !lIsMouseOverWindow)
-			{
-				;OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " outside window")
-				SendClickOutsideWindow(pThisHotkeyTrimmed)
-			}
-			; Otherwise toggle the key
-			else
-			{
-				;OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " inside window")
-
-				if (pThisHotkeyTrimmed == aimKey)
-					KeyToggle(aimKey, !bAiming, true)
-				else if(pThisHotkeyTrimmed == crouchKey)
-					KeyToggle(crouchKey, !bCrouching, true)
-				else if(pThisHotkeyTrimmed == sprintKey)
-					KeyToggle(sprintKey, !bSprinting, true)
-			}
-		case KEY_MODE_HOLD:
-			KeyHold(pThisHotkeyTrimmed)
-		; Based on https://autohotkey.com/board/topic/64576-the-definitive-autofire-thread/?p=407264
-		case KEY_MODE_AUTOFIRE:
-			if (pThisHotkeyTrimmed == aimAutofireKey)
-			{
-				bAutofireAiming := !bAutofireAiming
-				SetTimer(fnAutofireAim, bAutofireAiming ? nAutofireKeyDelay : 0)
-			}
-			else if (pThisHotkeyTrimmed == crouchAutofireKey)
-			{
-				bAutofireCrouching := !bAutofireCrouching
-				SetTimer(fnAutofireCrouch, bAutofireCrouching ? nAutofireKeyDelay : 0)
-			}
-			else if (pThisHotkeyTrimmed == sprintAutofireKey)
-			{
-				bAutofireSprinting := !bAutofireSprinting
-				SetTimer(fnAutofireSprint, bAutofireSprinting ? nAutofireKeyDelay : 0)
-			}
-
-			KeyWait(pThisHotkeyTrimmed)
-	}
-}
-
 HookWindow()
 {
 	global
 
 	; Make the hotkeys active only for a specific window
-	windowID := WinGetID(sWindowName)
-	OutputDebug(A_ThisFunc "::WinGet(" windowID ")")
-	GroupAdd("windowIDGroup", "ahk_id " windowID)
+	nWindowID := WinGetID(sWindowName)
+	OutputDebug(A_ThisFunc "::WinGet(" nWindowID ")")
+	GroupAdd("windowIDGroup", "ahk_id " nWindowID)
 
-	if (windowID && bShowNotifications)
+	if (nWindowID && bShowNotifications)
 	{
-		local lWindowName := WinGetTitle(windowID)
+		local lWindowName := WinGetTitle(nWindowID)
 		TrayTip(configFileNameTrimmed, "The window `"" . lWindowName . "`" has been hooked.")
 	}
 }
@@ -226,7 +162,7 @@ OnFocusChanged()
 	Sleep(nHookDelay)
 
 	; Make sure to hook the window again if it no longer exists
-	if (windowID != WinExist(sWindowName))
+	if (nWindowID != WinExist(sWindowName))
 	{
 		HookWindow()
 		RegisterHotkeys()
@@ -291,6 +227,74 @@ OnFocusChanged()
 	ReleaseAllKeys()
 }
 
+OnKeyPress(pThisHotkey)
+{
+	global
+	
+	local pThisHotkeyTrimmed := LTrim(pThisHotkey, "*$")
+	local lKeyMode := 0
+
+	switch pThisHotkeyTrimmed
+	{
+		case aimKey, aimAutofireKey:
+			lKeyMode := bAimMode
+		case crouchKey, crouchAutofireKey:
+			lKeyMode := bCrouchMode
+		case sprintKey, sprintAutofireKey:
+			lKeyMode := bSprintMode
+	}
+
+	;OutputDebug(A_ThisFunc "::" pThisHotkey " lKeyMode(" lKeyMode ")")
+
+	switch lKeyMode
+	{
+		case KEY_MODE_TOGGLE:
+			lIsMouseButton := IsMouseButton(pThisHotkeyTrimmed)
+			lIsMouseOverWindow := IsMouseOverWindow(nWindowID)
+			; OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
+
+			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and was enabled
+			if (lIsMouseButton && !lIsMouseOverWindow)
+			{
+				;OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " outside window")
+				SendClickOutsideWindow(pThisHotkeyTrimmed)
+			}
+			; Otherwise toggle the key
+			else
+			{
+				;OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " inside window")
+
+				if (pThisHotkeyTrimmed == aimKey)
+					KeyToggle(aimKey, !bAiming, true)
+				else if(pThisHotkeyTrimmed == crouchKey)
+					KeyToggle(crouchKey, !bCrouching, true)
+				else if(pThisHotkeyTrimmed == sprintKey)
+					KeyToggle(sprintKey, !bSprinting, true)
+			}
+		case KEY_MODE_HOLD:
+			KeyHold(pThisHotkeyTrimmed)
+		; Based on https://autohotkey.com/board/topic/64576-the-definitive-autofire-thread/?p=407264
+		case KEY_MODE_AUTOFIRE:
+			if (pThisHotkeyTrimmed == aimAutofireKey)
+			{
+				bAutofireAiming := !bAutofireAiming
+				SetTimer(fnAutofireAim, bAutofireAiming ? nAutofireKeyDelay : 0)
+			}
+			else if (pThisHotkeyTrimmed == crouchAutofireKey)
+			{
+				bAutofireCrouching := !bAutofireCrouching
+				SetTimer(fnAutofireCrouch, bAutofireCrouching ? nAutofireKeyDelay : 0)
+			}
+			else if (pThisHotkeyTrimmed == sprintAutofireKey)
+			{
+				bAutofireSprinting := !bAutofireSprinting
+				SetTimer(fnAutofireSprint, bAutofireSprinting ? nAutofireKeyDelay : 0)
+			}
+
+			KeyWait(pThisHotkeyTrimmed)
+	}
+}
+
 ReadConfigFile()
 {
 	global
@@ -334,6 +338,8 @@ ReadConfigFile()
 
 RegisterHotkeys()
 {
+	global
+
 	HotIfWinActive("ahk_group windowIDGroup")
 	; Enabled only for toggle and hold modes
 	Hotkey("*$" aimKey, OnKeyPress, bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off")
@@ -351,10 +357,10 @@ RegisterHotkeys()
 	Hotkey("*$" "LWin", SendWindows, bFixSystemKeys ? "On" : "Off")
 	Hotkey("*$" "RWin", SendWindows, bFixSystemKeys ? "On" : "Off")
 
-	; Functors
-	global fnAutofireAim := KeyAutofire.Bind(aimAutofireKey)
-	global fnAutofireCrouch := KeyAutofire.Bind(crouchAutofireKey)
-	global fnAutofireSprint := KeyAutofire.Bind(sprintAutofireKey)
+	; Bind our functors to actual functions
+	fnAutofireAim := KeyAutofire.Bind(aimAutofireKey)
+	fnAutofireCrouch := KeyAutofire.Bind(crouchAutofireKey)
+	fnAutofireSprint := KeyAutofire.Bind(sprintAutofireKey)
 	HotIfWinActive()
 }
 
@@ -375,9 +381,12 @@ ReleaseAllKeys()
 	bAutofireCrouching := false
 	bAutofireSprinting := false
 
-	SetTimer(fnAutofireAim, 0)
-	SetTimer(fnAutofireCrouch, 0)
-	SetTimer(fnAutofireSprint, 0)
+	if (fnAutofireAim)
+		SetTimer(fnAutofireAim, 0)
+	if (fnAutofireCrouch)
+		SetTimer(fnAutofireCrouch, 0)
+	if (fnAutofireSprint)
+		SetTimer(fnAutofireSprint, 0)
 }
 
 RestartAsAdminIfNeeded()
@@ -482,12 +491,12 @@ SendWindows(pThisHotkey)
 
 ShouldRestoreAutofiresOnFocus()
 {
-	return bRestoreAutofiresOnFocus && (bAimMode == KEY_MODE_AUTOFIRE || bCrouchMode == KEY_MODE_AUTOFIRE || bSprintMode == KEY_MODE_AUTOFIRE) && (WinExist("ahk_id " windowID) != 0)
+	return bRestoreAutofiresOnFocus && (bAimMode == KEY_MODE_AUTOFIRE || bCrouchMode == KEY_MODE_AUTOFIRE || bSprintMode == KEY_MODE_AUTOFIRE) && (WinExist("ahk_id " nWindowID) != 0)
 }
 
 ShouldRestoreTogglesOnFocus()
 {
-	return bRestoreTogglesOnFocus && (bAimMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " windowID) != 0)
+	return bRestoreTogglesOnFocus && (bAimMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " nWindowID) != 0)
 }
 
 TakeToggleKeysSnapshot(pReleaseKeys := true)
@@ -514,7 +523,7 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 *$XButton1::
 *$XButton2::
 {
-	if (!IsMouseOverWindow(windowID))
+	if (!IsMouseOverWindow(nWindowID))
 	{
 		;OutputDebug(A_ThisHotkey "::outside window")
 		SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
