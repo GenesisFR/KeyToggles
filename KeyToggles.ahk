@@ -34,6 +34,9 @@ global bAutofireSprinting := false
 global bRestoreAiming := false
 global bRestoreCrouching := false
 global bRestoreSprinting := false
+global bRestoreAutofireAiming := false
+global bRestoreAutofireCrouching := false
+global bRestoreAutofireSprinting := false
 global bToggleKeysSnapshotTaken := false
 global windowID := 0
 
@@ -252,12 +255,28 @@ OnFocusChanged()
 		bRestoreAiming := false
 		bRestoreCrouching := false
 		bRestoreSprinting := false
+		bRestoreAutofireAiming := false
+		bRestoreAutofireCrouching := false
+		bRestoreAutofireSprinting := false
+	}
+
+	; Restore autofire states
+	if (ShouldRestoreAutofiresOnFocus())
+	{
+		OutputDebug(A_ThisFunc "::restoreAutofireStates(" bRestoreAutofireAiming ", " bRestoreAutofireCrouching ", " bRestoreAutofireSprinting ")")
+
+		if (bRestoreAutofireAiming)
+			aimLabel(aimAutofireKey)
+		if (bRestoreAutofireCrouching)
+			crouchLabel(crouchAutofireKey)
+		if (bRestoreAutofireSprinting)
+			sprintLabel(sprintAutofireKey)
 	}
 
 	; Restore toggle states
 	if (ShouldRestoreTogglesOnFocus())
 	{
-		OutputDebug(A_ThisFunc "::saveToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
+		OutputDebug(A_ThisFunc "::restoreToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
 
 		if (bRestoreAiming)
 			KeyToggle(aimKey, true)
@@ -283,6 +302,9 @@ OnFocusChanged()
 			bRestoreAiming := bAiming
 			bRestoreCrouching := bCrouching
 			bRestoreSprinting := bSprinting
+			bRestoreAutofireAiming := bAutofireAiming
+			bRestoreAutofireCrouching := bAutofireCrouching
+			bRestoreAutofireSprinting := bAutofireSprinting
 		}
 	}
 
@@ -311,6 +333,7 @@ ReadConfigFile()
 	nHookDelay := IniRead(configFileName, "General", "hookDelay", 0)
 	nKeyDelay := IniRead(configFileName, "General", "keyDelay", 0)
 	bRestoreTogglesOnFocus := IniRead(configFileName, "General", "restoreTogglesOnFocus", 0)
+	bRestoreAutofiresOnFocus := IniRead(configFileName, "General", "restoreAutofiresOnFocus", 0)
 	bShowNotifications := IniRead(configFileName, "General", "showNotifications", 0)
 	bRunAsAdmin := IniRead(configFileName, "General", "runAsAdmin", 0)
 
@@ -477,6 +500,11 @@ SendWindows(pThisHotkey)
 	;OutputDebug(A_ThisFunc "::end")
 }
 
+ShouldRestoreAutofiresOnFocus()
+{
+	return bRestoreAutofiresOnFocus && (bAimMode == KEY_MODE_AUTOFIRE || bCrouchMode == KEY_MODE_AUTOFIRE || bSprintMode == KEY_MODE_AUTOFIRE) && (WinExist("ahk_id " windowID) != 0)
+}
+
 ShouldRestoreTogglesOnFocus()
 {
 	return bRestoreTogglesOnFocus && (bAimMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " windowID) != 0)
@@ -489,6 +517,9 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 	bRestoreAiming := bAiming
 	bRestoreCrouching := bCrouching
 	bRestoreSprinting := bSprinting
+	bRestoreAutofireAiming := bAutofireAiming
+	bRestoreAutofireCrouching := bAutofireCrouching
+	bRestoreAutofireSprinting := bAutofireSprinting
 	bToggleKeysSnapshotTaken := true
 
 	if (pReleaseKeys)
