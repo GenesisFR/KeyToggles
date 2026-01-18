@@ -70,14 +70,14 @@ aimLabel(pThisHotkey)
 			else
 			{
 				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " inside window")
-				AimToggle(!bAiming, true)
+				KeyToggle(aimKey, !bAiming, true)
 			}
 		case KEY_MODE_HOLD:
-			AimHold()
+			KeyHold(aimKey)
 		case KEY_MODE_AUTOFIRE:
 			; Based on https://autohotkey.com/board/topic/64576-the-definitive-autofire-thread/?p=407264
 			bAutofireAiming := !bAutofireAiming
-			SetTimer(AimAutofire,bAutofireAiming ? nAutofireKeyDelay : "Off")
+			SetTimer(fnAutofireAim, bAutofireAiming ? nAutofireKeyDelay : 0)
 			KeyWait(aimAutofireKey)
 	}
 }
@@ -104,13 +104,13 @@ crouchLabel(pThisHotkey)
 			else
 			{
 				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " inside window")
-				CrouchToggle(!bCrouching, true)
+				KeyToggle(crouchKey, !bCrouching, true)
 			}
 		case KEY_MODE_HOLD:
-			CrouchHold()
+			KeyHold(crouchKey)
 		case KEY_MODE_AUTOFIRE:
 			bAutofireCrouching := !bAutofireCrouching
-			SetTimer(CrouchAutofire,bAutofireCrouching ? nAutofireKeyDelay : "Off")
+			SetTimer(fnAutofireCrouch, bAutofireCrouching ? nAutofireKeyDelay : 0)
 			KeyWait(crouchAutofireKey)
 	}
 }
@@ -136,81 +136,67 @@ sprintLabel(pThisHotkey)
 			else
 			{
 				;OutputDebug(A_ThisFunc "::" A_ThisHotkey " inside window")
-				SprintToggle(!bSprinting, true)
+				KeyToggle(sprintKey, !bSprinting, true)
 			}
 		case KEY_MODE_HOLD:
-			SprintHold()
+			KeyHold(sprintKey)
 		case KEY_MODE_AUTOFIRE:
 			bAutofireSprinting := !bAutofireSprinting
-			SetTimer(SprintAutofire,bAutofireSprinting ? nAutofireKeyDelay : "Off")
+			SetTimer(fnAutofireSprint, bAutofireSprinting ? nAutofireKeyDelay : 0)
 			KeyWait(sprintAutofireKey)
 	}
 }
 
-AimAutofire()
+KeyAutofire(pAutofireKey, *)
 {
-	;OutputDebug(A_ThisFunc "::begin")
-	SendKey(aimKey, nKeyDelay)
-	;OutputDebug(A_ThisFunc "::end")
-}
-
-AimHold()
-{
-	;OutputDebug(A_ThisFunc "::begin")
-	SendKey(aimKey, nKeyDelay)
-	KeyWait(aimKey)
-	SendKey(aimKey, nKeyDelay)
-	;OutputDebug(A_ThisFunc "::end")
-}
-
-AimToggle(pAiming, pWait := false)
-{
-	global
-
-	;OutputDebug(A_ThisFunc "::begin")
-	bAiming := pAiming
-	;OutputDebug(A_ThisFunc "::bAiming(" bAiming ")")
-
-	SendInput(bAiming ? "{Blind}{" . aimKey . " down}" : "{Blind}{" . aimKey . " up}")
-
-	if (pWait)
-		KeyWait(aimKey)
-
-	;OutputDebug(A_ThisFunc "::end")
-}
-
-
-CrouchAutofire()
-{
-	;OutputDebug(A_ThisFunc "::begin")
-	SendKey(crouchKey, nKeyDelay)
-	;OutputDebug(A_ThisFunc "::end")
-}
-
-CrouchHold()
-{
-	;OutputDebug(A_ThisFunc "::begin")
-	SendKey(crouchKey, nKeyDelay)
-	KeyWait(crouchKey)
-	SendKey(crouchKey, nKeyDelay)
-	;OutputDebug(A_ThisFunc "::end")
-}
-
-CrouchToggle(pCrouching, pWait := false)
-{
-	global
-
 	OutputDebug(A_ThisFunc "::begin")
-	bCrouching := pCrouching
-	OutputDebug(A_ThisFunc "::bCrouching(" bCrouching ")")
 
-	;SendInput(bCrouching ? "{Blind}{" . crouchKey . " down}" : "{Blind}{" . crouchKey . " up}")
-	SendInput(bCrouching ? "{Blind}{" . crouchKey . " down}" : "{Blind}{" . crouchKey . " up}")
-
-	if (pWait)
-		KeyWait(crouchKey)
+	switch pAutofireKey
+	{
+		case aimAutofireKey:
+			SendKey(aimKey, nKeyDelay)
+		case crouchAutofireKey:
+			SendKey(crouchKey, nKeyDelay)
+		case sprintAutofireKey:
+			SendKey(sprintKey, nKeyDelay)
+	}
 
 	OutputDebug(A_ThisFunc "::end")
+}
+
+KeyHold(pKey)
+{
+	;OutputDebug(A_ThisFunc "::begin")
+	SendKey(pKey, nKeyDelay)
+	KeyWait(pKey)
+	SendKey(pKey, nKeyDelay)
+	;OutputDebug(A_ThisFunc "::end")
+}
+
+KeyToggle(pKey, pToggling, pWait := false)
+{
+	global
+
+	;OutputDebug(A_ThisFunc "::begin")
+
+	switch pKey
+	{
+		case aimKey:
+			bAiming := pToggling
+		case crouchKey:
+			bCrouching := pToggling
+		case sprintKey:
+			bSprinting := pToggling
+	}
+
+	OutputDebug(pKey == aimKey ? A_ThisFunc "::bAiming(" bAiming ")" : pKey == crouchKey ? A_ThisFunc "::bCrouching(" bCrouching ")" : A_ThisFunc "::bSprinting(" bSprinting ")")
+
+	SendInput(pToggling ? "{Blind}{" . pKey . " down}" : "{Blind}{" . pKey . " up}")
+
+	if (pWait)
+		KeyWait(pKey)
+
+	;OutputDebug(A_ThisFunc "::end")
 }
 
 HookWindow()
@@ -274,11 +260,11 @@ OnFocusChanged()
 		OutputDebug(A_ThisFunc "::saveToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
 
 		if (bRestoreAiming)
-			AimToggle(true)
+			KeyToggle(aimKey, true)
 		if (bRestoreCrouching)
-			CrouchToggle(true)
+			KeyToggle(crouchKey, true)
 		if (bRestoreSprinting)
-			SprintToggle(true)
+			KeyToggle(sprintKey, true)
 	}
 
 	OutputDebug(A_ThisFunc "::WinWaitNotActive")
@@ -352,15 +338,20 @@ RegisterHotkeys()
 	Hotkey("*$" sprintKey, sprintLabel, bSprintMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_HOLD ? "On" : "Off")
 
 	; Enabled only for autofire mode
-	Hotkey(aimAutofireKey, aimLabel, bAimMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
-	Hotkey(crouchAutofireKey, crouchLabel, bCrouchMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
-	Hotkey(sprintAutofireKey, sprintLabel, bSprintMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
+	Hotkey("*$" aimAutofireKey, aimLabel, bAimMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
+	Hotkey("*$" crouchAutofireKey, crouchLabel, bCrouchMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
+	Hotkey("*$" sprintAutofireKey, sprintLabel, bSprintMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
 
 	; Fixes issues when pressing system keys while toggle keys are modifiers and are enabled
 	Hotkey("*$" "!Tab", SendAltTab, bFixSystemKeys ? "On" : "Off")
 	Hotkey("*$" "Escape", SendEscape, bFixSystemKeys ? "On" : "Off")
 	Hotkey("*$" "LWin", SendWindows, bFixSystemKeys ? "On" : "Off")
 	Hotkey("*$" "RWin", SendWindows, bFixSystemKeys ? "On" : "Off")
+
+	; Functors
+	global fnAutofireAim := KeyAutofire.Bind(aimAutofireKey)
+	global fnAutofireCrouch := KeyAutofire.Bind(crouchAutofireKey)
+	global fnAutofireSprint := KeyAutofire.Bind(sprintAutofireKey)
 	HotIfWinActive()
 }
 
@@ -371,19 +362,19 @@ ReleaseAllKeys()
 	OutputDebug(A_ThisFunc "::states(" bAiming ", " bCrouching ", " bSprinting ")")
 
 	if (bAiming)
-		AimToggle(false)
+		KeyToggle(aimKey, false)
 	if (bCrouching)
-		CrouchToggle(false)
+		KeyToggle(crouchKey, false)
 	if (bSprinting)
-		SprintToggle(false)
+		KeyToggle(sprintKey, false)
 
 	bAutofireAiming := false
 	bAutofireCrouching := false
 	bAutofireSprinting := false
 
-	SetTimer(AimAutofire, 0)
-	SetTimer(CrouchAutofire, 0)
-	SetTimer(SprintAutofire, 0)
+	SetTimer(fnAutofireAim, 0)
+	SetTimer(fnAutofireCrouch, 0)
+	SetTimer(fnAutofireSprint, 0)
 }
 
 RestartAsAdminIfNeeded()
@@ -489,38 +480,6 @@ SendWindows(pThisHotkey)
 ShouldRestoreTogglesOnFocus()
 {
 	return bRestoreTogglesOnFocus && (bAimMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " windowID) != 0)
-}
-
-SprintAutofire()
-{
-	;OutputDebug(A_ThisFunc "::begin")
-	SendKey(sprintKey, nKeyDelay)
-	;OutputDebug(A_ThisFunc "::end")
-}
-
-SprintHold()
-{
-	;OutputDebug(A_ThisFunc "::begin")
-	SendKey(sprintKey, nKeyDelay)
-	KeyWait(sprintKey)
-	SendKey(sprintKey, nKeyDelay)
-	;OutputDebug(A_ThisFunc "::end")
-}
-
-SprintToggle(pSprinting, pWait := false)
-{
-	global
-
-	;OutputDebug(A_ThisFunc "::begin")
-	bSprinting := pSprinting
-	;OutputDebug(A_ThisFunc "::bSprinting(" bSprinting ")")
-
-	SendInput(bSprinting ? "{Blind}{" . sprintKey . " down}" : "{Blind}{" . sprintKey . " up}")
-
-	if (pWait)
-		KeyWait(sprintKey)
-
-	;OutputDebug(A_ThisFunc "::end")
 }
 
 TakeToggleKeysSnapshot(pReleaseKeys := true)
