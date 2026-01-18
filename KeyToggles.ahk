@@ -372,10 +372,10 @@ RegisterHotkeys()
 	Hotkey(sprintAutofireKey, sprintLabel, bSprintMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
 
 	; Fixes issues when pressing system keys while toggle keys are modifiers and are enabled
-	Hotkey("!Tab", SendAltTab, bFixSystemKeys ? "On" : "Off")
-	Hotkey("Escape", SendEscape, bFixSystemKeys ? "On" : "Off")
-	Hotkey("LWin", SendWindows, bFixSystemKeys ? "On" : "Off")
-	Hotkey("RWin", SendWindows, bFixSystemKeys ? "On" : "Off")
+	Hotkey("*$" "!Tab", SendAltTab, bFixSystemKeys ? "On" : "Off")
+	Hotkey("*$" "Escape", SendEscape, bFixSystemKeys ? "On" : "Off")
+	Hotkey("*$" "LWin", SendWindows, bFixSystemKeys ? "On" : "Off")
+	Hotkey("*$" "RWin", SendWindows, bFixSystemKeys ? "On" : "Off")
 	HotIfWinActive()
 }
 
@@ -430,12 +430,11 @@ SendAltTab(pThisHotkey)
 
 	; Check if modifier keys are physically pressed to handle Ctrl+Alt+Tab, Shift+Alt+Tab and Ctrl+Shift+Alt+Tab
 	if (GetKeyState("Control", "P"))
-		SendInput("{Control down}")
+		SendInput("{Blind}{Control down}")
 	if (GetKeyState("Shift", "P"))
-		SendInput("{Shift down}")
+		SendInput("{Blind}{Shift down}")
 
-	SendInput("{Alt down}{Tab}")
-
+	SendInput("{Blind}{Alt down}{Tab}")
 	;OutputDebug(A_ThisFunc "::end")
 }
 
@@ -462,14 +461,14 @@ SendEscape(pThisHotkey)
 
 	; Check if modifier keys are physically pressed to handle Ctrl+Escape and Ctrl+Shift+Escape
 	if (GetKeyState("Control", "P"))
-		SendInput("{Control down}")
+		SendInput("{Blind}{Control down}")
 	if (GetKeyState("Shift", "P"))
-		SendInput("{Shift down}")
+		SendInput("{Blind}{Shift down}")
 
-	SendInput("{Escape}")
+	SendInput("{Blind}{Escape}")
 
 	; Fixes an issue where the window wouldn't receive key up events when pressing Ctrl+Shift+Escape
-	ControlSend("{Control up}{Shift up}")
+	ControlSend("{Blind}{Control up}{Shift up}")
 
 	;OutputDebug(A_ThisFunc "::end")
 }
@@ -497,9 +496,9 @@ SendWindows(pThisHotkey)
 
 	; Check if modifier keys are physically pressed to handle Shift+Win
 	if (GetKeyState("Shift", "P"))
-		SendInput("{Shift down}")
+		SendInput("{Blind}{Shift down}")
 
-	SendInput("{LWin}")
+	SendInput("{Blind}{LWin}")
 
 	;OutputDebug(A_ThisFunc "::end")
 }
