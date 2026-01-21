@@ -2,7 +2,6 @@
 
 ; TODO
 ; add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
-; add autofire hold mode
 ; add cursor lock? (https://www.autohotkey.com/boards/viewtopic.php?t=66966)
 ; add overlay
 ; add setTitleWindowMatch
@@ -50,7 +49,7 @@ Init()
 ; Exit script
 ExitFunc(pExitReason, pExitCode)
 {
-	OutputDebug(A_ThisFunc "::pExitReason(" pExitReason ") pExitCode(" pExitCode ")")
+	Output(A_ThisFunc "::pExitReason(" pExitReason ") pExitCode(" pExitCode ")")
 	ReleaseAllKeys()
 }
 
@@ -74,7 +73,7 @@ HookWindow()
 
 	; Make the hotkeys active only for a specific window
 	nWindowID := WinGetID(sWindowName)
-	OutputDebug(A_ThisFunc "::WinGet(" nWindowID ")")
+	Output(A_ThisFunc "::WinGet(" nWindowID ")")
 	GroupAdd("windowIDGroup", "ahk_id " nWindowID)
 
 	if (nWindowID && bShowNotifications)
@@ -104,7 +103,7 @@ IsMouseOverWindow(pHwnd)
 
 KeyAutofire(pAutofireKey)
 {
-	OutputDebug(A_ThisFunc "::begin")
+	Output(A_ThisFunc "::begin")
 
 	switch pAutofireKey
 	{
@@ -116,23 +115,23 @@ KeyAutofire(pAutofireKey)
 			SendKey(sprintKey, nKeyDelay)
 	}
 
-	OutputDebug(A_ThisFunc "::end")
+	Output(A_ThisFunc "::end")
 }
 
 KeyHold(pKey)
 {
-	;OutputDebug(A_ThisFunc "::begin")
+	;Output(A_ThisFunc "::begin")
 	SendKey(pKey, nKeyDelay)
 	KeyWait(pKey)
 	SendKey(pKey, nKeyDelay)
-	;OutputDebug(A_ThisFunc "::end")
+	;Output(A_ThisFunc "::end")
 }
 
 KeyToggle(pKey, pToggling, pWait := false)
 {
 	global
 
-	;OutputDebug(A_ThisFunc "::begin")
+	;Output(A_ThisFunc "::begin")
 
 	switch pKey
 	{
@@ -144,14 +143,14 @@ KeyToggle(pKey, pToggling, pWait := false)
 			bSprinting := pToggling
 	}
 
-	OutputDebug(pKey == aimKey ? A_ThisFunc "::bAiming(" bAiming ")" : pKey == crouchKey ? A_ThisFunc "::bCrouching(" bCrouching ")" : A_ThisFunc "::bSprinting(" bSprinting ")")
+	Output(pKey == aimKey ? A_ThisFunc "::bAiming(" bAiming ")" : pKey == crouchKey ? A_ThisFunc "::bCrouching(" bCrouching ")" : A_ThisFunc "::bSprinting(" bSprinting ")")
 
 	SendInput(pToggling ? "{Blind}{" . pKey . " down}" : "{Blind}{" . pKey . " up}")
 
 	if (pWait)
 		KeyWait(pKey)
 
-	;OutputDebug(A_ThisFunc "::end")
+	;Output(A_ThisFunc "::end")
 }
 
 ; Hook the window and register hotkeys if necessary, disable toggles on focus lost and optionally restore them on focus
@@ -159,7 +158,7 @@ OnFocusChanged()
 {
 	global
 
-	OutputDebug(A_ThisFunc "::WinWaitActive")
+	Output(A_ThisFunc "::WinWaitActive")
 	WinWaitActive(sWindowName)
 	Sleep(nHookDelay)
 
@@ -181,7 +180,7 @@ OnFocusChanged()
 	; Restore autofire toggle states
 	if (ShouldRestoreAutofiresOnFocus())
 	{
-		OutputDebug(A_ThisFunc "::restoreAutofireToggleStates(" bRestoreAutofireAiming ", " bRestoreAutofireCrouching ", " bRestoreAutofireSprinting ")")
+		Output(A_ThisFunc "::restoreAutofireToggleStates(" bRestoreAutofireAiming ", " bRestoreAutofireCrouching ", " bRestoreAutofireSprinting ")")
 
 		if (bRestoreAutofireAiming)
 			OnKeyPress(aimAutofireKey)
@@ -194,7 +193,7 @@ OnFocusChanged()
 	; Restore toggle states
 	if (ShouldRestoreTogglesOnFocus())
 	{
-		OutputDebug(A_ThisFunc "::restoreToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
+		Output(A_ThisFunc "::restoreToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
 
 		if (bRestoreAiming)
 			KeyToggle(aimKey, true)
@@ -204,7 +203,7 @@ OnFocusChanged()
 			KeyToggle(sprintKey, true)
 	}
 
-	OutputDebug(A_ThisFunc "::WinWaitNotActive")
+	Output(A_ThisFunc "::WinWaitNotActive")
 	WinWaitNotActive(sWindowName)
 
 	; Save toggle states
@@ -215,7 +214,7 @@ OnFocusChanged()
 			bToggleKeysSnapshotTaken := false
 		else
 		{
-			OutputDebug(A_ThisFunc "::saveToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
+			Output(A_ThisFunc "::saveToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
 
 			bRestoreAiming := bAiming
 			bRestoreCrouching := bCrouching
@@ -246,25 +245,25 @@ OnKeyPress(pThisHotkey)
 			lKeyMode := bSprintMode
 	}
 
-	;OutputDebug(A_ThisFunc "::" pThisHotkey " lKeyMode(" lKeyMode ")")
+	;Output(A_ThisFunc "::" pThisHotkey " lKeyMode(" lKeyMode ")")
 
 	switch lKeyMode
 	{
 		case KEY_MODE_TOGGLE:
 			lIsMouseButton := IsMouseButton(pThisHotkeyTrimmed)
 			lIsMouseOverWindow := IsMouseOverWindow(nWindowID)
-			; OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
+			; Output(A_ThisFunc "::" pThisHotkeyTrimmed " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
 
 			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and was enabled
 			if (lIsMouseButton && !lIsMouseOverWindow)
 			{
-				;OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " outside window")
+				;Output(A_ThisFunc "::" pThisHotkeyTrimmed " outside window")
 				SendClickOutsideWindow(pThisHotkeyTrimmed)
 			}
 			; Otherwise toggle the key
 			else
 			{
-				;OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " inside window")
+				;Output(A_ThisFunc "::" pThisHotkeyTrimmed " inside window")
 
 				if (pThisHotkeyTrimmed == aimKey)
 					KeyToggle(aimKey, !bAiming, true)
@@ -295,8 +294,8 @@ OnKeyPress(pThisHotkey)
 
 			KeyWait(pThisHotkeyTrimmed)
 		case KEY_MODE_AUTOFIRE_HOLD:
-			OutputDebug(A_ThisFunc "::" lKeyMode " (" lKeyMode ")")
-			OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " pressed")
+			Output(A_ThisFunc "::" lKeyMode " (" lKeyMode ")")
+			Output(A_ThisFunc "::" pThisHotkeyTrimmed " pressed")
 
 			if (pThisHotkeyTrimmed == aimAutofireKey)
 				SetTimer(fnAutofireAim, nAutofireKeyDelay)
@@ -314,8 +313,14 @@ OnKeyPress(pThisHotkey)
 			else if (pThisHotkeyTrimmed == sprintAutofireKey)
 				SetTimer(fnAutofireSprint, 0)
 
-			OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " released")
+			Output(A_ThisFunc "::" pThisHotkeyTrimmed " released")
 	}
+}
+
+Output(pMessage)
+{
+	if (bDebugMode)
+		OutputDebug(pMessage . "`n")
 }
 
 ReadConfigFile()
@@ -391,7 +396,7 @@ ReleaseAllKeys()
 {
 	global
 
-	OutputDebug(A_ThisFunc "::states(" bAiming ", " bCrouching ", " bSprinting ")")
+	Output(A_ThisFunc "::states(" bAiming ", " bCrouching ", " bSprinting ")")
 
 	if (bAiming)
 		KeyToggle(aimKey, false)
@@ -431,7 +436,7 @@ RestartAsAdminIfNeeded()
 
 SendAltTab(pThisHotkey)
 {
-	;OutputDebug(A_ThisFunc "::begin")
+	;Output(A_ThisFunc "::begin")
 
 	; Take a snapshot of the toggle states
 	if (ShouldRestoreTogglesOnFocus())
@@ -444,12 +449,12 @@ SendAltTab(pThisHotkey)
 		SendInput("{Blind}{Shift down}")
 
 	SendInput("{Blind}{Alt down}{Tab}")
-	;OutputDebug(A_ThisFunc "::end")
+	;Output(A_ThisFunc "::end")
 }
 
 SendClickOutsideWindow(pKey)
 {
-	;OutputDebug(A_ThisFunc "::begin")
+	;Output(A_ThisFunc "::begin")
 
 	; Take a snapshot of the toggle states
 	if (ShouldRestoreTogglesOnFocus())
@@ -457,12 +462,12 @@ SendClickOutsideWindow(pKey)
 
 	SendKey(pKey, 0, true)
 
-	;OutputDebug(A_ThisFunc "::end")
+	;Output(A_ThisFunc "::end")
 }
 
 SendEscape(pThisHotkey)
 {
-	;OutputDebug(A_ThisFunc "::begin")
+	;Output(A_ThisFunc "::begin")
 
 	; Take a snapshot of the toggle states
 	if (ShouldRestoreTogglesOnFocus())
@@ -479,7 +484,7 @@ SendEscape(pThisHotkey)
 	; Fixes an issue where the window wouldn't receive key up events when pressing Ctrl+Shift+Escape
 	ControlSend("{Blind}{Control up}{Shift up}")
 
-	;OutputDebug(A_ThisFunc "::end")
+	;Output(A_ThisFunc "::end")
 }
 
 SendKey(pKey, pSleepMs := 0, pWait := false)
@@ -497,7 +502,7 @@ SendKey(pKey, pSleepMs := 0, pWait := false)
 
 SendWindows(pThisHotkey)
 {
-	;OutputDebug(A_ThisFunc "::begin")
+	;Output(A_ThisFunc "::begin")
 
 	; Take a snapshot of the toggle states
 	if (ShouldRestoreTogglesOnFocus())
@@ -509,7 +514,7 @@ SendWindows(pThisHotkey)
 
 	SendInput("{Blind}{LWin}")
 
-	;OutputDebug(A_ThisFunc "::end")
+	;Output(A_ThisFunc "::end")
 }
 
 ShouldRestoreAutofiresOnFocus()
@@ -548,12 +553,12 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 {
 	if (!IsMouseOverWindow(nWindowID))
 	{
-		;OutputDebug(A_ThisHotkey "::outside window")
+		;Output(A_ThisHotkey "::outside window")
 		SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
 	}
 	else
 	{
-		;OutputDebug(A_ThisHotkey "::inside window")
+		;Output(A_ThisHotkey "::inside window")
 		SendKey(LTrim(A_ThisHotkey, "*$"), 0, true)
 	}
 }
