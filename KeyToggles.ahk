@@ -72,7 +72,7 @@ HookWindow()
 	global
 
 	; Make the hotkeys active only for a specific window
-	nWindowID := WinGetID(sWindowName)
+	nWindowID := WinGetID(sWindowName . " ahk_exe " . sProcessName)
 	Output(A_ThisFunc "::WinGet(" nWindowID ")")
 	GroupAdd("windowIDGroup", "ahk_id " nWindowID)
 
@@ -159,11 +159,11 @@ OnFocusChanged()
 	global
 
 	Output(A_ThisFunc "::WinWaitActive")
-	WinWaitActive(sWindowName)
+	WinWaitActive(sWindowName . " ahk_exe " . sProcessName)
 	Sleep(nHookDelay)
 
 	; Make sure to hook the window again if it no longer exists
-	if (nWindowID != WinExist(sWindowName))
+	if (nWindowID != WinExist(sWindowName . " ahk_exe " . sProcessName))
 	{
 		HookWindow()
 		RegisterHotkeys()
@@ -204,7 +204,7 @@ OnFocusChanged()
 	}
 
 	Output(A_ThisFunc "::WinWaitNotActive")
-	WinWaitNotActive(sWindowName)
+	WinWaitNotActive(sWindowName " ahk_exe " . sProcessName)
 
 	; Save toggle states
 	if (ShouldRestoreTogglesOnFocus())
@@ -335,6 +335,7 @@ ReadConfigFile()
 		ExitWithErrorMessage(configFileName . " not found! The script will now exit.")
 
 	; General
+	sProcessName := IniRead(configFileName, "General", "processName", "")
 	sWindowName := IniRead(configFileName, "General", "windowName", "")
 	bAimMode := IniRead(configFileName, "General", "aimMode", 1)
 	bCrouchMode := IniRead(configFileName, "General", "crouchMode", 1)
@@ -360,8 +361,8 @@ ReadConfigFile()
 	; Debug
 	bDebugMode := IniRead(configFileName, "Debug", "debugMode", 0)
 
-	if (sWindowName == "" || sWindowName == "put_window_name_here")
-		ExitWithErrorMessage("You must specify a window name! The script will now exit.")
+	if (sProcessName == "" || sProcessName == "put_process_name_here")
+		ExitWithErrorMessage("You must specify a process name! The script will now exit.")
 }
 
 RegisterHotkeys()
