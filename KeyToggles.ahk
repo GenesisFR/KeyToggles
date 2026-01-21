@@ -458,8 +458,9 @@ SendClickOutsideWindow(pKey)
 
 	; Take a snapshot of the toggle states
 	if (ShouldRestoreTogglesOnFocus())
-		TakeToggleKeysSnapshot()
+		TakeToggleKeysSnapshot(false)
 
+	ReleaseAllKeys()
 	SendKey(pKey, 0, true)
 
 	;Output(A_ThisFunc "::end")
