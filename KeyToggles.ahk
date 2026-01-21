@@ -5,7 +5,8 @@
 ; add autofire hold mode
 ; add cursor lock? (https://www.autohotkey.com/boards/viewtopic.php?t=66966)
 ; add overlay
-; fix toggle off not working when physically holding toggle keys
+; add setTitleWindowMatch
+; fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 
 #Requires Autohotkey v2.0  ; Display an error and quit if this version requirement is not met.
@@ -21,6 +22,7 @@ OnExit(ExitFunc)
 global KEY_MODE_TOGGLE := 1
 global KEY_MODE_HOLD := 2
 global KEY_MODE_AUTOFIRE := 3
+global KEY_MODE_AUTOFIRE_HOLD := 4
 
 ; Initialize state variables
 global bAiming := false
@@ -78,7 +80,7 @@ HookWindow()
 	if (nWindowID && bShowNotifications)
 	{
 		local lWindowName := WinGetTitle(nWindowID)
-		TrayTip(configFileNameTrimmed, "The window `"" . lWindowName . "`" has been hooked.")
+		TrayTip("KeyToggles", "The window `"" . lWindowName . "`" has been hooked.")
 	}
 }
 
@@ -176,10 +178,10 @@ OnFocusChanged()
 		bRestoreAutofireSprinting := false
 	}
 
-	; Restore autofire states
+	; Restore autofire toggle states
 	if (ShouldRestoreAutofiresOnFocus())
 	{
-		OutputDebug(A_ThisFunc "::restoreAutofireStates(" bRestoreAutofireAiming ", " bRestoreAutofireCrouching ", " bRestoreAutofireSprinting ")")
+		OutputDebug(A_ThisFunc "::restoreAutofireToggleStates(" bRestoreAutofireAiming ", " bRestoreAutofireCrouching ", " bRestoreAutofireSprinting ")")
 
 		if (bRestoreAutofireAiming)
 			OnKeyPress(aimAutofireKey)
@@ -292,6 +294,27 @@ OnKeyPress(pThisHotkey)
 			}
 
 			KeyWait(pThisHotkeyTrimmed)
+		case KEY_MODE_AUTOFIRE_HOLD:
+			OutputDebug(A_ThisFunc "::" lKeyMode " (" lKeyMode ")")
+			OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " pressed")
+
+			if (pThisHotkeyTrimmed == aimAutofireKey)
+				SetTimer(fnAutofireAim, nAutofireKeyDelay)
+			else if (pThisHotkeyTrimmed == crouchAutofireKey)
+				SetTimer(fnAutofireCrouch, nAutofireKeyDelay)
+			else if (pThisHotkeyTrimmed == sprintAutofireKey)
+				SetTimer(fnAutofireSprint, nAutofireKeyDelay)
+
+			KeyWait(pThisHotkeyTrimmed)
+
+			if (pThisHotkeyTrimmed == aimAutofireKey)
+				SetTimer(fnAutofireAim, 0)
+			else if (pThisHotkeyTrimmed == crouchAutofireKey)
+				SetTimer(fnAutofireCrouch, 0)
+			else if (pThisHotkeyTrimmed == sprintAutofireKey)
+				SetTimer(fnAutofireSprint, 0)
+
+			OutputDebug(A_ThisFunc "::" pThisHotkeyTrimmed " released")
 	}
 }
 
@@ -300,14 +323,14 @@ ReadConfigFile()
 	global
 
 	SplitPath(A_ScriptName, , , , &configFileNameTrimmed)
-	configFileName := configFileNameTrimmed . ".ini"
+	configFileName := "KeyToggles.ini"
 
 	; Config file is missing, exit
 	if (!FileExist(configFileName))
 		ExitWithErrorMessage(configFileName . " not found! The script will now exit.")
 
 	; General
-	sWindowName := IniRead(configFileName, "General", "windowName", "`"put_window_name_here`"")
+	sWindowName := IniRead(configFileName, "General", "windowName", "")
 	bAimMode := IniRead(configFileName, "General", "aimMode", 1)
 	bCrouchMode := IniRead(configFileName, "General", "crouchMode", 1)
 	bSprintMode := IniRead(configFileName, "General", "sprintMode", 1)
@@ -332,7 +355,7 @@ ReadConfigFile()
 	; Debug
 	bDebugMode := IniRead(configFileName, "Debug", "debugMode", 0)
 
-	if (sWindowName == "put_window_name_here")
+	if (sWindowName == "" || sWindowName == "put_window_name_here")
 		ExitWithErrorMessage("You must specify a window name! The script will now exit.")
 }
 
@@ -347,9 +370,9 @@ RegisterHotkeys()
 	Hotkey("*$" sprintKey, OnKeyPress, bSprintMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_HOLD ? "On" : "Off")
 
 	; Enabled only for autofire mode
-	Hotkey("*$" aimAutofireKey, OnKeyPress, bAimMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
-	Hotkey("*$" crouchAutofireKey, OnKeyPress, bCrouchMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
-	Hotkey("*$" sprintAutofireKey, OnKeyPress, bSprintMode == KEY_MODE_AUTOFIRE ? "On" : "Off")
+	Hotkey("*$" aimAutofireKey, OnKeyPress, bAimMode == KEY_MODE_AUTOFIRE || bAimMode == KEY_MODE_AUTOFIRE_HOLD  ? "On" : "Off")
+	Hotkey("*$" crouchAutofireKey, OnKeyPress, bCrouchMode == KEY_MODE_AUTOFIRE || bCrouchMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
+	Hotkey("*$" sprintAutofireKey, OnKeyPress, bSprintMode == KEY_MODE_AUTOFIRE || bSprintMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 
 	; Fixes issues when pressing system keys while toggle keys are modifiers and are enabled
 	Hotkey("*$" "!Tab", SendAltTab, bFixSystemKeys ? "On" : "Off")

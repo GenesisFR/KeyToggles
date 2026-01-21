@@ -1,14 +1,15 @@
 # KeyToggles
-An AutoHotkey 1.1 script that can change the input mode of keys and mouse buttons.
+An AutoHotkey 2 script that can change the input mode of keys and mouse buttons.
 
-3 modes are currently supported:
+4 modes are currently supported:
 - toggle: you don't have to hold the key to perform its action.
 - hold: you have to hold the key to perform its action.
 - autofire: same as toggle except it will repeatedly perform the action of another key.
+- autofire hold: same as autofire except you need to hold the autofire key.
 
 ## Installation
 
-You can run the script from anywhere as long as "KeyToggles.ini" is in the same directory than the script.  
+You can run the script from anywhere, as long as "KeyToggles.ini" is in the same directory than the script.  
 
 ## Usage
 
@@ -32,3 +33,7 @@ For games run as admin, you must also run the script as admin for it to work.
 
 I've only tested the script in Aliens: Colonial Marines, Half-Life 1, Half-Life 2 and some Unity games.  
 It will not work in games that prevent keys from being simulated (ex: games using anti-cheats).
+
+## Credits
+
+- [Keeyra_](https://www.reddit.com/user/Keeyra_)
