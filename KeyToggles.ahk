@@ -238,7 +238,7 @@ OnFocusChanged()
 OnKeyPress(pThisHotkey)
 {
 	global
-	
+
 	local lCleanHotkey := LTrim(pThisHotkey, "~*$")
 	local lKeyMode := KEY_MODE_DISABLED
 
@@ -285,22 +285,22 @@ OnKeyPress(pThisHotkey)
 
 				if (lCleanHotkey == aimKey)
 					KeyToggle(aimKey, !bAiming, true)
-				else if(lCleanHotkey == crouchKey)
+				else if (lCleanHotkey == crouchKey)
 					KeyToggle(crouchKey, !bCrouching, true)
-				else if(lCleanHotkey == sprintKey)
+				else if (lCleanHotkey == sprintKey)
 					KeyToggle(sprintKey, !bSprinting, true)
-				else if(lCleanHotkey == autorunKey)
+				else if (lCleanHotkey == autorunKey)
 				{
 					; Autorun will engage even if the forward/backward key was physically pressed
 					if (GetKeyState(backwardKey, "P"))
 						SendKey(backwardKey)
-					
+
 					KeyWait(forwardKey)
 					KeyToggle(forwardKey, !bAutorunning)
 					KeyWait(autorunKey)
 				}
 			}
-		case KEY_MODE_HOLD:	
+		case KEY_MODE_HOLD:
 			KeyHold(lCleanHotkey)
 		; Based on https://autohotkey.com/board/topic/64576-the-definitive-autofire-thread/?p=407264
 		case KEY_MODE_AUTOFIRE:
@@ -365,19 +365,19 @@ ReadConfigFile()
 	; General
 	sProcessName := IniRead(configFileName, "General", "processName", "")
 	sWindowName := IniRead(configFileName, "General", "windowName", "")
-	bAimMode := IniRead(configFileName, "General", "aimMode", 0)
-	bCrouchMode := IniRead(configFileName, "General", "crouchMode", 0)
-	bSprintMode := IniRead(configFileName, "General", "sprintMode", 0)
-	bAutorunMode := IniRead(configFileName, "General", "autorunMode", 0)
 	nAutofireKeyDelay := IniRead(configFileName, "General", "autofireKeyDelay", 100)
 	bFixSystemKeys := IniRead(configFileName, "General", "fixSystemKeys", 1)
 	nFocusCheckDelay := IniRead(configFileName, "General", "focusCheckDelay", 1000)
 	nHookDelay := IniRead(configFileName, "General", "hookDelay", 0)
 	nKeyDelay := IniRead(configFileName, "General", "keyDelay", 0)
-	bRestoreTogglesOnFocus := IniRead(configFileName, "General", "restoreTogglesOnFocus", 0)
 	bRestoreAutofiresOnFocus := IniRead(configFileName, "General", "restoreAutofiresOnFocus", 0)
-	bShowNotifications := IniRead(configFileName, "General", "showNotifications", 0)
+	bRestoreTogglesOnFocus := IniRead(configFileName, "General", "restoreTogglesOnFocus", 0)
 	bRunAsAdmin := IniRead(configFileName, "General", "runAsAdmin", 0)
+	bShowNotifications := IniRead(configFileName, "General", "showNotifications", 0)
+	bAimMode := IniRead(configFileName, "General", "aimMode", 0)
+	bCrouchMode := IniRead(configFileName, "General", "crouchMode", 0)
+	bSprintMode := IniRead(configFileName, "General", "sprintMode", 0)
+	bAutorunMode := IniRead(configFileName, "General", "autorunMode", 0)
 
 	; Main keys
 	aimKey := IniRead(configFileName, "Keys", "aimKey", "RButton")
@@ -399,6 +399,12 @@ ReadConfigFile()
 
 	if (sProcessName == "")
 		ExitWithErrorMessage("You must specify a process name! The script will now exit.")
+
+	; Prevent timers from not working
+	if (nAutofireKeyDelay <= 0)
+		nAutofireKeyDelay := 1
+	if (nFocusCheckDelay <= 0)
+		nFocusCheckDelay := 1
 }
 
 RegisterHotkeys()
