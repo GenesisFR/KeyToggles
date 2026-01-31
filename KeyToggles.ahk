@@ -65,7 +65,7 @@ Init()
 {
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
-	SetTimer(OnFocusChanged, nFocusCheckDelay)
+	SetTimer(OnFocusChanged, nFocusCheckInterval)
 }
 
 HookWindow()
@@ -272,7 +272,7 @@ OnKeyPress(pThisHotkey)
 			lIsMouseOverWindow := IsMouseOverWindow(nWindowID)
 			; Output(A_ThisFunc "::" lCleanHotkey " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
 
-			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and was enabled
+			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and toggled
 			if (lIsMouseButton && !lIsMouseOverWindow)
 			{
 				;Output(A_ThisFunc "::" lCleanHotkey " outside window")
@@ -307,17 +307,17 @@ OnKeyPress(pThisHotkey)
 			if (lCleanHotkey == aimAutofireKey)
 			{
 				bAutofireAiming := !bAutofireAiming
-				SetTimer(fnAutofireAim, bAutofireAiming ? nAutofireKeyDelay : 0)
+				SetTimer(fnAutofireAim, bAutofireAiming ? nAutofireKeyInterval : 0)
 			}
 			else if (lCleanHotkey == crouchAutofireKey)
 			{
 				bAutofireCrouching := !bAutofireCrouching
-				SetTimer(fnAutofireCrouch, bAutofireCrouching ? nAutofireKeyDelay : 0)
+				SetTimer(fnAutofireCrouch, bAutofireCrouching ? nAutofireKeyInterval : 0)
 			}
 			else if (lCleanHotkey == sprintAutofireKey)
 			{
 				bAutofireSprinting := !bAutofireSprinting
-				SetTimer(fnAutofireSprint, bAutofireSprinting ? nAutofireKeyDelay : 0)
+				SetTimer(fnAutofireSprint, bAutofireSprinting ? nAutofireKeyInterval : 0)
 			}
 
 			KeyWait(lCleanHotkey)
@@ -326,11 +326,11 @@ OnKeyPress(pThisHotkey)
 			Output(A_ThisFunc "::" lCleanHotkey " pressed")
 
 			if (lCleanHotkey == aimAutofireKey)
-				SetTimer(fnAutofireAim, nAutofireKeyDelay)
+				SetTimer(fnAutofireAim, nAutofireKeyInterval)
 			else if (lCleanHotkey == crouchAutofireKey)
-				SetTimer(fnAutofireCrouch, nAutofireKeyDelay)
+				SetTimer(fnAutofireCrouch, nAutofireKeyInterval)
 			else if (lCleanHotkey == sprintAutofireKey)
-				SetTimer(fnAutofireSprint, nAutofireKeyDelay)
+				SetTimer(fnAutofireSprint, nAutofireKeyInterval)
 
 			KeyWait(lCleanHotkey)
 
@@ -365,9 +365,9 @@ ReadConfigFile()
 	; General
 	sProcessName := IniRead(configFileName, "General", "processName", "")
 	sWindowName := IniRead(configFileName, "General", "windowName", "")
-	nAutofireKeyDelay := IniRead(configFileName, "General", "autofireKeyDelay", 100)
+	nAutofireKeyInterval := IniRead(configFileName, "General", "autofireKeyInterval", 100)
 	bFixSystemKeys := IniRead(configFileName, "General", "fixSystemKeys", 1)
-	nFocusCheckDelay := IniRead(configFileName, "General", "focusCheckDelay", 1000)
+	nFocusCheckInterval := IniRead(configFileName, "General", "focusCheckInterval", 1000)
 	nHookDelay := IniRead(configFileName, "General", "hookDelay", 0)
 	nKeyDelay := IniRead(configFileName, "General", "keyDelay", 0)
 	bRestoreAutofiresOnFocus := IniRead(configFileName, "General", "restoreAutofiresOnFocus", 0)
@@ -401,10 +401,10 @@ ReadConfigFile()
 		ExitWithErrorMessage("You must specify a process name! The script will now exit.")
 
 	; Prevent timers from not working
-	if (nAutofireKeyDelay <= 0)
-		nAutofireKeyDelay := 1
-	if (nFocusCheckDelay <= 0)
-		nFocusCheckDelay := 1
+	if (nAutofireKeyInterval <= 0)
+		nAutofireKeyInterval := 1
+	if (nFocusCheckInterval <= 0)
+		nFocusCheckInterval := 1
 }
 
 RegisterHotkeys()
@@ -428,7 +428,7 @@ RegisterHotkeys()
 	Hotkey("*$" crouchAutofireKey, OnKeyPress, bCrouchMode == KEY_MODE_AUTOFIRE || bCrouchMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 	Hotkey("*$" sprintAutofireKey, OnKeyPress, bSprintMode == KEY_MODE_AUTOFIRE || bSprintMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 
-	; Fixes issues when pressing system keys while toggle keys are modifiers and are enabled
+	; Fixes issues when pressing system keys while toggle keys are modifiers and toggled
 	Hotkey("*$" "!Tab", SendAltTab, bFixSystemKeys ? "On" : "Off")
 	Hotkey("*$" "Escape", SendEscape, bFixSystemKeys ? "On" : "Off")
 	Hotkey("*$" "LWin", SendWindows, bFixSystemKeys ? "On" : "Off")
