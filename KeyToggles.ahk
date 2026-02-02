@@ -51,6 +51,7 @@ ExitFunc(p_sExitReason, p_nExitCode)
 {
 	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_nExitCode ")")
 	ReleaseAllKeys()
+	TrayTip()
 }
 
 ; Display an error message and exit
@@ -76,12 +77,8 @@ HookWindow()
 	Output(A_ThisFunc "::WinGet(" g_nWindowID ")")
 	GroupAdd("windowIDGroup", "ahk_id " g_nWindowID)
 
-	if (g_nWindowID && g_bShowNotifications)
-	{
-		local l_sWindowName := WinGetTitle(g_nWindowID)
-		TrayTip() ; Clear any existing traytip
-		TrayTip("KeyToggles", "The window `"" l_sWindowName "`" has been hooked.")
-	}
+	if (g_nWindowID)
+		ShowNotification("The window `"" WinGetTitle(g_nWindowID) "`" has been hooked.")
 }
 
 IsMouseButton(p_sKey)
@@ -160,11 +157,7 @@ OnFocusChanged()
 {
 	global
 
-	if (g_bShowNotifications)
-	{
-		TrayTip() ; Clear any existing traytip
-		TrayTip("KeyToggles", "Waiting for the process `"" g_sProcessName "`" to become active.")
-	}
+	ShowNotification("Waiting for the process `"" g_sProcessName "`" to become active.")
 
 	Output(A_ThisFunc "::WinWaitActive")
 	WinWaitActive(g_sWindowName " ahk_exe " g_sProcessName)
@@ -378,7 +371,7 @@ ReadConfigFile()
 	g_bRestoreAutofiresOnFocus := IniRead(l_sConfigFileName, "General", "restoreAutofiresOnFocus", 0)
 	g_bRestoreTogglesOnFocus := IniRead(l_sConfigFileName, "General", "restoreTogglesOnFocus", 0)
 	g_bRunAsAdmin := IniRead(l_sConfigFileName, "General", "runAsAdmin", 0)
-	g_bShowNotifications := IniRead(l_sConfigFileName, "General", "showNotifications", 0)
+	g_nShowNotifications := IniRead(l_sConfigFileName, "General", "showNotifications", 0)
 	g_bAimMode := IniRead(l_sConfigFileName, "General", "aimMode", 0)
 	g_bCrouchMode := IniRead(l_sConfigFileName, "General", "crouchMode", 0)
 	g_bSprintMode := IniRead(l_sConfigFileName, "General", "sprintMode", 0)
@@ -585,6 +578,20 @@ ShouldRestoreAutofiresOnFocus()
 ShouldRestoreTogglesOnFocus()
 {
 	return g_bRestoreTogglesOnFocus && (g_bAimMode == KEY_MODE_TOGGLE || g_bCrouchMode == KEY_MODE_TOGGLE || g_bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " g_nWindowID) != 0)
+}
+
+ShowNotification(p_sMessage)
+{
+	switch g_nShowNotifications
+	{
+		case 1:
+			 ; Make sure to clear any existing traytip
+			TrayTip()
+			TrayTip(p_sMessage)
+		case 2:
+			ToolTip(p_sMessage)
+			SetTimer(() => ToolTip(), -5000)
+	}
 }
 
 TakeToggleKeysSnapshot(p_bReleaseKeys := true)
