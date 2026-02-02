@@ -9,7 +9,6 @@
 #Requires Autohotkey v2.0  ; Display an error and quit if this version requirement is not met.
 #SingleInstance force      ; Allow only a single instance of the script to run.
 #Warn                      ; Enable warnings to assist with detecting common errors.
-SetWorkingDir(A_ScriptDir) ; Ensures a consistent starting directory.
 
 ; Register a function to be called on exit
 OnExit(ExitFunc)
@@ -80,6 +79,7 @@ HookWindow()
 	if (g_nWindowID && g_bShowNotifications)
 	{
 		local l_sWindowName := WinGetTitle(g_nWindowID)
+		TrayTip() ; Clear any existing traytip
 		TrayTip("KeyToggles", "The window `"" l_sWindowName "`" has been hooked.")
 	}
 }
@@ -132,7 +132,7 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 {
 	global
 
-	;Output(A_ThisFunc "::begin")
+	Output(A_ThisFunc "::begin")
 
 	switch p_sKey
 	{
@@ -147,19 +147,24 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 	}
 
 	Output(p_sKey == g_sAimKey ? A_ThisFunc "::bAiming(" g_bAiming ")" : p_sKey == g_sCrouchKey ? A_ThisFunc "::bCrouching(" g_bCrouching ")" : p_sKey == g_sSprintKey ? A_ThisFunc "::bSprinting(" g_bSprinting ")" : A_ThisFunc "::bAutorunning(" g_bAutorunning ")")
-
 	SendInput(p_bToggle ? "{Blind}{" p_sKey " down}" : "{Blind}{" p_sKey " up}")
 
 	if (p_bWait)
 		KeyWait(p_sKey)
 
-	;Output(A_ThisFunc "::end")
+	Output(A_ThisFunc "::end")
 }
 
 ; Hook the window and register hotkeys if necessary, disable toggles on focus lost and optionally restore them on focus
 OnFocusChanged()
 {
 	global
+
+	if (g_bShowNotifications)
+	{
+		TrayTip() ; Clear any existing traytip
+		TrayTip("KeyToggles", "Waiting for the process `"" g_sProcessName "`" to become active.")
+	}
 
 	Output(A_ThisFunc "::WinWaitActive")
 	WinWaitActive(g_sWindowName " ahk_exe " g_sProcessName)
@@ -397,14 +402,14 @@ ReadConfigFile()
 	; Debug
 	g_bDebugMode := IniRead(l_sConfigFileName, "Debug", "debugMode", 0)
 
-	if (g_sProcessName == "")
-		ExitWithErrorMessage("You must specify a process name! The script will now exit.")
-
 	; Prevent timers from not working
 	if (g_nAutofireKeyInterval <= 0)
 		g_nAutofireKeyInterval := 1
 	if (g_nFocusCheckInterval <= 0)
 		g_nFocusCheckInterval := 1
+
+	if (g_sProcessName == "")
+		ExitWithErrorMessage("You must specify a process name! The script will now exit.")
 }
 
 RegisterHotkeys()
