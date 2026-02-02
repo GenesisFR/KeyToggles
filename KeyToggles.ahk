@@ -73,14 +73,14 @@ HookWindow()
 	global
 
 	; Make the hotkeys active only for a specific window
-	nWindowID := WinGetID(sWindowName . " ahk_exe " . sProcessName)
+	nWindowID := WinGetID(sWindowName " ahk_exe " sProcessName)
 	Output(A_ThisFunc "::WinGet(" nWindowID ")")
 	GroupAdd("windowIDGroup", "ahk_id " nWindowID)
 
 	if (nWindowID && bShowNotifications)
 	{
 		local lWindowName := WinGetTitle(nWindowID)
-		TrayTip("KeyToggles", "The window `"" . lWindowName . "`" has been hooked.")
+		TrayTip("KeyToggles", "The window `"" lWindowName "`" has been hooked.")
 	}
 }
 
@@ -93,7 +93,7 @@ IsMouseButton(pKey)
 IsMouseOver(pWinTitle)
 {
 	MouseGetPos(, , &winID)
-	return WinExist(pWinTitle . " ahk_id " . winID)
+	return WinExist(pWinTitle " ahk_id " winID)
 }
 
 IsMouseOverWindow(pHwnd)
@@ -148,7 +148,7 @@ KeyToggle(pKey, pToggle, pWait := false)
 
 	Output(pKey == aimKey ? A_ThisFunc "::bAiming(" bAiming ")" : pKey == crouchKey ? A_ThisFunc "::bCrouching(" bCrouching ")" : pKey == sprintKey ? A_ThisFunc "::bSprinting(" bSprinting ")" : A_ThisFunc "::bAutorunning(" bAutorunning ")")
 
-	SendInput(pToggle ? "{Blind}{" . pKey . " down}" : "{Blind}{" . pKey . " up}")
+	SendInput(pToggle ? "{Blind}{" pKey " down}" : "{Blind}{" pKey " up}")
 
 	if (pWait)
 		KeyWait(pKey)
@@ -162,11 +162,11 @@ OnFocusChanged()
 	global
 
 	Output(A_ThisFunc "::WinWaitActive")
-	WinWaitActive(sWindowName . " ahk_exe " . sProcessName)
+	WinWaitActive(sWindowName " ahk_exe " sProcessName)
 	Sleep(nHookDelay)
 
 	; Make sure to hook the window again if it no longer exists
-	if (nWindowID != WinExist(sWindowName . " ahk_exe " . sProcessName))
+	if (nWindowID != WinExist(sWindowName " ahk_exe " sProcessName))
 	{
 		HookWindow()
 		RegisterHotkeys()
@@ -210,7 +210,7 @@ OnFocusChanged()
 	}
 
 	Output(A_ThisFunc "::WinWaitNotActive")
-	WinWaitNotActive(sWindowName " ahk_exe " . sProcessName)
+	WinWaitNotActive(sWindowName " ahk_exe " sProcessName)
 
 	; Save toggle states
 	if (ShouldRestoreTogglesOnFocus())
@@ -348,7 +348,7 @@ OnKeyPress(pThisHotkey)
 Output(pMessage)
 {
 	if (bDebugMode)
-		OutputDebug(pMessage . "`n")
+		OutputDebug(pMessage "`n")
 }
 
 ReadConfigFile()
@@ -360,7 +360,7 @@ ReadConfigFile()
 
 	; Config file is missing, exit
 	if (!FileExist(configFileName))
-		ExitWithErrorMessage(configFileName . " not found! The script will now exit.")
+		ExitWithErrorMessage(configFileName " not found! The script will now exit.")
 
 	; General
 	sProcessName := IniRead(configFileName, "General", "processName", "")
@@ -544,7 +544,7 @@ SendEscape(pThisHotkey)
 
 SendKey(pKey, pSleepMs := 0, pWait := false)
 {
-	SendInput("{Blind}{" . pKey . " down}")
+	SendInput("{Blind}{" pKey " down}")
 
 	if (pSleepMs > 0)
 		Sleep(pSleepMs)
@@ -552,7 +552,7 @@ SendKey(pKey, pSleepMs := 0, pWait := false)
 	if (pWait)
 		KeyWait(pKey)
 
-	SendInput("{Blind}{" . pKey . " up}")
+	SendInput("{Blind}{" pKey " up}")
 }
 
 SendWindows(pThisHotkey)
@@ -629,7 +629,7 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 *!F11::Reload() ; ALT+F11
 #HotIf
 
-; Suspend script (useful when in menus)
+; Suspend script (useful in menus)
 *!F12:: ; ALT+F12
 {
 	Suspend()
