@@ -23,41 +23,41 @@ global KEY_MODE_AUTOFIRE_HOLD := 4
 global KEY_MODE_AUTORUN := 5
 
 ; Initialize state variables
-global bAiming := false
-global bCrouching := false
-global bSprinting := false
-global bAutorunning := false
-global bAutofireAiming := false
-global bAutofireCrouching := false
-global bAutofireSprinting := false
-global bRestoreAiming := false
-global bRestoreCrouching := false
-global bRestoreSprinting := false
-global bRestoreAutorunning := false
-global bRestoreAutofireAiming := false
-global bRestoreAutofireCrouching := false
-global bRestoreAutofireSprinting := false
-global bToggleKeysSnapshotTaken := false
-global nWindowID := 0
+global g_bAiming := false
+global g_bCrouching := false
+global g_bSprinting := false
+global g_bAutorunning := false
+global g_bAutofireAiming := false
+global g_bAutofireCrouching := false
+global g_bAutofireSprinting := false
+global g_bRestoreAiming := false
+global g_bRestoreCrouching := false
+global g_bRestoreSprinting := false
+global g_bRestoreAutorunning := false
+global g_bRestoreAutofireAiming := false
+global g_bRestoreAutofireCrouching := false
+global g_bRestoreAutofireSprinting := false
+global g_bToggleKeysSnapshotTaken := false
+global g_nWindowID := 0
 
 ; Functors
-global fnAutofireAim := 0
-global fnAutofireCrouch := 0
-global fnAutofireSprint := 0
+global g_fnAutofireAim := 0
+global g_fnAutofireCrouch := 0
+global g_fnAutofireSprint := 0
 
 Init()
 
 ; Exit script
-ExitFunc(pExitReason, pExitCode)
+ExitFunc(p_sExitReason, p_nExitCode)
 {
-	Output(A_ThisFunc "::pExitReason(" pExitReason ") pExitCode(" pExitCode ")")
+	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_nExitCode ")")
 	ReleaseAllKeys()
 }
 
 ; Display an error message and exit
-ExitWithErrorMessage(pErrorMessage)
+ExitWithErrorMessage(p_sErrorMessage)
 {
-	MsgBox(pErrorMessage, "Error", 16)
+	MsgBox(p_sErrorMessage, "Error", 16)
 	ExitApp(1)
 }
 
@@ -65,7 +65,7 @@ Init()
 {
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
-	SetTimer(OnFocusChanged, nFocusCheckInterval)
+	SetTimer(OnFocusChanged, g_nFocusCheckInterval)
 }
 
 HookWindow()
@@ -73,85 +73,85 @@ HookWindow()
 	global
 
 	; Make the hotkeys active only for a specific window
-	nWindowID := WinGetID(sWindowName " ahk_exe " sProcessName)
-	Output(A_ThisFunc "::WinGet(" nWindowID ")")
-	GroupAdd("windowIDGroup", "ahk_id " nWindowID)
+	g_nWindowID := WinGetID(g_sWindowName " ahk_exe " g_sProcessName)
+	Output(A_ThisFunc "::WinGet(" g_nWindowID ")")
+	GroupAdd("windowIDGroup", "ahk_id " g_nWindowID)
 
-	if (nWindowID && bShowNotifications)
+	if (g_nWindowID && g_bShowNotifications)
 	{
-		local lWindowName := WinGetTitle(nWindowID)
-		TrayTip("KeyToggles", "The window `"" lWindowName "`" has been hooked.")
+		local l_sWindowName := WinGetTitle(g_nWindowID)
+		TrayTip("KeyToggles", "The window `"" l_sWindowName "`" has been hooked.")
 	}
 }
 
-IsMouseButton(pKey)
+IsMouseButton(p_sKey)
 {
 	mouseButtonsList := "LButton MButton RButton XButton1 XButton2"
-	return InStr(mouseButtonsList, pKey) != false
+	return InStr(mouseButtonsList, p_sKey) != false
 }
 
-IsMouseOver(pWinTitle)
+IsMouseOver(p_sWinTitle)
 {
-	MouseGetPos(, , &winID)
-	return WinExist(pWinTitle " ahk_id " winID)
+	MouseGetPos(, , &l_nWinID)
+	return WinExist(p_sWinTitle " ahk_id " l_nWinID)
 }
 
-IsMouseOverWindow(pHwnd)
+IsMouseOverWindow(p_nHwnd)
 {
-	MouseGetPos(, , &mouseWindowID)
-	return pHwnd == mouseWindowID
+	MouseGetPos(, , &l_nMouseWindowID)
+	return p_nHwnd == l_nMouseWindowID
 }
 
-KeyAutofire(pAutofireKey)
+KeyAutofire(p_sAutofireKey)
 {
 	Output(A_ThisFunc "::begin")
 
-	switch pAutofireKey
+	switch p_sAutofireKey
 	{
-		case aimAutofireKey:
-			SendKey(aimKey, nKeyDelay)
-		case crouchAutofireKey:
-			SendKey(crouchKey, nKeyDelay)
-		case sprintAutofireKey:
-			SendKey(sprintKey, nKeyDelay)
+		case g_sAimAutofireKey:
+			SendKey(g_sAimKey, g_nKeyDelay)
+		case g_sCrouchAutofireKey:
+			SendKey(g_sCrouchKey, g_nKeyDelay)
+		case g_sSprintAutofireKey:
+			SendKey(g_sSprintKey, g_nKeyDelay)
 	}
 
 	Output(A_ThisFunc "::end")
 }
 
-KeyHold(pKey)
+KeyHold(p_sKey)
 {
 	;Output(A_ThisFunc "::begin")
-	SendKey(pKey, nKeyDelay)
-	KeyWait(pKey)
-	SendKey(pKey, nKeyDelay)
+	SendKey(p_sKey, g_nKeyDelay)
+	KeyWait(p_sKey)
+	SendKey(p_sKey, g_nKeyDelay)
 	;Output(A_ThisFunc "::end")
 }
 
-KeyToggle(pKey, pToggle, pWait := false)
+KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 {
 	global
 
 	;Output(A_ThisFunc "::begin")
 
-	switch pKey
+	switch p_sKey
 	{
-		case aimKey:
-			bAiming := pToggle
-		case crouchKey:
-			bCrouching := pToggle
-		case sprintKey:
-			bSprinting := pToggle
-		case forwardKey:
-			bAutorunning := pToggle
+		case g_sAimKey:
+			g_bAiming := p_bToggle
+		case g_sCrouchKey:
+			g_bCrouching := p_bToggle
+		case g_sSprintKey:
+			g_bSprinting := p_bToggle
+		case g_sForwardKey:
+			g_bAutorunning := p_bToggle
 	}
 
-	Output(pKey == aimKey ? A_ThisFunc "::bAiming(" bAiming ")" : pKey == crouchKey ? A_ThisFunc "::bCrouching(" bCrouching ")" : pKey == sprintKey ? A_ThisFunc "::bSprinting(" bSprinting ")" : A_ThisFunc "::bAutorunning(" bAutorunning ")")
+	Output(p_sKey == g_sAimKey ? A_ThisFunc "::bAiming(" g_bAiming ")" : p_sKey == g_sCrouchKey ? A_ThisFunc "::bCrouching(" g_bCrouching ")" : p_sKey == g_sSprintKey ? A_ThisFunc "::bSprinting(" g_bSprinting ")" : A_ThisFunc "::bAutorunning(" g_bAutorunning ")")
 
-	SendInput(pToggle ? "{Blind}{" pKey " down}" : "{Blind}{" pKey " up}")
+	SendInput(p_bToggle ? "{Blind}{" p_sKey " down}" : "{Blind}{" p_sKey " up}")
 
-	if (pWait)
-		KeyWait(pKey)
+	if (p_bWait)
+		KeyWait(p_sKey)
 
 	;Output(A_ThisFunc "::end")
 }
@@ -162,249 +162,248 @@ OnFocusChanged()
 	global
 
 	Output(A_ThisFunc "::WinWaitActive")
-	WinWaitActive(sWindowName " ahk_exe " sProcessName)
-	Sleep(nHookDelay)
+	WinWaitActive(g_sWindowName " ahk_exe " g_sProcessName)
+	Sleep(g_nHookDelay)
 
 	; Make sure to hook the window again if it no longer exists
-	if (nWindowID != WinExist(sWindowName " ahk_exe " sProcessName))
+	if (g_nWindowID != WinExist(g_sWindowName " ahk_exe " g_sProcessName))
 	{
 		HookWindow()
 		RegisterHotkeys()
 
 		; That's a different window, don't restore toggle states
-		bRestoreAiming := false
-		bRestoreCrouching := false
-		bRestoreSprinting := false
-		bRestoreAutorunning := false
-		bRestoreAutofireAiming := false
-		bRestoreAutofireCrouching := false
-		bRestoreAutofireSprinting := false
+		g_bRestoreAiming := false
+		g_bRestoreCrouching := false
+		g_bRestoreSprinting := false
+		g_bRestoreAutorunning := false
+		g_bRestoreAutofireAiming := false
+		g_bRestoreAutofireCrouching := false
+		g_bRestoreAutofireSprinting := false
 	}
 
 	; Restore autofire toggle states
 	if (ShouldRestoreAutofiresOnFocus())
 	{
-		Output(A_ThisFunc "::restoreAutofireToggleStates(" bRestoreAutofireAiming ", " bRestoreAutofireCrouching ", " bRestoreAutofireSprinting ")")
+		Output(A_ThisFunc "::restoreAutofireToggleStates(" g_bRestoreAutofireAiming ", " g_bRestoreAutofireCrouching ", " g_bRestoreAutofireSprinting ")")
 
-		if (bRestoreAutofireAiming)
-			OnKeyPress(aimAutofireKey)
-		if (bRestoreAutofireCrouching)
-			OnKeyPress(crouchAutofireKey)
-		if (bRestoreAutofireSprinting)
-			OnKeyPress(sprintAutofireKey)
+		if (g_bRestoreAutofireAiming)
+			OnKeyPress(g_sAimAutofireKey)
+		if (g_bRestoreAutofireCrouching)
+			OnKeyPress(g_sCrouchAutofireKey)
+		if (g_bRestoreAutofireSprinting)
+			OnKeyPress(g_sSprintAutofireKey)
 	}
 
 	; Restore toggle states
 	if (ShouldRestoreTogglesOnFocus())
 	{
-		Output(A_ThisFunc "::restoreToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
+		Output(A_ThisFunc "::restoreToggleStates(" g_bRestoreAiming ", " g_bRestoreCrouching ", " g_bRestoreSprinting ")")
 
-		if (bRestoreAiming)
-			KeyToggle(aimKey, true)
-		if (bRestoreCrouching)
-			KeyToggle(crouchKey, true)
-		if (bRestoreSprinting)
-			KeyToggle(sprintKey, true)
-		if (bRestoreAutorunning)
-			KeyToggle(forwardKey, true)
+		if (g_bRestoreAiming)
+			KeyToggle(g_sAimKey, true)
+		if (g_bRestoreCrouching)
+			KeyToggle(g_sCrouchKey, true)
+		if (g_bRestoreSprinting)
+			KeyToggle(g_sSprintKey, true)
+		if (g_bRestoreAutorunning)
+			KeyToggle(g_sForwardKey, true)
 	}
 
 	Output(A_ThisFunc "::WinWaitNotActive")
-	WinWaitNotActive(sWindowName " ahk_exe " sProcessName)
+	WinWaitNotActive(g_sWindowName " ahk_exe " g_sProcessName)
 
 	; Save toggle states
 	if (ShouldRestoreTogglesOnFocus())
 	{
 		; A snapshot of the toggle states was already taken elsewhere, don't take another one
-		if (bToggleKeysSnapshotTaken)
-			bToggleKeysSnapshotTaken := false
+		if (g_bToggleKeysSnapshotTaken)
+			g_bToggleKeysSnapshotTaken := false
 		else
 		{
-			Output(A_ThisFunc "::saveToggleStates(" bRestoreAiming ", " bRestoreCrouching ", " bRestoreSprinting ")")
+			Output(A_ThisFunc "::saveToggleStates(" g_bRestoreAiming ", " g_bRestoreCrouching ", " g_bRestoreSprinting ")")
 
-			bRestoreAiming := bAiming
-			bRestoreCrouching := bCrouching
-			bRestoreSprinting := bSprinting
-			bRestoreAutorunning := bAutorunning
-			bRestoreAutofireAiming := bAutofireAiming
-			bRestoreAutofireCrouching := bAutofireCrouching
-			bRestoreAutofireSprinting := bAutofireSprinting
+			g_bRestoreAiming := g_bAiming
+			g_bRestoreCrouching := g_bCrouching
+			g_bRestoreSprinting := g_bSprinting
+			g_bRestoreAutorunning := g_bAutorunning
+			g_bRestoreAutofireAiming := g_bAutofireAiming
+			g_bRestoreAutofireCrouching := g_bAutofireCrouching
+			g_bRestoreAutofireSprinting := g_bAutofireSprinting
 		}
 	}
 
 	ReleaseAllKeys()
 }
 
-OnKeyPress(pThisHotkey)
+OnKeyPress(p_sThisHotkey)
 {
 	global
 
-	local lCleanHotkey := LTrim(pThisHotkey, "~*$")
-	local lKeyMode := KEY_MODE_DISABLED
+	local l_sCleanHotkey := LTrim(p_sThisHotkey, "~*$")
+	local l_nKeyMode := KEY_MODE_DISABLED
 
-	switch lCleanHotkey
+	switch l_sCleanHotkey
 	{
-		case aimKey, aimAutofireKey:
-			lKeyMode := bAimMode
-		case crouchKey, crouchAutofireKey:
-			lKeyMode := bCrouchMode
-		case sprintKey, sprintAutofireKey:
-			lKeyMode := bSprintMode
-		case autorunKey:
-			lKeyMode := bAutorunMode
+		case g_sAimKey, g_sAimAutofireKey:
+			l_nKeyMode := g_bAimMode
+		case g_sCrouchKey, g_sCrouchAutofireKey:
+			l_nKeyMode := g_bCrouchMode
+		case g_sSprintKey, g_sSprintAutofireKey:
+			l_nKeyMode := g_bSprintMode
+		case g_autorunKey:
+			l_nKeyMode := g_bAutorunMode
 		; Pressing the forward/backward key disables autorunning
-		case forwardKey:
-			bAutorunning := false
-		case backwardKey:
-			if (bAutorunning)
+		case g_sForwardKey:
+			g_bAutorunning := false
+		case g_sBackwardKey:
+			if (g_bAutorunning)
 			{
-				KeyToggle(forwardKey, false)
-				KeyWait(backwardKey)
+				KeyToggle(g_sForwardKey, false)
+				KeyWait(g_sBackwardKey)
 			}
 	}
 
 	;Output(A_ThisFunc "::" pThisHotkey " lKeyMode(" lKeyMode ")")
 
-	switch lKeyMode
+	switch l_nKeyMode
 	{
 		case KEY_MODE_TOGGLE, KEY_MODE_AUTORUN:
-			lIsMouseButton := IsMouseButton(lCleanHotkey)
-			lIsMouseOverWindow := IsMouseOverWindow(nWindowID)
-			; Output(A_ThisFunc "::" lCleanHotkey " lIsMouseButton(" lIsMouseButton ") lIsMouseOverWindow(" lIsMouseOverWindow ")")
+			l_bIsMouseButton := IsMouseButton(l_sCleanHotkey)
+			l_bIsMouseOverWindow := IsMouseOverWindow(g_nWindowID)
+			; Output(A_ThisFunc "::" l_sCleanHotkey " l_bIsMouseButton(" l_bIsMouseButton ") l_bIsMouseOverWindow(" l_bIsMouseOverWindow ")")
 
 			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and toggled
-			if (lIsMouseButton && !lIsMouseOverWindow)
+			if (l_bIsMouseButton && !l_bIsMouseOverWindow)
 			{
-				;Output(A_ThisFunc "::" lCleanHotkey " outside window")
-				SendClickOutsideWindow(lCleanHotkey)
+				;Output(A_ThisFunc "::" l_sCleanHotkey " outside window")
+				SendClickOutsideWindow(l_sCleanHotkey)
 			}
 			; Otherwise toggle the key
 			else
 			{
-				;Output(A_ThisFunc "::" lCleanHotkey " inside window")
+				;Output(A_ThisFunc "::" l_sCleanHotkey " inside window")
 
-				if (lCleanHotkey == aimKey)
-					KeyToggle(aimKey, !bAiming, true)
-				else if (lCleanHotkey == crouchKey)
-					KeyToggle(crouchKey, !bCrouching, true)
-				else if (lCleanHotkey == sprintKey)
-					KeyToggle(sprintKey, !bSprinting, true)
-				else if (lCleanHotkey == autorunKey)
+				if (l_sCleanHotkey == g_sAimKey)
+					KeyToggle(g_sAimKey, !g_bAiming, true)
+				else if (l_sCleanHotkey == g_sCrouchKey)
+					KeyToggle(g_sCrouchKey, !g_bCrouching, true)
+				else if (l_sCleanHotkey == g_sSprintKey)
+					KeyToggle(g_sSprintKey, !g_bSprinting, true)
+				else if (l_sCleanHotkey == g_autorunKey)
 				{
 					; Autorun will engage even if the forward/backward key was physically pressed
-					if (GetKeyState(backwardKey, "P"))
-						SendKey(backwardKey)
+					if (GetKeyState(g_sBackwardKey, "P"))
+						SendKey(g_sBackwardKey)
 
-					KeyWait(forwardKey)
-					KeyToggle(forwardKey, !bAutorunning)
-					KeyWait(autorunKey)
+					KeyWait(g_sForwardKey)
+					KeyToggle(g_sForwardKey, !g_bAutorunning)
+					KeyWait(g_autorunKey)
 				}
 			}
 		case KEY_MODE_HOLD:
-			KeyHold(lCleanHotkey)
+			KeyHold(l_sCleanHotkey)
 		; Based on https://autohotkey.com/board/topic/64576-the-definitive-autofire-thread/?p=407264
 		case KEY_MODE_AUTOFIRE:
-			if (lCleanHotkey == aimAutofireKey)
+			if (l_sCleanHotkey == g_sAimAutofireKey)
 			{
-				bAutofireAiming := !bAutofireAiming
-				SetTimer(fnAutofireAim, bAutofireAiming ? nAutofireKeyInterval : 0)
+				g_bAutofireAiming := !g_bAutofireAiming
+				SetTimer(g_fnAutofireAim, g_bAutofireAiming ? g_nAutofireKeyInterval : 0)
 			}
-			else if (lCleanHotkey == crouchAutofireKey)
+			else if (l_sCleanHotkey == g_sCrouchAutofireKey)
 			{
-				bAutofireCrouching := !bAutofireCrouching
-				SetTimer(fnAutofireCrouch, bAutofireCrouching ? nAutofireKeyInterval : 0)
+				g_bAutofireCrouching := !g_bAutofireCrouching
+				SetTimer(g_fnAutofireCrouch, g_bAutofireCrouching ? g_nAutofireKeyInterval : 0)
 			}
-			else if (lCleanHotkey == sprintAutofireKey)
+			else if (l_sCleanHotkey == g_sSprintAutofireKey)
 			{
-				bAutofireSprinting := !bAutofireSprinting
-				SetTimer(fnAutofireSprint, bAutofireSprinting ? nAutofireKeyInterval : 0)
+				g_bAutofireSprinting := !g_bAutofireSprinting
+				SetTimer(g_fnAutofireSprint, g_bAutofireSprinting ? g_nAutofireKeyInterval : 0)
 			}
 
-			KeyWait(lCleanHotkey)
+			KeyWait(l_sCleanHotkey)
 		case KEY_MODE_AUTOFIRE_HOLD:
-			Output(A_ThisFunc "::" lKeyMode " (" lKeyMode ")")
-			Output(A_ThisFunc "::" lCleanHotkey " pressed")
+			Output(A_ThisFunc "::" l_nKeyMode " (" l_nKeyMode ")")
+			Output(A_ThisFunc "::" l_sCleanHotkey " pressed")
 
-			if (lCleanHotkey == aimAutofireKey)
-				SetTimer(fnAutofireAim, nAutofireKeyInterval)
-			else if (lCleanHotkey == crouchAutofireKey)
-				SetTimer(fnAutofireCrouch, nAutofireKeyInterval)
-			else if (lCleanHotkey == sprintAutofireKey)
-				SetTimer(fnAutofireSprint, nAutofireKeyInterval)
+			if (l_sCleanHotkey == g_sAimAutofireKey)
+				SetTimer(g_fnAutofireAim, g_nAutofireKeyInterval)
+			else if (l_sCleanHotkey == g_sCrouchAutofireKey)
+				SetTimer(g_fnAutofireCrouch, g_nAutofireKeyInterval)
+			else if (l_sCleanHotkey == g_sSprintAutofireKey)
+				SetTimer(g_fnAutofireSprint, g_nAutofireKeyInterval)
 
-			KeyWait(lCleanHotkey)
+			KeyWait(l_sCleanHotkey)
 
-			if (lCleanHotkey == aimAutofireKey)
-				SetTimer(fnAutofireAim, 0)
-			else if (lCleanHotkey == crouchAutofireKey)
-				SetTimer(fnAutofireCrouch, 0)
-			else if (lCleanHotkey == sprintAutofireKey)
-				SetTimer(fnAutofireSprint, 0)
+			if (l_sCleanHotkey == g_sAimAutofireKey)
+				SetTimer(g_fnAutofireAim, 0)
+			else if (l_sCleanHotkey == g_sCrouchAutofireKey)
+				SetTimer(g_fnAutofireCrouch, 0)
+			else if (l_sCleanHotkey == g_sSprintAutofireKey)
+				SetTimer(g_fnAutofireSprint, 0)
 
-			Output(A_ThisFunc "::" lCleanHotkey " released")
+			Output(A_ThisFunc "::" l_sCleanHotkey " released")
 	}
 }
 
-Output(pMessage)
+Output(p_sMessage)
 {
-	if (bDebugMode)
-		OutputDebug(pMessage "`n")
+	if (g_bDebugMode)
+		OutputDebug(p_sMessage "`n")
 }
 
 ReadConfigFile()
 {
 	global
 
-	SplitPath(A_ScriptName, , , , &configFileNameTrimmed)
-	configFileName := "KeyToggles.ini"
+	l_sConfigFileName := "KeyToggles.ini"
 
 	; Config file is missing, exit
-	if (!FileExist(configFileName))
-		ExitWithErrorMessage(configFileName " not found! The script will now exit.")
+	if (!FileExist(l_sConfigFileName))
+		ExitWithErrorMessage(l_sConfigFileName " not found! The script will now exit.")
 
 	; General
-	sProcessName := IniRead(configFileName, "General", "processName", "")
-	sWindowName := IniRead(configFileName, "General", "windowName", "")
-	nAutofireKeyInterval := IniRead(configFileName, "General", "autofireKeyInterval", 100)
-	bFixSystemKeys := IniRead(configFileName, "General", "fixSystemKeys", 1)
-	nFocusCheckInterval := IniRead(configFileName, "General", "focusCheckInterval", 1000)
-	nHookDelay := IniRead(configFileName, "General", "hookDelay", 0)
-	nKeyDelay := IniRead(configFileName, "General", "keyDelay", 0)
-	bRestoreAutofiresOnFocus := IniRead(configFileName, "General", "restoreAutofiresOnFocus", 0)
-	bRestoreTogglesOnFocus := IniRead(configFileName, "General", "restoreTogglesOnFocus", 0)
-	bRunAsAdmin := IniRead(configFileName, "General", "runAsAdmin", 0)
-	bShowNotifications := IniRead(configFileName, "General", "showNotifications", 0)
-	bAimMode := IniRead(configFileName, "General", "aimMode", 0)
-	bCrouchMode := IniRead(configFileName, "General", "crouchMode", 0)
-	bSprintMode := IniRead(configFileName, "General", "sprintMode", 0)
-	bAutorunMode := IniRead(configFileName, "General", "autorunMode", 0)
+	g_sProcessName := IniRead(l_sConfigFileName, "General", "processName", "")
+	g_sWindowName := IniRead(l_sConfigFileName, "General", "windowName", "")
+	g_nAutofireKeyInterval := IniRead(l_sConfigFileName, "General", "autofireKeyInterval", 100)
+	g_bFixSystemKeys := IniRead(l_sConfigFileName, "General", "fixSystemKeys", 1)
+	g_nFocusCheckInterval := IniRead(l_sConfigFileName, "General", "focusCheckInterval", 1000)
+	g_nHookDelay := IniRead(l_sConfigFileName, "General", "hookDelay", 0)
+	g_nKeyDelay := IniRead(l_sConfigFileName, "General", "keyDelay", 0)
+	g_bRestoreAutofiresOnFocus := IniRead(l_sConfigFileName, "General", "restoreAutofiresOnFocus", 0)
+	g_bRestoreTogglesOnFocus := IniRead(l_sConfigFileName, "General", "restoreTogglesOnFocus", 0)
+	g_bRunAsAdmin := IniRead(l_sConfigFileName, "General", "runAsAdmin", 0)
+	g_bShowNotifications := IniRead(l_sConfigFileName, "General", "showNotifications", 0)
+	g_bAimMode := IniRead(l_sConfigFileName, "General", "aimMode", 0)
+	g_bCrouchMode := IniRead(l_sConfigFileName, "General", "crouchMode", 0)
+	g_bSprintMode := IniRead(l_sConfigFileName, "General", "sprintMode", 0)
+	g_bAutorunMode := IniRead(l_sConfigFileName, "General", "autorunMode", 0)
 
 	; Main keys
-	aimKey := IniRead(configFileName, "Keys", "aimKey", "RButton")
-	crouchKey := IniRead(configFileName, "Keys", "crouchKey", "LCtrl")
-	sprintKey := IniRead(configFileName, "Keys", "sprintKey", "LShift")
+	g_sAimKey := IniRead(l_sConfigFileName, "Keys", "aimKey", "RButton")
+	g_sCrouchKey := IniRead(l_sConfigFileName, "Keys", "crouchKey", "LCtrl")
+	g_sSprintKey := IniRead(l_sConfigFileName, "Keys", "sprintKey", "LShift")
 
 	; Autorun keys
-	autorunKey := IniRead(configFileName, "Keys", "autorunKey", "F1")
-	forwardKey := IniRead(configFileName, "Keys", "forwardKey", "w")
-	backwardKey := IniRead(configFileName, "Keys", "backwardKey", "s")
+	g_autorunKey := IniRead(l_sConfigFileName, "Keys", "autorunKey", "F1")
+	g_sForwardKey := IniRead(l_sConfigFileName, "Keys", "forwardKey", "w")
+	g_sBackwardKey := IniRead(l_sConfigFileName, "Keys", "backwardKey", "s")
 
 	; Autofire keys
-	aimAutofireKey := IniRead(configFileName, "Keys", "aimAutofireKey", "F2")
-	crouchAutofireKey := IniRead(configFileName, "Keys", "crouchAutofireKey", "F3")
-	sprintAutofireKey := IniRead(configFileName, "Keys", "sprintAutofireKey", "F4")
+	g_sAimAutofireKey := IniRead(l_sConfigFileName, "Keys", "aimAutofireKey", "F2")
+	g_sCrouchAutofireKey := IniRead(l_sConfigFileName, "Keys", "crouchAutofireKey", "F3")
+	g_sSprintAutofireKey := IniRead(l_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; Debug
-	bDebugMode := IniRead(configFileName, "Debug", "debugMode", 0)
+	g_bDebugMode := IniRead(l_sConfigFileName, "Debug", "debugMode", 0)
 
-	if (sProcessName == "")
+	if (g_sProcessName == "")
 		ExitWithErrorMessage("You must specify a process name! The script will now exit.")
 
 	; Prevent timers from not working
-	if (nAutofireKeyInterval <= 0)
-		nAutofireKeyInterval := 1
-	if (nFocusCheckInterval <= 0)
-		nFocusCheckInterval := 1
+	if (g_nAutofireKeyInterval <= 0)
+		g_nAutofireKeyInterval := 1
+	if (g_nFocusCheckInterval <= 0)
+		g_nFocusCheckInterval := 1
 }
 
 RegisterHotkeys()
@@ -414,30 +413,30 @@ RegisterHotkeys()
 	HotIfWinActive("ahk_group windowIDGroup")
 
 	; Enabled only for toggle and hold modes
-	Hotkey("*$" aimKey, OnKeyPress, bAimMode == KEY_MODE_TOGGLE || bAimMode == KEY_MODE_HOLD ? "On" : "Off")
-	Hotkey("*$" crouchKey, OnKeyPress, bCrouchMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_HOLD ? "On" : "Off")
-	Hotkey("*$" sprintKey, OnKeyPress, bSprintMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_sAimKey, OnKeyPress, g_bAimMode == KEY_MODE_TOGGLE || g_bAimMode == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_sCrouchKey, OnKeyPress, g_bCrouchMode == KEY_MODE_TOGGLE || g_bCrouchMode == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_sSprintKey, OnKeyPress, g_bSprintMode == KEY_MODE_TOGGLE || g_bSprintMode == KEY_MODE_HOLD ? "On" : "Off")
 
 	; Enabled only for autorun mode
-	Hotkey("*$" autorunKey, OnKeyPress, bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
-	Hotkey("~*$" forwardKey, OnKeyPress, bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
-	Hotkey("~*$" backwardKey, OnKeyPress, bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
+	Hotkey("*$" g_autorunKey, OnKeyPress, g_bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
+	Hotkey("~*$" g_sForwardKey, OnKeyPress, g_bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
+	Hotkey("~*$" g_sBackwardKey, OnKeyPress, g_bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
 
 	; Enabled only for autofire modes
-	Hotkey("*$" aimAutofireKey, OnKeyPress, bAimMode == KEY_MODE_AUTOFIRE || bAimMode == KEY_MODE_AUTOFIRE_HOLD  ? "On" : "Off")
-	Hotkey("*$" crouchAutofireKey, OnKeyPress, bCrouchMode == KEY_MODE_AUTOFIRE || bCrouchMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
-	Hotkey("*$" sprintAutofireKey, OnKeyPress, bSprintMode == KEY_MODE_AUTOFIRE || bSprintMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_sAimAutofireKey, OnKeyPress, g_bAimMode == KEY_MODE_AUTOFIRE || g_bAimMode == KEY_MODE_AUTOFIRE_HOLD  ? "On" : "Off")
+	Hotkey("*$" g_sCrouchAutofireKey, OnKeyPress, g_bCrouchMode == KEY_MODE_AUTOFIRE || g_bCrouchMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_sSprintAutofireKey, OnKeyPress, g_bSprintMode == KEY_MODE_AUTOFIRE || g_bSprintMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 
 	; Fixes issues when pressing system keys while toggle keys are modifiers and toggled
-	Hotkey("*$" "!Tab", SendAltTab, bFixSystemKeys ? "On" : "Off")
-	Hotkey("*$" "Escape", SendEscape, bFixSystemKeys ? "On" : "Off")
-	Hotkey("*$" "LWin", SendWindows, bFixSystemKeys ? "On" : "Off")
-	Hotkey("*$" "RWin", SendWindows, bFixSystemKeys ? "On" : "Off")
+	Hotkey("*$" "!Tab", SendAltTab, g_bFixSystemKeys ? "On" : "Off")
+	Hotkey("*$" "Escape", SendEscape, g_bFixSystemKeys ? "On" : "Off")
+	Hotkey("*$" "LWin", SendWindows, g_bFixSystemKeys ? "On" : "Off")
+	Hotkey("*$" "RWin", SendWindows, g_bFixSystemKeys ? "On" : "Off")
 
 	; Bind our functors to actual functions
-	fnAutofireAim := KeyAutofire.Bind(aimAutofireKey)
-	fnAutofireCrouch := KeyAutofire.Bind(crouchAutofireKey)
-	fnAutofireSprint := KeyAutofire.Bind(sprintAutofireKey)
+	g_fnAutofireAim := KeyAutofire.Bind(g_sAimAutofireKey)
+	g_fnAutofireCrouch := KeyAutofire.Bind(g_sCrouchAutofireKey)
+	g_fnAutofireSprint := KeyAutofire.Bind(g_sSprintAutofireKey)
 
 	HotIfWinActive()
 }
@@ -446,35 +445,35 @@ ReleaseAllKeys()
 {
 	global
 
-	Output(A_ThisFunc "::states(" bAiming ", " bCrouching ", " bSprinting ", " bAutorunning ")")
+	Output(A_ThisFunc "::states(" g_bAiming ", " g_bCrouching ", " g_bSprinting ", " g_bAutorunning ")")
 
 	; Release all toggle keys
-	if (bAiming)
-		KeyToggle(aimKey, false)
-	if (bCrouching)
-		KeyToggle(crouchKey, false)
-	if (bSprinting)
-		KeyToggle(sprintKey, false)
-	if (bAutorunning)
-		KeyToggle(forwardKey, false)
+	if (g_bAiming)
+		KeyToggle(g_sAimKey, false)
+	if (g_bCrouching)
+		KeyToggle(g_sCrouchKey, false)
+	if (g_bSprinting)
+		KeyToggle(g_sSprintKey, false)
+	if (g_bAutorunning)
+		KeyToggle(g_sForwardKey, false)
 
-	bAutofireAiming := false
-	bAutofireCrouching := false
-	bAutofireSprinting := false
+	g_bAutofireAiming := false
+	g_bAutofireCrouching := false
+	g_bAutofireSprinting := false
 
 	; Delete all autofire timers
-	if (fnAutofireAim)
-		SetTimer(fnAutofireAim, 0)
-	if (fnAutofireCrouch)
-		SetTimer(fnAutofireCrouch, 0)
-	if (fnAutofireSprint)
-		SetTimer(fnAutofireSprint, 0)
+	if (g_fnAutofireAim)
+		SetTimer(g_fnAutofireAim, 0)
+	if (g_fnAutofireCrouch)
+		SetTimer(g_fnAutofireCrouch, 0)
+	if (g_fnAutofireSprint)
+		SetTimer(g_fnAutofireSprint, 0)
 }
 
 RestartAsAdminIfNeeded()
 {
 	; Restart the script as admin
-	if (bRunAsAdmin && !A_IsAdmin)
+	if (g_bRunAsAdmin && !A_IsAdmin)
 	{
 		try
 		{
@@ -488,7 +487,7 @@ RestartAsAdminIfNeeded()
 	}
 }
 
-SendAltTab(pThisHotkey)
+SendAltTab(p_sThisHotkey)
 {
 	;Output(A_ThisFunc "::begin")
 
@@ -506,7 +505,7 @@ SendAltTab(pThisHotkey)
 	;Output(A_ThisFunc "::end")
 }
 
-SendClickOutsideWindow(pKey)
+SendClickOutsideWindow(p_sKey)
 {
 	;Output(A_ThisFunc "::begin")
 
@@ -515,12 +514,12 @@ SendClickOutsideWindow(pKey)
 		TakeToggleKeysSnapshot(false)
 
 	ReleaseAllKeys()
-	SendKey(pKey, 0, true)
+	SendKey(p_sKey, 0, true)
 
 	;Output(A_ThisFunc "::end")
 }
 
-SendEscape(pThisHotkey)
+SendEscape(p_sThisHotkey)
 {
 	;Output(A_ThisFunc "::begin")
 
@@ -542,20 +541,20 @@ SendEscape(pThisHotkey)
 	;Output(A_ThisFunc "::end")
 }
 
-SendKey(pKey, pSleepMs := 0, pWait := false)
+SendKey(p_sKey, p_nHoldDuration := 0, p_bWait := false)
 {
-	SendInput("{Blind}{" pKey " down}")
+	SendInput("{Blind}{" p_sKey " down}")
 
-	if (pSleepMs > 0)
-		Sleep(pSleepMs)
+	if (p_nHoldDuration > 0)
+		Sleep(p_nHoldDuration)
 
-	if (pWait)
-		KeyWait(pKey)
+	if (p_bWait)
+		KeyWait(p_sKey)
 
-	SendInput("{Blind}{" pKey " up}")
+	SendInput("{Blind}{" p_sKey " up}")
 }
 
-SendWindows(pThisHotkey)
+SendWindows(p_sThisHotkey)
 {
 	;Output(A_ThisFunc "::begin")
 
@@ -574,28 +573,28 @@ SendWindows(pThisHotkey)
 
 ShouldRestoreAutofiresOnFocus()
 {
-	return bRestoreAutofiresOnFocus && (bAimMode == KEY_MODE_AUTOFIRE || bCrouchMode == KEY_MODE_AUTOFIRE || bSprintMode == KEY_MODE_AUTOFIRE) && (WinExist("ahk_id " nWindowID) != 0)
+	return g_bRestoreAutofiresOnFocus && (g_bAimMode == KEY_MODE_AUTOFIRE || g_bCrouchMode == KEY_MODE_AUTOFIRE || g_bSprintMode == KEY_MODE_AUTOFIRE) && (WinExist("ahk_id " g_nWindowID) != 0)
 }
 
 ShouldRestoreTogglesOnFocus()
 {
-	return bRestoreTogglesOnFocus && (bAimMode == KEY_MODE_TOGGLE || bCrouchMode == KEY_MODE_TOGGLE || bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " nWindowID) != 0)
+	return g_bRestoreTogglesOnFocus && (g_bAimMode == KEY_MODE_TOGGLE || g_bCrouchMode == KEY_MODE_TOGGLE || g_bSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " g_nWindowID) != 0)
 }
 
-TakeToggleKeysSnapshot(pReleaseKeys := true)
+TakeToggleKeysSnapshot(p_bReleaseKeys := true)
 {
 	global
 
-	bRestoreAiming := bAiming
-	bRestoreCrouching := bCrouching
-	bRestoreSprinting := bSprinting
-	bRestoreAutorunning := bAutorunning
-	bRestoreAutofireAiming := bAutofireAiming
-	bRestoreAutofireCrouching := bAutofireCrouching
-	bRestoreAutofireSprinting := bAutofireSprinting
-	bToggleKeysSnapshotTaken := true
+	g_bRestoreAiming := g_bAiming
+	g_bRestoreCrouching := g_bCrouching
+	g_bRestoreSprinting := g_bSprinting
+	g_bRestoreAutorunning := g_bAutorunning
+	g_bRestoreAutofireAiming := g_bAutofireAiming
+	g_bRestoreAutofireCrouching := g_bAutofireCrouching
+	g_bRestoreAutofireSprinting := g_bAutofireSprinting
+	g_bToggleKeysSnapshotTaken := true
 
-	if (pReleaseKeys)
+	if (p_bReleaseKeys)
 		ReleaseAllKeys()
 }
 
@@ -607,7 +606,7 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 *$XButton1::
 *$XButton2::
 {
-	if (!IsMouseOverWindow(nWindowID))
+	if (!IsMouseOverWindow(g_nWindowID))
 	{
 		;Output(A_ThisHotkey "::outside window")
 		SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
@@ -621,7 +620,7 @@ TakeToggleKeysSnapshot(pReleaseKeys := true)
 #HotIf
 
 #SuspendExempt
-#HotIf bDebugMode
+#HotIf g_bDebugMode
 ; Exit script
 *!F10::ExitApp() ; ALT+F10
 
