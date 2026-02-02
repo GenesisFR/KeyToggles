@@ -1,4 +1,4 @@
-; KeyToggles v2.0
+; KeyToggles v2.1
 
 ; TODO
 ; add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
