@@ -321,10 +321,10 @@ OnKeyPress(p_sThisHotkey)
 			}
 
 			KeyWait(l_sCleanHotkey)
-		case KEY_MODE_AUTOFIRE_HOLD:
-			Output(A_ThisFunc "::" l_nKeyMode " (" l_nKeyMode ")")
-			Output(A_ThisFunc "::" l_sCleanHotkey " pressed")
 
+			; Fixes a weird bug where the autofire key would stay permanently pressed after holding it down for a few seconds
+			SendInput("{Blind}{" l_sCleanHotkey " up}")
+		case KEY_MODE_AUTOFIRE_HOLD:
 			if (l_sCleanHotkey == g_sAimAutofireKey)
 				SetTimer(g_fnAutofireAim, g_nAutofireKeyInterval)
 			else if (l_sCleanHotkey == g_sCrouchAutofireKey)
@@ -341,7 +341,8 @@ OnKeyPress(p_sThisHotkey)
 			else if (l_sCleanHotkey == g_sSprintAutofireKey)
 				SetTimer(g_fnAutofireSprint, 0)
 
-			Output(A_ThisFunc "::" l_sCleanHotkey " released")
+			; Fixes a weird bug where the autofire key would stay permanently pressed after holding it down for a few seconds
+			SendInput("{Blind}{" l_sCleanHotkey " up}")
 	}
 }
 
