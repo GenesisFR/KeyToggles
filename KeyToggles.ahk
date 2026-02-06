@@ -184,11 +184,14 @@ GuiCreate()
 	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY " h" 6*29 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "General")
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Process name")
-	g_editProcName := g_guiSettings.AddEdit("vMyGuiProcessNameEdit CBlack x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sProcessName)
-	g_guiSettings.AddButton("vMyGuiBrowseButton x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " h23 w" l_nRightWidth, "Browse").OnEvent("Click", GuiButtonBrowse_Click)
+	g_editProcName := g_guiSettings.AddEdit("vMyGuiProcessNameEdit CBlack x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                        " w" l_nMiddleWidth, g_sProcessName)
+	g_guiSettings.AddButton("vMyGuiBrowseButton x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " h23 w" l_nRightWidth, "Browse")
+	             .OnEvent("Click", GuiButtonBrowse_Click)
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Window name")
-	g_editWndName := g_guiSettings.AddEdit("vMyGuiWindowNameEdit CBlack x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sWindowName)
+	g_editWndName := g_guiSettings.AddEdit("vMyGuiWindowNameEdit CBlack x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                       " w" l_nMiddleWidth, g_sWindowName)
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Autofire key interval")
 	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth)
@@ -207,106 +210,137 @@ GuiCreate()
 	g_upDownKeyDelay := g_guiSettings.AddUpDown("vMyGuiKeyDelayUpDown Range0-1000", g_nKeyDelay)
 
 	; Save states
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 3 " h" 2*35 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Save states")
-	g_cbxRestoreAutofiresOnFocus := g_guiSettings.AddCheckbox("vRestoreAutofiresOnFocus Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth + 23 " Checked" g_bRestoreAutofiresOnFocus, "Restore autofires on focus  ")
-	g_cbxRestoreTogglesOnFocus := g_guiSettings.AddCheckbox("vRestoreTogglesOnFocusCheckBox Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth + 23 " Checked" g_bRestoreTogglesOnFocus, "Restore toggles on focus  ")
+	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 3 " h" 2*35
+	                          " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Save states")
+	g_cbxRestoreAutofiresOnFocus := g_guiSettings.AddCheckbox("vRestoreAutofiresOnFocus Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow)
+	                                                          " w" l_nLeftWidth + 23 " Checked" g_bRestoreAutofiresOnFocus, "Restore autofires on focus  ")
+	g_cbxRestoreTogglesOnFocus := g_guiSettings.AddCheckbox("vRestoreTogglesOnFocusCheckBox Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow)
+	                                                        " w" l_nLeftWidth + 23 " Checked" g_bRestoreTogglesOnFocus, "Restore toggles on focus  ")
 
 	; Key modes
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 3 " h" 4*30 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Key modes")
+	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 3 " h" 4*30 " w" (l_nLeftWidth + l_nMiddleWidth +
+	                          l_nRightWidth + (l_nSpacingX * 4)), "Key modes")
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Aim")
-	g_ddlAimMode := g_guiSettings.AddDropDownList("vAimModeDropDownList x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth " Choose" g_nAimMode + 1, l_arrKeyModes)
+	g_ddlAimMode := g_guiSettings.AddDropDownList("vAimModeDropDownList x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                              " w" l_nMiddleWidth " Choose" g_nAimMode + 1, l_arrKeyModes)
 	
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Crouch")
-	g_ddlCrouchMode := g_guiSettings.AddDropDownList("vCrouchModeDropDownList x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth " Choose" g_nCrouchMode + 1, l_arrKeyModes)
+	g_ddlCrouchMode := g_guiSettings.AddDropDownList("vCrouchModeDropDownList x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                 " w" l_nMiddleWidth " Choose" g_nCrouchMode + 1, l_arrKeyModes)
 	
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Sprint")
-	g_ddlSprintMode := g_guiSettings.AddDropDownList("vSprintModeDropDownList x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth " Choose" g_nSprintMode + 1, l_arrKeyModes)
+	g_ddlSprintMode := g_guiSettings.AddDropDownList("vSprintModeDropDownList x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                 " w" l_nMiddleWidth " Choose" g_nSprintMode + 1, l_arrKeyModes)
 
-	g_cbxAutorun := g_guiSettings.AddCheckBox("vAutorunModeCheckBox Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth + 23 " Checked" (g_bAutorunMode == KEY_MODE_AUTORUN ? "1" : "0"), "Autorun  ")
+	g_cbxAutorun := g_guiSettings.AddCheckBox("vAutorunModeCheckBox Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth + 23
+	                                          " Checked" (g_bAutorunMode == KEY_MODE_AUTORUN ? "1" : "0"), "Autorun  ")
 
 	; Hotkeys
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 3 " h" 9*28 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Hotkeys")
+	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 3 " h" 9*28
+	                          " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Hotkeys")
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Aim")
 	g_hkAimKey := g_guiSettings.AddHotkey("vAimKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sAimKey)
 	g_hkAimKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlAimKey := g_guiSettings.AddDropDownList("vAimKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlAimKey := g_guiSettings.AddDropDownList("vAimKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                             " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlAimKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlAimKey.Text := IsExtraOption(g_sAimKey) ? g_sAimKey : "None"
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Crouch")
-	g_hkCrouchKey := g_guiSettings.AddHotkey("vCrouchKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sCrouchKey)
+	g_hkCrouchKey := g_guiSettings.AddHotkey("vCrouchKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                         " w" l_nMiddleWidth, g_sCrouchKey)
 	g_hkCrouchKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlCrouchKey := g_guiSettings.AddDropDownList("vCrouchKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlCrouchKey := g_guiSettings.AddDropDownList("vCrouchKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlCrouchKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlCrouchKey.Text := IsExtraOption(g_sCrouchKey) ? g_sCrouchKey : "None"
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Sprint")
-	g_hkSprintKey := g_guiSettings.AddHotkey("vSprintKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sSprintKey)
+	g_hkSprintKey := g_guiSettings.AddHotkey("vSprintKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                         " w" l_nMiddleWidth, g_sSprintKey)
 	g_hkSprintKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlSprintKey := g_guiSettings.AddDropDownList("vSprintKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlSprintKey := g_guiSettings.AddDropDownList("vSprintKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlSprintKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlSprintKey.Text := IsExtraOption(g_sSprintKey) ? g_sSprintKey : "None"
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Autorun")
-	g_hkAutorunKey := g_guiSettings.AddHotkey("vAutorunKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_autorunKey)
+	g_hkAutorunKey := g_guiSettings.AddHotkey("vAutorunKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                        " w" l_nMiddleWidth, g_autorunKey)
 	g_hkAutorunKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlAutorunKey := g_guiSettings.AddDropDownList("vAutorunKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlAutorunKey := g_guiSettings.AddDropDownList("vAutorunKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                 " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlAutorunKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlAutorunKey.Text := IsExtraOption(g_autorunKey) ? g_autorunKey : "None"
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Forward")
-	g_hkForwardKey := g_guiSettings.AddHotkey("vForwardKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sForwardKey)
+	g_hkForwardKey := g_guiSettings.AddHotkey("vForwardKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                          " w" l_nMiddleWidth, g_sForwardKey)
 	g_hkForwardKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlForwardKey := g_guiSettings.AddDropDownList("vForwardKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlForwardKey := g_guiSettings.AddDropDownList("vForwardKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                 " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlForwardKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlForwardKey.Text := IsExtraOption(g_sForwardKey) ? g_sForwardKey : "None"
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Backward")
-	g_hkBackwardKey := g_guiSettings.AddHotkey("vBackwardKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sBackwardKey)
+	g_hkBackwardKey := g_guiSettings.AddHotkey("vBackwardKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                           " w" l_nMiddleWidth, g_sBackwardKey)
 	g_hkBackwardKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlBackwardKey := g_guiSettings.AddDropDownList("vBackwardKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlBackwardKey := g_guiSettings.AddDropDownList("vBackwardKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                  " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlBackwardKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlBackwardKey.Text := IsExtraOption(g_sBackwardKey) ? g_sBackwardKey : "None"
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Aim autofire")
-	g_hkAimAutofireKey := g_guiSettings.AddHotkey("vAimAutofireKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sAimAutofireKey)
+	g_hkAimAutofireKey := g_guiSettings.AddHotkey("vAimAutofireKeyHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                              " w" l_nMiddleWidth, g_sAimAutofireKey)
 	g_hkAimAutofireKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlAimAutofireKey := g_guiSettings.AddDropDownList("vAimAutofireKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlAimAutofireKey := g_guiSettings.AddDropDownList("vAimAutofireKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                     " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlAimAutofireKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlAimAutofireKey.Text := IsExtraOption(g_sAimAutofireKey) ? g_sAimAutofireKey : "None"
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Crouch autofire")
-	g_hkCrouchAutofireKey := g_guiSettings.AddHotkey("vCrouchAutofireHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sCrouchAutofireKey)
+	g_hkCrouchAutofireKey := g_guiSettings.AddHotkey("vCrouchAutofireHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                 " w" l_nMiddleWidth, g_sCrouchAutofireKey)
 	g_hkCrouchAutofireKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlCrouchAutofireKey := g_guiSettings.AddDropDownList("vCrouchAutofireKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlCrouchAutofireKey := g_guiSettings.AddDropDownList("vCrouchAutofireKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                        " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlCrouchAutofireKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlCrouchAutofireKey.Text := IsExtraOption(g_sCrouchAutofireKey) ? g_sCrouchAutofireKey : "None"
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Sprint autofire")
-	g_hkSprintAutofireKey := g_guiSettings.AddHotkey("vSprintAutofireHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth, g_sSprintAutofireKey)
+	g_hkSprintAutofireKey := g_guiSettings.AddHotkey("vSprintAutofireHotkey x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                 " w" l_nMiddleWidth, g_sSprintAutofireKey)
 	g_hkSprintAutofireKey.OnEvent("Change", GuiHK_Change)
 
-	g_ddlSprintAutofireKey := g_guiSettings.AddDropDownList("vSprintAutofireKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nRightWidth, l_arrExtraKeys)
+	g_ddlSprintAutofireKey := g_guiSettings.AddDropDownList("vSprintAutofireKeyDropDownList x" l_nRightX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                        " w" l_nRightWidth, l_arrExtraKeys)
 	g_ddlSprintAutofireKey.OnEvent("Change", GuiDDLExtra_Change)
 	g_ddlSprintAutofireKey.Text := IsExtraOption(g_sSprintAutofireKey) ? g_sSprintAutofireKey : "None"
 
 	; Misc
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 10 " h" 3*32 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Misc")
+	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 10 " h" 3*32
+	                          " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Misc")
 
-	g_cbxFixSystemKeys := g_guiSettings.AddCheckbox("vFixSystemKeysCheckBox Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth + 23 " Checked" g_bFixSystemKeys, "Fix system keys  ")
-	g_cbxRunAsAdmin := g_guiSettings.AddCheckbox("vRunAsAdmin Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth + 23 " Checked" g_bRunAsAdmin, "Run as admin  ")
+	g_cbxFixSystemKeys := g_guiSettings.AddCheckbox("vFixSystemKeysCheckBox Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow)
+	                                                " w" l_nLeftWidth + 23 " Checked" g_bFixSystemKeys, "Fix system keys  ")
+	g_cbxRunAsAdmin := g_guiSettings.AddCheckbox("vRunAsAdmin Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth + 23
+	                                             " Checked" g_bRunAsAdmin, "Run as admin  ")
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth, "Notifications")
-	g_ddlNotifications := g_guiSettings.AddDropDownList("vNotificationsDropDownList x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5 " w" l_nMiddleWidth " Choose" g_nShowNotifications + 1, ["Disabled", "System notifications", "Tooltips"])
+	g_ddlNotifications := g_guiSettings.AddDropDownList("vNotificationsDropDownList x" l_nMiddleX " y" l_nTopY + (l_nSpacingY * l_nCurrentRow) - 5
+	                                                    " w" l_nMiddleWidth " Choose" g_nShowNotifications + 1,
+	                                                    ["Disabled", "System notifications", "Tooltips"])
 
 	g_guiSettings.AddButton("vMyGuiSave x200 w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 }
@@ -421,7 +455,8 @@ HookWindow()
 
 IsExtraOption(p_sKey)
 {
-	l_ddlExtraList := Map("LButton", "", "MButton", "", "RButton", "", "XButton1", "", "XButton2", "", "Space", "", "Tab", "", "Enter", "", "Escape", "", "Backspace", "")
+	l_ddlExtraList := Map("LButton", "", "MButton", "", "RButton", "", "XButton1", "", "XButton2", "", "Space", "", "Tab", "", "Enter", "",
+	                      "Escape", "", "Backspace", "")
 	return l_ddlExtraList.Has(p_sKey)
 }
 
@@ -487,7 +522,8 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 			g_bAutorunning := p_bToggle
 	}
 
-	Output(p_sKey == g_sAimKey ? A_ThisFunc "::bAiming(" g_bAiming ")" : p_sKey == g_sCrouchKey ? A_ThisFunc "::bCrouching(" g_bCrouching ")" : p_sKey == g_sSprintKey ? A_ThisFunc "::bSprinting(" g_bSprinting ")" : A_ThisFunc "::bAutorunning(" g_bAutorunning ")")
+	Output(p_sKey == g_sAimKey ? A_ThisFunc "::bAiming(" g_bAiming ")" : p_sKey == g_sCrouchKey ? A_ThisFunc "::bCrouching(" g_bCrouching ")" :
+	       p_sKey == g_sSprintKey ? A_ThisFunc "::bSprinting(" g_bSprinting ")" : A_ThisFunc "::bAutorunning(" g_bAutorunning ")")
 	SendInput(p_bToggle ? "{Blind}{" p_sKey " down}" : "{Blind}{" p_sKey " up}")
 
 	if (p_bWait)
@@ -914,12 +950,14 @@ SendWindows(p_sThisHotkey)
 
 ShouldRestoreAutofiresOnFocus()
 {
-	return g_bRestoreAutofiresOnFocus && (g_nAimMode == KEY_MODE_AUTOFIRE || g_nCrouchMode == KEY_MODE_AUTOFIRE || g_nSprintMode == KEY_MODE_AUTOFIRE) && (WinExist("ahk_id " g_nWindowID) != 0)
+	return g_bRestoreAutofiresOnFocus && (g_nAimMode == KEY_MODE_AUTOFIRE || g_nCrouchMode == KEY_MODE_AUTOFIRE || g_nSprintMode == KEY_MODE_AUTOFIRE)
+	       && (WinExist("ahk_id " g_nWindowID) != 0)
 }
 
 ShouldRestoreTogglesOnFocus()
 {
-	return g_bRestoreTogglesOnFocus && (g_nAimMode == KEY_MODE_TOGGLE || g_nCrouchMode == KEY_MODE_TOGGLE || g_nSprintMode == KEY_MODE_TOGGLE) && (WinExist("ahk_id " g_nWindowID) != 0)
+	return g_bRestoreTogglesOnFocus && (g_nAimMode == KEY_MODE_TOGGLE || g_nCrouchMode == KEY_MODE_TOGGLE || g_nSprintMode == KEY_MODE_TOGGLE)
+	       && (WinExist("ahk_id " g_nWindowID) != 0)
 }
 
 ShowNotification(p_sMessage)
