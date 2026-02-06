@@ -364,6 +364,37 @@ GuiHK_Change(GuiCtrlObj, Info)
 	}
 }
 
+IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
+{
+	l_sValue := IniRead(p_sFile, p_sSection, p_sKey, p_sDefault)
+
+	switch p_sType
+	{
+		case Number:
+			try {
+				l_nValue := l_sValue + 0
+				return l_nValue
+			} catch TypeError {
+				return p_sDefault
+			}
+		case String:
+				return l_sValue
+		case "bool":
+			return l_sValue == "1" ? true : l_sValue == "0" ? false : p_sDefault
+		case "key mode":
+			try {
+				l_nValue := l_sValue + 0
+				return (l_nValue >= KEY_MODE_DISABLED && l_nValue <= KEY_MODE_AUTOFIRE_HOLD) ? l_nValue : p_sDefault
+			} catch TypeError {
+				return p_sDefault
+			}
+		case "autorun":
+			return l_sValue == "5" ? KEY_MODE_AUTORUN : p_sDefault
+		default:
+			return l_sValue
+	}
+}
+
 Init()
 {
 	global g_guiSettings
@@ -674,21 +705,21 @@ ReadConfigFile()
 		ExitWithErrorMessage(l_sConfigFileName " not found! The script will now exit.")
 
 	; General
-	g_sProcessName := IniRead(l_sConfigFileName, "General", "processName", "")
-	g_sWindowName := IniRead(l_sConfigFileName, "General", "windowName", "")
-	g_nAutofireKeyInterval := IniRead(l_sConfigFileName, "General", "autofireKeyInterval", 100)
-	g_bFixSystemKeys := IniRead(l_sConfigFileName, "General", "fixSystemKeys", 1)
-	g_nFocusCheckInterval := IniRead(l_sConfigFileName, "General", "focusCheckInterval", 1000)
-	g_nHookDelay := IniRead(l_sConfigFileName, "General", "hookDelay", 0)
-	g_nKeyDelay := IniRead(l_sConfigFileName, "General", "keyDelay", 0)
-	g_bRestoreAutofiresOnFocus := IniRead(l_sConfigFileName, "General", "restoreAutofiresOnFocus", 0)
-	g_bRestoreTogglesOnFocus := IniRead(l_sConfigFileName, "General", "restoreTogglesOnFocus", 0)
-	g_bRunAsAdmin := IniRead(l_sConfigFileName, "General", "runAsAdmin", 0)
-	g_nShowNotifications := IniRead(l_sConfigFileName, "General", "showNotifications", 0)
-	g_nAimMode := IniRead(l_sConfigFileName, "General", "aimMode", 0)
-	g_nCrouchMode := IniRead(l_sConfigFileName, "General", "crouchMode", 0)
-	g_nSprintMode := IniRead(l_sConfigFileName, "General", "sprintMode", 0)
-	g_bAutorunMode := IniRead(l_sConfigFileName, "General", "autorunMode", 0)
+	g_sProcessName := IniReadEnforceType(l_sConfigFileName, "General", "processName", "", String)
+	g_sWindowName := IniReadEnforceType(l_sConfigFileName, "General", "windowName", "", String)
+	g_nAutofireKeyInterval := IniReadEnforceType(l_sConfigFileName, "General", "autofireKeyInterval", 100, Number)
+	g_bFixSystemKeys := IniReadEnforceType(l_sConfigFileName, "General", "fixSystemKeys", 1, "bool")
+	g_nFocusCheckInterval := IniReadEnforceType(l_sConfigFileName, "General", "focusCheckInterval", 1000, Number)
+	g_nHookDelay := IniReadEnforceType(l_sConfigFileName, "General", "hookDelay", 0, Number)
+	g_nKeyDelay := IniReadEnforceType(l_sConfigFileName, "General", "keyDelay", 0, Number)
+	g_bRestoreAutofiresOnFocus := IniReadEnforceType(l_sConfigFileName, "General", "restoreAutofiresOnFocus", 0, "bool")
+	g_bRestoreTogglesOnFocus := IniReadEnforceType(l_sConfigFileName, "General", "restoreTogglesOnFocus", 0, "bool")
+	g_bRunAsAdmin := IniReadEnforceType(l_sConfigFileName, "General", "runAsAdmin", 0, "bool")
+	g_nShowNotifications := IniReadEnforceType(l_sConfigFileName, "General", "showNotifications", 0, Number)
+	g_nAimMode := IniReadEnforceType(l_sConfigFileName, "General", "aimMode", 0, "key mode")
+	g_nCrouchMode := IniReadEnforceType(l_sConfigFileName, "General", "crouchMode", 0, "key mode")
+	g_nSprintMode := IniReadEnforceType(l_sConfigFileName, "General", "sprintMode", 0, "key mode")
+	g_bAutorunMode := IniReadEnforceType(l_sConfigFileName, "General", "autorunMode", 0, "autorun")
 
 	; Main keys
 	g_sAimKey := IniRead(l_sConfigFileName, "Keys", "aimKey", "RButton")
