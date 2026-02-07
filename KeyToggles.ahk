@@ -1,4 +1,4 @@
-; KeyToggles v2.1
+; KeyToggles v2.2
 
 ; TODO
 ; add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
@@ -197,8 +197,6 @@ GuiCreate()
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Process name")
 	g_mapSettings["editProcessName"] := g_guiSettings.AddEdit("CBlack x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
 	                                        " w" l_nMiddleWidth, g_sProcessName)
-	g_mapSettings["editProcessName"].OnEvent("Focus", (*) => ToolTip("Enter the name of the target process executable (e.g., game.exe)."))
-	g_mapSettings["editProcessName"].OnEvent("LoseFocus", (*) => ToolTip())
 
 	g_guiSettings.AddButton("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Browse").OnEvent("Click", GuiButtonBrowse_Click)
 
