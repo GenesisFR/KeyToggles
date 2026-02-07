@@ -237,15 +237,15 @@ GuiCreate()
 	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " h" 4*31
 	                          " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Key modes")
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Aim")
-	g_mapSettings["aimMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
-	                                              " w" l_nMiddleWidth " Choose" g_nAimMode + 1, g_arrKeyModes)
+	g_mapSettings["ddlAimMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
+	                                                          " w" l_nMiddleWidth " Choose" g_nAimMode + 1, g_arrKeyModes)
 	
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Crouch")
-	g_mapSettings["crouchMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
+	g_mapSettings["ddlCrouchMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
 	                                                             " w" l_nMiddleWidth " Choose" g_nCrouchMode + 1, g_arrKeyModes)
 	
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Sprint")
-	g_mapSettings["sprintMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
+	g_mapSettings["ddlSprintMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
 	                                                             " w" l_nMiddleWidth " Choose" g_nSprintMode + 1, g_arrKeyModes)
 
 	g_mapSettings["autorun"] := g_guiSettings.AddCheckBox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
@@ -338,15 +338,15 @@ GuiCreate()
 	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 3*33
 	                          " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Misc")
 
-	g_cbxFixSystemKeys := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow
-	                                                " w" l_nLeftWidth + 23 " Checked" g_bFixSystemKeys, "Fix system keys  ")
-	g_cbxRunAsAdmin := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
-	                                             " Checked" g_bRunAsAdmin, "Run as admin  ")
+	g_mapSettings["fixSystemKeys"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow
+	                                                            " w" l_nLeftWidth + 23 " Checked" g_bFixSystemKeys, "Fix system keys  ")
+	g_mapSettings["runAsAdmin"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+	                                                         " Checked" g_bRunAsAdmin, "Run as admin  ")
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Notifications")
-	g_ddlNotifications := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
-	                                                    " w" l_nMiddleWidth " Choose" g_nShowNotifications + 1,
-	                                                    ["Disabled", "System notifications", "Tooltips"])
+	g_mapSettings["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
+	                                                                   " w" l_nMiddleWidth " Choose" g_nShowNotifications + 1,
+	                                                                   ["Disabled", "System notifications", "Tooltips"])
 
 	g_guiSettings.AddButton("x200 w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 }
