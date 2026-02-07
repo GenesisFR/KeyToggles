@@ -3,6 +3,9 @@
 ; TODO
 ; add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 ; add overlay
+; add text/tooltips when mousing over GUI controls to explain what they do
+; replace global GUI variables with named controls (https://www.autohotkey.com/docs/v2/lib/Gui.htm#control-variables)
+; replace sleeps with timers
 ; fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 
@@ -17,9 +20,8 @@ OnExit(ExitFunc)
 global KEY_MODE_DISABLED := 0
 global KEY_MODE_TOGGLE := 1
 global KEY_MODE_HOLD := 2
-global KEY_MODE_AUTOFIRE := 3
+global KEY_MODE_AUTOFIRE_TOGGLE := 3
 global KEY_MODE_AUTOFIRE_HOLD := 4
-global KEY_MODE_AUTORUN := 5
 
 ; Initialize state variables
 global g_bAiming := false
@@ -134,7 +136,7 @@ GuiButtonSave_Click(GuiCtrlObj, Info)
 	IniWrite(g_ddlAimMode.Value - 1, "KeyToggles.ini", "General", "aimMode")
 	IniWrite(g_ddlCrouchMode.Value - 1, "KeyToggles.ini", "General", "crouchMode")
 	IniWrite(g_ddlSprintMode.Value - 1, "KeyToggles.ini", "General", "sprintMode")
-	IniWrite(g_cbxAutorun.Value == 1 ? 5 : 0, "KeyToggles.ini", "General", "autorunMode")
+	IniWrite(g_cbxAutorun.Value, "KeyToggles.ini", "General", "autorunMode")
 	
 	IniWrite(g_hkAimKey.Value, "KeyToggles.ini", "Keys", "aimKey")
 	IniWrite(g_hkCrouchKey.Value, "KeyToggles.ini", "Keys", "crouchKey")
@@ -233,7 +235,7 @@ GuiCreate()
 	                                                 " w" l_nMiddleWidth " Choose" g_nSprintMode + 1, l_arrKeyModes)
 
 	g_cbxAutorun := g_guiSettings.AddCheckBox("vAutorunModeCheckBox Right x" l_nLeftX " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) " w" l_nLeftWidth + 23
-	                                          " Checked" (g_bAutorunMode == KEY_MODE_AUTORUN ? "1" : "0"), "Autorun  ")
+	                                          " Checked" g_bAutorunMode, "Autorun  ")
 
 	; Hotkeys
 	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + (l_nSpacingY * ++l_nCurrentRow) + 3 " h" 9*28
@@ -345,7 +347,7 @@ GuiCreate()
 	g_guiSettings.AddButton("vMyGuiSave x200 w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 }
 
-; Enable/disable and set hotkey controls text based on selected DDL extra keys
+; Set hotkey controls text based on selected DDL extra keys
 GuiDDLExtra_Change(GuiCtrlObj, Info)
 {
 	switch GuiCtrlObj
@@ -371,7 +373,7 @@ GuiDDLExtra_Change(GuiCtrlObj, Info)
 	}
 }
 
-; Prevent modified keys from being used in hotkey controls 
+; Prevent modified keys from being used in hotkey controls (could be changed to allow them in the future)
 GuiHK_Change(GuiCtrlObj, Info)
 {
 	; Turn MsgBox into a modal
@@ -398,6 +400,19 @@ GuiHK_Change(GuiCtrlObj, Info)
 	}
 }
 
+HookWindow()
+{
+	global
+
+	; Make the hotkeys active only for a specific window
+	g_nWindowID := WinGetID(g_sWindowName " ahk_exe " g_sProcessName)
+	Output(A_ThisFunc "::WinGet(" g_nWindowID ")")
+	GroupAdd("windowIDGroup", "ahk_id " g_nWindowID)
+
+	if (g_nWindowID)
+		ShowNotification("The window `"" WinGetTitle(g_nWindowID) "`" has been hooked.")
+}
+
 IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 {
 	l_sValue := IniRead(p_sFile, p_sSection, p_sKey, p_sDefault)
@@ -422,8 +437,6 @@ IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 			} catch TypeError {
 				return p_sDefault
 			}
-		case "autorun":
-			return l_sValue == "5" ? KEY_MODE_AUTORUN : p_sDefault
 		default:
 			return l_sValue
 	}
@@ -440,30 +453,15 @@ Init()
 	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure settings", (*) => 	g_guiSettings.Show())
 }
 
-HookWindow()
-{
-	global
-
-	; Make the hotkeys active only for a specific window
-	g_nWindowID := WinGetID(g_sWindowName " ahk_exe " g_sProcessName)
-	Output(A_ThisFunc "::WinGet(" g_nWindowID ")")
-	GroupAdd("windowIDGroup", "ahk_id " g_nWindowID)
-
-	if (g_nWindowID)
-		ShowNotification("The window `"" WinGetTitle(g_nWindowID) "`" has been hooked.")
-}
-
 IsExtraOption(p_sKey)
 {
-	l_ddlExtraList := Map("LButton", "", "MButton", "", "RButton", "", "XButton1", "", "XButton2", "", "Space", "", "Tab", "", "Enter", "",
-	                      "Escape", "", "Backspace", "")
-	return l_ddlExtraList.Has(p_sKey)
+	; https://www.autohotkey.com/docs/v2/lib/If.htm#ExIfInContains
+	return StrLower(p_sKey) ~= "i)\A(lbutton|mbutton|rbutton|xbutton1|xbutton2|space|tab|enter|escape|backspace)\z"
 }
 
 IsMouseButton(p_sKey)
 {
-	l_mouseButtonList := "LButton MButton RButton XButton1 XButton2"
-	return InStr(l_mouseButtonList, p_sKey) != false
+	return StrLower(p_sKey) ~= "i)\A(lbutton|mbutton|rbutton|xbutton1|xbutton2)\z"
 }
 
 IsMouseOver(p_sWinTitle)
@@ -645,7 +643,7 @@ OnKeyPress(p_sThisHotkey)
 
 	switch l_nKeyMode
 	{
-		case KEY_MODE_TOGGLE, KEY_MODE_AUTORUN:
+		case KEY_MODE_TOGGLE:
 			l_bIsMouseButton := IsMouseButton(l_sCleanHotkey)
 			l_bIsMouseOverWindow := IsMouseOverWindow(g_nWindowID)
 			; Output(A_ThisFunc "::" l_sCleanHotkey " l_bIsMouseButton(" l_bIsMouseButton ") l_bIsMouseOverWindow(" l_bIsMouseOverWindow ")")
@@ -681,7 +679,7 @@ OnKeyPress(p_sThisHotkey)
 		case KEY_MODE_HOLD:
 			KeyHold(l_sCleanHotkey)
 		; Based on https://autohotkey.com/board/topic/64576-the-definitive-autofire-thread/?p=407264
-		case KEY_MODE_AUTOFIRE:
+		case KEY_MODE_AUTOFIRE_TOGGLE:
 			if (l_sCleanHotkey == g_sAimAutofireKey)
 			{
 				g_bAutofireAiming := !g_bAutofireAiming
@@ -755,7 +753,7 @@ ReadConfigFile()
 	g_nAimMode := IniReadEnforceType(l_sConfigFileName, "General", "aimMode", 0, "key mode")
 	g_nCrouchMode := IniReadEnforceType(l_sConfigFileName, "General", "crouchMode", 0, "key mode")
 	g_nSprintMode := IniReadEnforceType(l_sConfigFileName, "General", "sprintMode", 0, "key mode")
-	g_bAutorunMode := IniReadEnforceType(l_sConfigFileName, "General", "autorunMode", 0, "autorun")
+	g_bAutorunMode := IniReadEnforceType(l_sConfigFileName, "General", "autorunMode", 0, "bool")
 
 	; Main keys
 	g_sAimKey := IniRead(l_sConfigFileName, "Keys", "aimKey", "RButton")
@@ -795,14 +793,14 @@ RegisterHotkeys()
 	Hotkey("*$" g_sSprintKey, OnKeyPress, g_nSprintMode == KEY_MODE_TOGGLE || g_nSprintMode == KEY_MODE_HOLD ? "On" : "Off")
 
 	; Enabled only for autorun mode
-	Hotkey("*$" g_autorunKey, OnKeyPress, g_bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
-	Hotkey("~*$" g_sForwardKey, OnKeyPress, g_bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
-	Hotkey("~*$" g_sBackwardKey, OnKeyPress, g_bAutorunMode == KEY_MODE_AUTORUN ? "On" : "Off")
+	Hotkey("*$" g_autorunKey, OnKeyPress, g_bAutorunMode == KEY_MODE_TOGGLE ? "On" : "Off")
+	Hotkey("~*$" g_sForwardKey, OnKeyPress, g_bAutorunMode == KEY_MODE_TOGGLE ? "On" : "Off")
+	Hotkey("~*$" g_sBackwardKey, OnKeyPress, g_bAutorunMode == KEY_MODE_TOGGLE ? "On" : "Off")
 
 	; Enabled only for autofire modes
-	Hotkey("*$" g_sAimAutofireKey, OnKeyPress, g_nAimMode == KEY_MODE_AUTOFIRE || g_nAimMode == KEY_MODE_AUTOFIRE_HOLD  ? "On" : "Off")
-	Hotkey("*$" g_sCrouchAutofireKey, OnKeyPress, g_nCrouchMode == KEY_MODE_AUTOFIRE || g_nCrouchMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
-	Hotkey("*$" g_sSprintAutofireKey, OnKeyPress, g_nSprintMode == KEY_MODE_AUTOFIRE || g_nSprintMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_sAimAutofireKey, OnKeyPress, g_nAimMode == KEY_MODE_AUTOFIRE_TOGGLE || g_nAimMode == KEY_MODE_AUTOFIRE_HOLD  ? "On" : "Off")
+	Hotkey("*$" g_sCrouchAutofireKey, OnKeyPress, g_nCrouchMode == KEY_MODE_AUTOFIRE_TOGGLE || g_nCrouchMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_sSprintAutofireKey, OnKeyPress, g_nSprintMode == KEY_MODE_AUTOFIRE_TOGGLE || g_nSprintMode == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 
 	; Fixes issues when pressing system keys while toggle keys are modifiers and toggled
 	Hotkey("*$" "!Tab", SendAltTab, g_bFixSystemKeys ? "On" : "Off")
@@ -950,14 +948,14 @@ SendWindows(p_sThisHotkey)
 
 ShouldRestoreAutofiresOnFocus()
 {
-	return g_bRestoreAutofiresOnFocus && (g_nAimMode == KEY_MODE_AUTOFIRE || g_nCrouchMode == KEY_MODE_AUTOFIRE || g_nSprintMode == KEY_MODE_AUTOFIRE)
-	       && (WinExist("ahk_id " g_nWindowID) != 0)
+	return g_bRestoreAutofiresOnFocus && (g_nAimMode == KEY_MODE_AUTOFIRE_TOGGLE || g_nCrouchMode == KEY_MODE_AUTOFIRE_TOGGLE ||
+	       g_nSprintMode == KEY_MODE_AUTOFIRE_TOGGLE) && WinExist("ahk_id " g_nWindowID)
 }
 
 ShouldRestoreTogglesOnFocus()
 {
-	return g_bRestoreTogglesOnFocus && (g_nAimMode == KEY_MODE_TOGGLE || g_nCrouchMode == KEY_MODE_TOGGLE || g_nSprintMode == KEY_MODE_TOGGLE)
-	       && (WinExist("ahk_id " g_nWindowID) != 0)
+	return g_bRestoreTogglesOnFocus && (g_nAimMode == KEY_MODE_TOGGLE || g_nCrouchMode == KEY_MODE_TOGGLE || g_nSprintMode == KEY_MODE_TOGGLE
+	       || g_bAutorunMode == KEY_MODE_TOGGLE) && WinExist("ahk_id " g_nWindowID)
 }
 
 ShowNotification(p_sMessage)
