@@ -52,7 +52,6 @@ global g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autof
 global g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton2", "Space", "Tab", "Enter", "Escape", "Backspace"]
 
 Init()
-g_guiSettings.show()
 
 ; Exit script
 ExitFunc(p_sExitReason, p_nExitCode)
@@ -159,7 +158,8 @@ GuiButtonSave_Click(GuiCtrlObj, Info)
 	IniWrite(g_mapSettings["sprintAutofireKey"].Value, "KeyToggles.ini", "Keys", "sprintAutofireKey")
 	IniWrite(g_mapSettings["sprintKey"].Value, "KeyToggles.ini", "Keys", "sprintKey")
 
-	MsgBox("Settings saved! Please restart the script to apply changes.", "Info", 64)
+	if (MsgBox("Settings saved! Would you like to restart the script to apply changes?", "Info", 68) == "Yes")
+		Reload()
 }
 
 GuiCreate()
