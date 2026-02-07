@@ -37,6 +37,8 @@ Left ALT + F10: close the script (debug mode)
 Left ALT + F11: reload the script (debug mode)  
 Left ALT + F12: suspend the script (disables all hotkeys)
 
+<img width="522" height="819" alt="built-in configurator" src="https://github.com/user-attachments/assets/3a3f3434-0b3f-474e-bd3e-bc41f90219a7" />
+
 ## Limitations
 
 - Hotkeys using modifiers (ex: Ctrl + K) aren't supported at the moment.
