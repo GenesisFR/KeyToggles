@@ -86,7 +86,12 @@ GuiButtonSave_Click(GuiCtrlObj, Info)
 
 	; Validate process name
 	l_procNameExt := SubStr(l_procNameClean, -4)
-	if (l_procNameExt != ".exe")
+	if (Trim(l_procNameExt) == "")
+	{
+		MsgBox("You must specify a process name.", "Error", 16)
+		return
+	}
+	else if (l_procNameExt != ".exe")
 	{
 		MsgBox("The process name doesn't end with `".exe`".", "Error", 16)
 		return
