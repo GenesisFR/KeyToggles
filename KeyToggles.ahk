@@ -69,7 +69,6 @@ global g_mapStates := Map(
 	"bRestoreAutorunning", false,
 	"bRestoreCrouching", false,
 	"bRestoreSprinting", false,
-	"bToggleKeysSnapshotTaken", false
 )
 
 ; Functors
@@ -82,6 +81,7 @@ global g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autof
 global g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton2", "Space", "Tab", "Enter", "Escape", "Backspace"]
 
 ; Others
+global g_bToggleKeysSnapshotTaken := false
 global g_guiSettings := 0
 global g_nWindowID := 0
 
@@ -105,8 +105,6 @@ ExitWithErrorMessage(p_sErrorMessage)
 ; Browse for process executable
 GuiButtonBrowse_Click(GuiCtrlObj, Info)
 {
-	global g_editProcName
-
 	; Turn FileSelect into a modal
 	g_guiSettings.Opt("+OwnDialogs")
 
@@ -258,7 +256,7 @@ GuiCreate()
 	g_mapControls["udHookDelay"] := g_guiSettings.AddUpDown("Range0-30000", g_mapSettings["nHookDelay"])
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Key delay")
-	g_editKeyDelay := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
+	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
 	g_mapControls["udKeyDelay"] := g_guiSettings.AddUpDown("Range0-1000", g_mapSettings["nKeyDelay"])
 
 	; Save states
@@ -668,8 +666,8 @@ OnFocusChanged()
 	if (ShouldRestoreTogglesOnFocus())
 	{
 		; A snapshot of the toggle states was already taken elsewhere, don't take another one
-		if (g_mapStates["bToggleKeysSnapshotTaken"])
-			g_mapStates["bToggleKeysSnapshotTaken"] := false
+		if (g_bToggleKeysSnapshotTaken)
+			g_bToggleKeysSnapshotTaken := false
 		else
 		{
 			Output(A_ThisFunc "::saveToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
@@ -824,14 +822,14 @@ ReadConfigFile()
 	g_mapSettings["nFocusCheckInterval"] := IniReadEnforceType(l_sConfigFileName, "General", "focusCheckInterval", 1000, Number)
 	g_mapSettings["nHookDelay"] := IniReadEnforceType(l_sConfigFileName, "General", "hookDelay", 0, Number)
 	g_mapSettings["nKeyDelay"] := IniReadEnforceType(l_sConfigFileName, "General", "keyDelay", 0, Number)
-	g_mapSettings["bRestoreAutofiresOnFocus"] := IniReadEnforceType(l_sConfigFileName, "General", "restoreAutofiresOnFocus", 0, "bool")
-	g_mapSettings["bRestoreTogglesOnFocus"] := IniReadEnforceType(l_sConfigFileName, "General", "restoreTogglesOnFocus", 0, "bool")
-	g_mapSettings["bRunAsAdmin"] := IniReadEnforceType(l_sConfigFileName, "General", "runAsAdmin", 0, "bool")
+	g_mapSettings["bRestoreAutofiresOnFocus"] := IniReadEnforceType(l_sConfigFileName, "General", "restoreAutofiresOnFocus", false, "bool")
+	g_mapSettings["bRestoreTogglesOnFocus"] := IniReadEnforceType(l_sConfigFileName, "General", "restoreTogglesOnFocus", false, "bool")
+	g_mapSettings["bRunAsAdmin"] := IniReadEnforceType(l_sConfigFileName, "General", "runAsAdmin", false, "bool")
 	g_mapSettings["nShowNotifications"] := IniReadEnforceType(l_sConfigFileName, "General", "showNotifications", 0, Number)
 	g_mapSettings["nAimMode"] := IniReadEnforceType(l_sConfigFileName, "General", "aimMode", 0, "key mode")
 	g_mapSettings["nCrouchMode"] := IniReadEnforceType(l_sConfigFileName, "General", "crouchMode", 0, "key mode")
 	g_mapSettings["nSprintMode"] := IniReadEnforceType(l_sConfigFileName, "General", "sprintMode", 0, "key mode")
-	g_mapSettings["bAutorunMode"] := IniReadEnforceType(l_sConfigFileName, "General", "autorunMode", 0, "bool")
+	g_mapSettings["bAutorunMode"] := IniReadEnforceType(l_sConfigFileName, "General", "autorunMode", false, "bool")
 
 	; Main keys
 	g_mapSettings["sAimKey"] := IniRead(l_sConfigFileName, "Keys", "aimKey", "RButton")
@@ -849,7 +847,7 @@ ReadConfigFile()
 	g_mapSettings["sSprintAutofireKey"] := IniRead(l_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; Debug
-	g_mapSettings["bDebugMode"] := IniRead(l_sConfigFileName, "Debug", "debugMode", 0)
+	g_mapSettings["bDebugMode"] := IniRead(l_sConfigFileName, "Debug", "debugMode", false)
 
 	; Prevent timers from not working if set to 0
 	g_mapSettings["nAutofireKeyInterval"] := Max(1, g_mapSettings["nAutofireKeyInterval"])
@@ -1061,7 +1059,7 @@ TakeToggleKeysSnapshot(p_bReleaseKeys := true)
 	g_mapStates["bRestoreAutofireAiming"] := g_mapStates["bAutofireAiming"]
 	g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
 	g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
-	g_mapStates["bToggleKeysSnapshotTaken"] := true
+	g_bToggleKeysSnapshotTaken := true
 
 	if (p_bReleaseKeys)
 		ReleaseAllKeys()
