@@ -3,8 +3,12 @@
 ; TODO
 ; add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 ; add overlay
+; add support for hotkey modifiers (e.g., Ctrl+F1)
 ; add text/tooltips when mousing over GUI controls to explain what they do
 ; replace sleeps with timers
+; replace ternary operators with coalescing ?? operators where possible
+; show window name on top of process name during WinWaitActive
+; validate process name at startup and show error if not valid
 ; fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 
@@ -23,21 +27,24 @@ global KEY_MODE_AUTOFIRE_TOGGLE := 3
 global KEY_MODE_AUTOFIRE_HOLD := 4
 
 ; Initialize state variables
-global g_bAiming := false
-global g_bCrouching := false
-global g_bSprinting := false
-global g_bAutorunning := false
-global g_bAutofireAiming := false
-global g_bAutofireCrouching := false
-global g_bAutofireSprinting := false
-global g_bRestoreAiming := false
-global g_bRestoreCrouching := false
-global g_bRestoreSprinting := false
-global g_bRestoreAutorunning := false
-global g_bRestoreAutofireAiming := false
-global g_bRestoreAutofireCrouching := false
-global g_bRestoreAutofireSprinting := false
-global g_bToggleKeysSnapshotTaken := false
+global g_mapStates := Map(
+	"bAiming", false,
+	"bCrouching", false,
+	"bSprinting", false,
+	"bAutofireAiming", false,
+	"bAutofireCrouching", false,
+	"bAutofireSprinting", false,
+	"bAutorunning", false,
+	"bRestoreAiming", false,
+	"bRestoreAutofireAiming", false,
+	"bRestoreAutofireCrouching", false,
+	"bRestoreAutofireSprinting", false,
+	"bRestoreAutorunning", false,
+	"bRestoreCrouching", false,
+	"bRestoreSprinting", false,
+	"bToggleKeysSnapshotTaken", false
+)
+
 global g_guiSettings := 0
 global g_mapSettings := Map()
 global g_nWindowID := 0
@@ -197,6 +204,8 @@ GuiCreate()
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Process name")
 	g_mapSettings["editProcessName"] := g_guiSettings.AddEdit("CBlack x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
 	                                        " w" l_nMiddleWidth, g_sProcessName)
+	;g_mapSettings["editProcessName"].OnEvent("Focus", (*) => ToolTip("Enter the name of the target process executable (e.g., game.exe)."))
+	;g_mapSettings["editProcessName"].OnEvent("LoseFocus", (*) => ToolTip())
 
 	g_guiSettings.AddButton("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Browse").OnEvent("Click", GuiButtonBrowse_Click)
 
@@ -224,11 +233,11 @@ GuiCreate()
 	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 2*35
 	                          " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Save states")
 	g_mapSettings["cbRestoreAutofiresOnFocus"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow
-	                                                                      " w" l_nLeftWidth + 23 " Checked" g_bRestoreAutofiresOnFocus,
-	                                                                      "Restore autofires on focus  ")
+	                                                                        " w" l_nLeftWidth + 23 " Checked" g_bRestoreAutofiresOnFocus,
+	                                                                        "Restore autofires on focus  ")
 	g_mapSettings["cbRestoreTogglesOnFocus"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow
-	                                                                    " w" l_nLeftWidth + 23 " Checked" g_bRestoreTogglesOnFocus,
-	                                                                    "Restore toggles on focus  ")
+	                                                                      " w" l_nLeftWidth + 23 " Checked" g_bRestoreTogglesOnFocus,
+	                                                                      "Restore toggles on focus  ")
 
 	; Key modes
 	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " h" 4*31
@@ -311,7 +320,7 @@ GuiCreate()
 	g_mapSettings["cbFixSystemKeys"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow
 	                                                            " w" l_nLeftWidth + 23 " Checked" g_bFixSystemKeys, "Fix system keys  ")
 	g_mapSettings["cbRunAsAdmin"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
-	                                                         " Checked" g_bRunAsAdmin, "Run as admin  ")
+	                                                           " Checked" g_bRunAsAdmin, "Run as admin  ")
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Notifications")
 	g_mapSettings["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5
@@ -482,7 +491,7 @@ Init()
 	RestartAsAdminIfNeeded()
 	SetTimer(OnFocusChanged, g_nFocusCheckInterval)
 	GuiCreate()
-	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure settings", (*) => 	g_guiSettings.Show())
+	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure Settings", (*) => g_guiSettings.Show())
 }
 
 IsExtraOption(p_sKey)
@@ -543,17 +552,17 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 	switch p_sKey
 	{
 		case g_sAimKey:
-			g_bAiming := p_bToggle
+			g_mapStates["bAiming"] := p_bToggle
 		case g_sCrouchKey:
-			g_bCrouching := p_bToggle
+			g_mapStates["bCrouching"] := p_bToggle
 		case g_sSprintKey:
-			g_bSprinting := p_bToggle
+			g_mapStates["bSprinting"] := p_bToggle
 		case g_sForwardKey:
-			g_bAutorunning := p_bToggle
+			g_mapStates["bAutorunning"] := p_bToggle
 	}
 
-	Output(p_sKey == g_sAimKey ? A_ThisFunc "::bAiming(" g_bAiming ")" : p_sKey == g_sCrouchKey ? A_ThisFunc "::bCrouching(" g_bCrouching ")" :
-	       p_sKey == g_sSprintKey ? A_ThisFunc "::bSprinting(" g_bSprinting ")" : A_ThisFunc "::bAutorunning(" g_bAutorunning ")")
+	Output(p_sKey == g_sAimKey ? A_ThisFunc "::bAiming(" g_mapStates["bAiming"] ")" : p_sKey == g_sCrouchKey ? A_ThisFunc "::bCrouching(" g_mapStates["bCrouching"] ")" :
+	       p_sKey == g_sSprintKey ? A_ThisFunc "::bSprinting(" g_mapStates["bSprinting"] ")" : A_ThisFunc "::bAutorunning(" g_mapStates["bAutorunning"] ")")
 	SendInput(p_bToggle ? "{Blind}{" p_sKey " down}" : "{Blind}{" p_sKey " up}")
 
 	if (p_bWait)
@@ -580,40 +589,40 @@ OnFocusChanged()
 		RegisterHotkeys()
 
 		; That's a different window, don't restore toggle states
-		g_bRestoreAiming := false
-		g_bRestoreCrouching := false
-		g_bRestoreSprinting := false
-		g_bRestoreAutorunning := false
-		g_bRestoreAutofireAiming := false
-		g_bRestoreAutofireCrouching := false
-		g_bRestoreAutofireSprinting := false
+		g_mapStates["bRestoreAiming"] := false
+		g_mapStates["bRestoreCrouching"] := false
+		g_mapStates["bRestoreSprinting"] := false
+		g_mapStates["bRestoreAutorunning"] := false
+		g_mapStates["bRestoreAutofireAiming"] := false
+		g_mapStates["bRestoreAutofireCrouching"] := false
+		g_mapStates["bRestoreAutofireSprinting"] := false
 	}
 
 	; Restore autofire toggle states
 	if (ShouldRestoreAutofiresOnFocus())
 	{
-		Output(A_ThisFunc "::restoreAutofireToggleStates(" g_bRestoreAutofireAiming ", " g_bRestoreAutofireCrouching ", " g_bRestoreAutofireSprinting ")")
+		Output(A_ThisFunc "::restoreAutofireToggleStates(" g_mapStates["bRestoreAutofireAiming"] ", " g_mapStates["bRestoreAutofireCrouching"] ", " g_mapStates["bRestoreAutofireSprinting"] ")")
 
-		if (g_bRestoreAutofireAiming)
+		if (g_mapStates["bRestoreAutofireAiming"])
 			OnKeyPress(g_sAimAutofireKey)
-		if (g_bRestoreAutofireCrouching)
+		if (g_mapStates["bRestoreAutofireCrouching"])
 			OnKeyPress(g_sCrouchAutofireKey)
-		if (g_bRestoreAutofireSprinting)
+		if (g_mapStates["bRestoreAutofireSprinting"])
 			OnKeyPress(g_sSprintAutofireKey)
 	}
 
 	; Restore toggle states
 	if (ShouldRestoreTogglesOnFocus())
 	{
-		Output(A_ThisFunc "::restoreToggleStates(" g_bRestoreAiming ", " g_bRestoreCrouching ", " g_bRestoreSprinting ")")
+		Output(A_ThisFunc "::restoreToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
 
-		if (g_bRestoreAiming)
+		if (g_mapStates["bRestoreAiming"])
 			KeyToggle(g_sAimKey, true)
-		if (g_bRestoreCrouching)
+		if (g_mapStates["bRestoreCrouching"])
 			KeyToggle(g_sCrouchKey, true)
-		if (g_bRestoreSprinting)
+		if (g_mapStates["bRestoreSprinting"])
 			KeyToggle(g_sSprintKey, true)
-		if (g_bRestoreAutorunning)
+		if (g_mapStates["bRestoreAutorunning"])
 			KeyToggle(g_sForwardKey, true)
 	}
 
@@ -624,19 +633,19 @@ OnFocusChanged()
 	if (ShouldRestoreTogglesOnFocus())
 	{
 		; A snapshot of the toggle states was already taken elsewhere, don't take another one
-		if (g_bToggleKeysSnapshotTaken)
-			g_bToggleKeysSnapshotTaken := false
+		if (g_mapStates["bToggleKeysSnapshotTaken"])
+			g_mapStates["bToggleKeysSnapshotTaken"] := false
 		else
 		{
-			Output(A_ThisFunc "::saveToggleStates(" g_bRestoreAiming ", " g_bRestoreCrouching ", " g_bRestoreSprinting ")")
+			Output(A_ThisFunc "::saveToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
 
-			g_bRestoreAiming := g_bAiming
-			g_bRestoreCrouching := g_bCrouching
-			g_bRestoreSprinting := g_bSprinting
-			g_bRestoreAutorunning := g_bAutorunning
-			g_bRestoreAutofireAiming := g_bAutofireAiming
-			g_bRestoreAutofireCrouching := g_bAutofireCrouching
-			g_bRestoreAutofireSprinting := g_bAutofireSprinting
+			g_mapStates["bRestoreAiming"] := g_mapStates["bAiming"]
+			g_mapStates["bRestoreCrouching"] := g_mapStates["bCrouching"]
+			g_mapStates["bRestoreSprinting"] := g_mapStates["bSprinting"]
+			g_mapStates["bRestoreAutorunning"] := g_mapStates["bAutorunning"]
+			g_mapStates["bRestoreAutofireAiming"] := g_mapStates["bAutofireAiming"]
+			g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
+			g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
 		}
 	}
 
@@ -662,9 +671,9 @@ OnKeyPress(p_sThisHotkey)
 			l_nKeyMode := g_bAutorunMode
 		; Pressing the forward/backward key disables autorunning
 		case g_sForwardKey:
-			g_bAutorunning := false
+			g_mapStates["bAutorunning"] := false
 		case g_sBackwardKey:
-			if (g_bAutorunning)
+			if (g_mapStates["bAutorunning"])
 			{
 				KeyToggle(g_sForwardKey, false)
 				KeyWait(g_sBackwardKey)
@@ -692,11 +701,11 @@ OnKeyPress(p_sThisHotkey)
 				;Output(A_ThisFunc "::" l_sCleanHotkey " inside window")
 
 				if (l_sCleanHotkey == g_sAimKey)
-					KeyToggle(g_sAimKey, !g_bAiming, true)
+					KeyToggle(g_sAimKey, !g_mapStates["bAiming"], true)
 				else if (l_sCleanHotkey == g_sCrouchKey)
-					KeyToggle(g_sCrouchKey, !g_bCrouching, true)
+					KeyToggle(g_sCrouchKey, !g_mapStates["bCrouching"], true)
 				else if (l_sCleanHotkey == g_sSprintKey)
-					KeyToggle(g_sSprintKey, !g_bSprinting, true)
+					KeyToggle(g_sSprintKey, !g_mapStates["bSprinting"], true)
 				else if (l_sCleanHotkey == g_sAutorunKey)
 				{
 					; Autorun will engage even if the forward/backward key was physically pressed
@@ -704,7 +713,7 @@ OnKeyPress(p_sThisHotkey)
 						SendKey(g_sBackwardKey)
 
 					KeyWait(g_sForwardKey)
-					KeyToggle(g_sForwardKey, !g_bAutorunning)
+					KeyToggle(g_sForwardKey, !g_mapStates["bAutorunning"])
 					KeyWait(g_sAutorunKey)
 				}
 			}
@@ -714,18 +723,18 @@ OnKeyPress(p_sThisHotkey)
 		case KEY_MODE_AUTOFIRE_TOGGLE:
 			if (l_sCleanHotkey == g_sAimAutofireKey)
 			{
-				g_bAutofireAiming := !g_bAutofireAiming
-				SetTimer(g_fnAutofireAim, g_bAutofireAiming ? g_nAutofireKeyInterval : 0)
+				g_mapStates["bAutofireAiming"] := !g_mapStates["bAutofireAiming"]
+				SetTimer(g_fnAutofireAim, g_mapStates["bAutofireAiming"] ? g_nAutofireKeyInterval : 0)
 			}
 			else if (l_sCleanHotkey == g_sCrouchAutofireKey)
 			{
-				g_bAutofireCrouching := !g_bAutofireCrouching
-				SetTimer(g_fnAutofireCrouch, g_bAutofireCrouching ? g_nAutofireKeyInterval : 0)
+				g_mapStates["bAutofireCrouching"] := !g_mapStates["bAutofireCrouching"]
+				SetTimer(g_fnAutofireCrouch, g_mapStates["bAutofireCrouching"] ? g_nAutofireKeyInterval : 0)
 			}
 			else if (l_sCleanHotkey == g_sSprintAutofireKey)
 			{
-				g_bAutofireSprinting := !g_bAutofireSprinting
-				SetTimer(g_fnAutofireSprint, g_bAutofireSprinting ? g_nAutofireKeyInterval : 0)
+				g_mapStates["bAutofireSprinting"] := !g_mapStates["bAutofireSprinting"]
+				SetTimer(g_fnAutofireSprint, g_mapStates["bAutofireSprinting"] ? g_nAutofireKeyInterval : 0)
 			}
 
 			KeyWait(l_sCleanHotkey)
@@ -852,21 +861,21 @@ ReleaseAllKeys()
 {
 	global
 
-	Output(A_ThisFunc "::states(" g_bAiming ", " g_bCrouching ", " g_bSprinting ", " g_bAutorunning ")")
+	Output(A_ThisFunc "::states(" g_mapStates["bAiming"] ", " g_mapStates["bCrouching"] ", " g_mapStates["bSprinting"] ", " g_mapStates["bAutorunning"] ")")
 
 	; Release all toggle keys
-	if (g_bAiming)
+	if (g_mapStates["bAiming"])
 		KeyToggle(g_sAimKey, false)
-	if (g_bCrouching)
+	if (g_mapStates["bCrouching"])
 		KeyToggle(g_sCrouchKey, false)
-	if (g_bSprinting)
+	if (g_mapStates["bSprinting"])
 		KeyToggle(g_sSprintKey, false)
-	if (g_bAutorunning)
+	if (g_mapStates["bAutorunning"])
 		KeyToggle(g_sForwardKey, false)
 
-	g_bAutofireAiming := false
-	g_bAutofireCrouching := false
-	g_bAutofireSprinting := false
+	g_mapStates["bAutofireAiming"] := false
+	g_mapStates["bAutofireCrouching"] := false
+	g_mapStates["bAutofireSprinting"] := false
 
 	; Delete all autofire timers
 	if (g_fnAutofireAim)
@@ -1008,14 +1017,14 @@ TakeToggleKeysSnapshot(p_bReleaseKeys := true)
 {
 	global
 
-	g_bRestoreAiming := g_bAiming
-	g_bRestoreCrouching := g_bCrouching
-	g_bRestoreSprinting := g_bSprinting
-	g_bRestoreAutorunning := g_bAutorunning
-	g_bRestoreAutofireAiming := g_bAutofireAiming
-	g_bRestoreAutofireCrouching := g_bAutofireCrouching
-	g_bRestoreAutofireSprinting := g_bAutofireSprinting
-	g_bToggleKeysSnapshotTaken := true
+	g_mapStates["bRestoreAiming"] := g_mapStates["bAiming"]
+	g_mapStates["bRestoreCrouching"] := g_mapStates["bCrouching"]
+	g_mapStates["bRestoreSprinting"] := g_mapStates["bSprinting"]
+	g_mapStates["bRestoreAutorunning"] := g_mapStates["bAutorunning"]
+	g_mapStates["bRestoreAutofireAiming"] := g_mapStates["bAutofireAiming"]
+	g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
+	g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
+	g_mapStates["bToggleKeysSnapshotTaken"] := true
 
 	if (p_bReleaseKeys)
 		ReleaseAllKeys()
