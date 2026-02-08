@@ -7,7 +7,6 @@
 ; add text/tooltips when mousing over GUI controls to explain what they do
 ; replace sleeps with timers
 ; replace ternary operators with coalescing ?? operators where possible
-; show window name on top of process name during WinWaitActive
 ; validate process name at startup and show error if not valid
 ; fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
@@ -28,7 +27,23 @@ global KEY_MODE_AUTOFIRE_HOLD := 4
 
 ; Maps
 global g_mapControls := Map()
-global g_mapStates := Map()
+global g_mapStates := Map(
+	"bAiming", false,
+	"bCrouching", false,
+	"bSprinting", false,
+	"bAutofireAiming", false,
+	"bAutofireCrouching", false,
+	"bAutofireSprinting", false,
+	"bAutorunning", false,
+	"bRestoreAiming", false,
+	"bRestoreAutofireAiming", false,
+	"bRestoreAutofireCrouching", false,
+	"bRestoreAutofireSprinting", false,
+	"bRestoreAutorunning", false,
+	"bRestoreCrouching", false,
+	"bRestoreSprinting", false,
+	"bToggleKeysSnapshotTaken", false
+)
 
 ; Functors
 global g_fnAutofireAim := 0
@@ -566,7 +581,10 @@ OnFocusChanged()
 {
 	global
 
-	ShowNotification("Waiting for the process `"" g_sProcessName "`" to become active.")
+	if (g_sWindowName == "")
+		ShowNotification("Waiting for the process `"" g_sProcessName "`" to become active.")
+	else
+		ShowNotification("Waiting for the window `"" g_sWindowName "`" of the process `"" g_sProcessName "`" to become active.")
 
 	Output(A_ThisFunc "::WinWaitActive")
 	WinWaitActive(g_sWindowName " ahk_exe " g_sProcessName)
@@ -647,6 +665,7 @@ OnKeyPress(p_sThisHotkey)
 	global
 
 	local l_sCleanHotkey := LTrim(p_sThisHotkey, "~*$")
+	;local l_sCleanHotkeyNoModifiers := LTrim(p_sThisHotkey, "~*$#!^+")
 	local l_nKeyMode := KEY_MODE_DISABLED
 
 	switch l_sCleanHotkey
@@ -705,6 +724,7 @@ OnKeyPress(p_sThisHotkey)
 					KeyWait(g_sForwardKey)
 					KeyToggle(g_sForwardKey, !g_mapStates["bAutorunning"])
 					KeyWait(g_sAutorunKey)
+					;KeyWait(l_sCleanHotkeyNoModifiers)
 				}
 			}
 		case KEY_MODE_HOLD:
