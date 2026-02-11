@@ -2,14 +2,13 @@
 
 ; TODO
 ; add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
-; add overlay
+; add a window picker à la window spy
 ; add support for hotkey modifiers (e.g., Ctrl+F1)
 ; add text/tooltips when mousing over GUI controls to explain what they do
-; replace sleeps with timers
-; replace ternary operators with coalescing ?? operators where possible
-; validate process name at startup and show error if not valid
 ; fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
+; replace sleeps with timers
+; replace ternary operators with coalescing ?? operators where possible
 
 #Requires Autohotkey v2.0  ; Display an error and quit if this version requirement is not met.
 #SingleInstance force      ; Allow only a single instance of the script to run.
@@ -84,6 +83,7 @@ global g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "
 global g_bToggleKeysSnapshotTaken := false
 global g_guiSettings := 0
 global g_nWindowID := 0
+global g_sConfigFileName := "KeyToggles.ini"
 
 Init()
 
@@ -93,13 +93,6 @@ ExitFunc(p_sExitReason, p_nExitCode)
 	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_nExitCode ")")
 	ReleaseAllKeys()
 	TrayTip()
-}
-
-; Display an error message and exit
-ExitWithErrorMessage(p_sErrorMessage)
-{
-	MsgBox(p_sErrorMessage, "Error", 16)
-	ExitApp(1)
 }
 
 ; Browse for process executable
@@ -125,15 +118,16 @@ GuiButtonSave_Click(GuiCtrlObj, Info)
 	l_windowNameClean := Trim(g_mapControls["editWindowName"].Value, "`"")
 
 	; Validate process name
-	l_procNameExt := SubStr(l_procNameClean, -4)
-	if (Trim(l_procNameExt) == "")
+	l_bIsProcessNameValid := ValidateProcessName(l_procNameClean)
+
+	if (l_bIsProcessNameValid == -1)
 	{
-		MsgBox("You must specify a process name.", "Error", 16)
+		MsgBox("You must specify a process name.", , 48)
 		return
 	}
-	else if (l_procNameExt != ".exe")
+	else if (l_bIsProcessNameValid == 0)
 	{
-		MsgBox("The process name doesn't end with `".exe`".", "Error", 16)
+		MsgBox("The process name `"" l_procNameClean "`" must end with `".exe`".", , 48)
 		return
 	}
 
@@ -161,7 +155,7 @@ GuiButtonSave_Click(GuiCtrlObj, Info)
 		{
 			if (l_mapHotkeys.Has(l_sValue))
 			{
-				MsgBox("Duplicate hotkey detected: " l_sValue, "Error", 16)
+				MsgBox("Duplicate hotkey detected: " l_sValue, , 48)
 				return
 			}
 			else
@@ -170,33 +164,42 @@ GuiButtonSave_Click(GuiCtrlObj, Info)
 	}
 
 	; Everything ok, save settings
-	IniWrite(l_procNameClean,                                  "KeyToggles.ini", "General", "processName")
-	IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
-	IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
-	IniWrite(g_mapControls["cbAutorun"].Value,                 "KeyToggles.ini", "General", "autorunMode")
-	IniWrite(g_mapControls["ddlAimMode"].Value - 1,            "KeyToggles.ini", "General", "aimMode")
-	IniWrite(g_mapControls["ddlCrouchMode"].Value - 1,         "KeyToggles.ini", "General", "crouchMode")
-	IniWrite(g_mapControls["ddlNotifications"].Value - 1,      "KeyToggles.ini", "General", "showNotifications")
-	IniWrite(g_mapControls["ddlSprintMode"].Value - 1,         "KeyToggles.ini", "General", "sprintMode")
-	IniWrite(g_mapControls["cbFixSystemKeys"].Value,           "KeyToggles.ini", "General", "fixSystemKeys")
-	IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
-	IniWrite(g_mapControls["udHookDelay"].Value,               "KeyToggles.ini", "General", "hookDelay")
-	IniWrite(g_mapControls["udKeyDelay"].Value,                "KeyToggles.ini", "General", "keyDelay")
-	IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value,   "KeyToggles.ini", "General", "restoreTogglesOnFocus")
-	IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
-	IniWrite(g_mapControls["cbRunAsAdmin"].Value,              "KeyToggles.ini", "General", "runAsAdmin")
-	IniWrite(g_mapControls["hkAimAutofireKey"].Value,          "KeyToggles.ini", "Keys",    "aimAutofireKey")
-	IniWrite(g_mapControls["hkAimKey"].Value,                  "KeyToggles.ini", "Keys",    "aimKey")
-	IniWrite(g_mapControls["hkAutorunKey"].Value,              "KeyToggles.ini", "Keys",    "autorunKey")
-	IniWrite(g_mapControls["hkBackwardKey"].Value,             "KeyToggles.ini", "Keys",    "backwardKey")
-	IniWrite(g_mapControls["hkCrouchAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "crouchAutofireKey")
-	IniWrite(g_mapControls["hkCrouchKey"].Value,               "KeyToggles.ini", "Keys",    "crouchKey")
-	IniWrite(g_mapControls["hkForwardKey"].Value,              "KeyToggles.ini", "Keys",    "forwardKey")
-	IniWrite(g_mapControls["hkSprintAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "sprintAutofireKey")
-	IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
+	try
+	{
+		IniWrite(l_procNameClean,                                  "KeyToggles.ini", "General", "processName")
+		IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
+		IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
+		IniWrite(g_mapControls["cbAutorun"].Value,                 "KeyToggles.ini", "General", "autorunMode")
+		IniWrite(g_mapControls["ddlAimMode"].Value - 1,            "KeyToggles.ini", "General", "aimMode")
+		IniWrite(g_mapControls["ddlCrouchMode"].Value - 1,         "KeyToggles.ini", "General", "crouchMode")
+		IniWrite(g_mapControls["ddlNotifications"].Value - 1,      "KeyToggles.ini", "General", "showNotifications")
+		IniWrite(g_mapControls["ddlSprintMode"].Value - 1,         "KeyToggles.ini", "General", "sprintMode")
+		IniWrite(g_mapControls["cbFixSystemKeys"].Value,           "KeyToggles.ini", "General", "fixSystemKeys")
+		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
+		IniWrite(g_mapControls["udHookDelay"].Value,               "KeyToggles.ini", "General", "hookDelay")
+		IniWrite(g_mapControls["udKeyDelay"].Value,                "KeyToggles.ini", "General", "keyDelay")
+		IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value,   "KeyToggles.ini", "General", "restoreTogglesOnFocus")
+		IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
+		IniWrite(g_mapControls["cbRunAsAdmin"].Value,              "KeyToggles.ini", "General", "runAsAdmin")
+		IniWrite(g_mapControls["hkAimAutofireKey"].Value,          "KeyToggles.ini", "Keys",    "aimAutofireKey")
+		IniWrite(g_mapControls["hkAimKey"].Value,                  "KeyToggles.ini", "Keys",    "aimKey")
+		IniWrite(g_mapControls["hkAutorunKey"].Value,              "KeyToggles.ini", "Keys",    "autorunKey")
+		IniWrite(g_mapControls["hkBackwardKey"].Value,             "KeyToggles.ini", "Keys",    "backwardKey")
+		IniWrite(g_mapControls["hkCrouchAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "crouchAutofireKey")
+		IniWrite(g_mapControls["hkCrouchKey"].Value,               "KeyToggles.ini", "Keys",    "crouchKey")
+		IniWrite(g_mapControls["hkForwardKey"].Value,              "KeyToggles.ini", "Keys",    "forwardKey")
+		IniWrite(g_mapControls["hkSprintAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "sprintAutofireKey")
+		IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
+	}
+	catch as e
+	{
+		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , 48)
+		return
+	}
 
-	if (MsgBox("Settings saved! Would you like to restart the script to apply changes?", "Info", 68) == "Yes")
-		Reload()
+	ReadConfigFile()
+	MsgBox("Settings saved!", , 64)
+	SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
 }
 
 GuiCreate()
@@ -393,19 +396,19 @@ GuiDDLExtra_Change(GuiCtrlObj, Info)
 	switch GuiCtrlObj
 	{
 		case g_mapControls["ddlAimKey"]:
-			g_mapControls["hkAimKey"].Value            := g_mapControls["ddlAimKey"].Value == 1 ? "" :            g_mapControls["ddlAimKey"].Text
+			g_mapControls["hkAimKey"].Value            := g_mapControls["ddlAimKey"].Value == 1 ? ""            : g_mapControls["ddlAimKey"].Text
 		case g_mapControls["ddlCrouchKey"]:
-			g_mapControls["hkCrouchKey"].Value         := g_mapControls["ddlCrouchKey"].Value == 1 ? "" :         g_mapControls["ddlCrouchKey"].Text
+			g_mapControls["hkCrouchKey"].Value         := g_mapControls["ddlCrouchKey"].Value == 1 ? ""         : g_mapControls["ddlCrouchKey"].Text
 		case g_mapControls["ddlSprintKey"]:
-			g_mapControls["hkSprintKey"].Value         := g_mapControls["ddlSprintKey"].Value == 1 ? "" :         g_mapControls["ddlSprintKey"].Text
+			g_mapControls["hkSprintKey"].Value         := g_mapControls["ddlSprintKey"].Value == 1 ? ""         : g_mapControls["ddlSprintKey"].Text
 		case g_mapControls["ddlAutorunKey"]:
-			g_mapControls["hkAutorunKey"].Value        := g_mapControls["ddlAutorunKey"].Value == 1 ? "" :        g_mapControls["ddlAutorunKey"].Text
+			g_mapControls["hkAutorunKey"].Value        := g_mapControls["ddlAutorunKey"].Value == 1 ? ""        : g_mapControls["ddlAutorunKey"].Text
 		case g_mapControls["ddlForwardKey"]:
-			g_mapControls["hkForwardKey"].Value        := g_mapControls["ddlForwardKey"].Value == 1 ? "" :        g_mapControls["ddlForwardKey"].Text
+			g_mapControls["hkForwardKey"].Value        := g_mapControls["ddlForwardKey"].Value == 1 ? ""        : g_mapControls["ddlForwardKey"].Text
 		case g_mapControls["ddlBackwardKey"]:
-			g_mapControls["hkBackwardKey"].Value       := g_mapControls["ddlBackwardKey"].Value == 1 ? "" :       g_mapControls["ddlBackwardKey"].Text
+			g_mapControls["hkBackwardKey"].Value       := g_mapControls["ddlBackwardKey"].Value == 1 ? ""       : g_mapControls["ddlBackwardKey"].Text
 		case g_mapControls["ddlAimAutofireKey"]:
-			g_mapControls["hkAimAutofireKey"].Value    := g_mapControls["ddlAimAutofireKey"].Value == 1 ? "" :    g_mapControls["ddlAimAutofireKey"].Text
+			g_mapControls["hkAimAutofireKey"].Value    := g_mapControls["ddlAimAutofireKey"].Value == 1 ? ""    : g_mapControls["ddlAimAutofireKey"].Text
 		case g_mapControls["ddlCrouchAutofireKey"]:
 			g_mapControls["hkCrouchAutofireKey"].Value := g_mapControls["ddlCrouchAutofireKey"].Value == 1 ? "" : g_mapControls["ddlCrouchAutofireKey"].Text
 		case g_mapControls["ddlSprintAutofireKey"]:
@@ -436,7 +439,7 @@ GuiHK_Change(GuiCtrlObj, Info)
 	else if (l_bShift || l_bControl || l_bAlt && l_sHotkeyLength > 1)
 	{
 		GuiCtrlObj.Value := ""
-		MsgBox("You can't use modified keys!", "Error", 16)
+		MsgBox("You can't use modified keys!", , 48)
 	}
 }
 
@@ -480,7 +483,7 @@ GuiUpdate()
 
 HookWindow()
 {
-	global
+	global g_nWindowID
 
 	; Make the hotkeys active only for a specific window
 	g_nWindowID := WinGetID(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
@@ -497,22 +500,31 @@ IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 
 	switch p_sType
 	{
-		case Number:
-			try {
+		case Integer:
+			try
+			{
 				l_nValue := l_sValue + 0
+				l_nValue := Max(0, l_nValue) ; no negative integer
 				return l_nValue
-			} catch TypeError {
+			}
+			catch TypeError ; not an integer
+			{
 				return p_sDefault
 			}
 		case String:
-				return l_sValue
+			; Validate process name
+			l_bIsProcessNameValid := ValidateProcessName(l_sValue)
+			return l_bIsProcessNameValid ? l_sValue : p_sDefault
 		case "bool":
 			return l_sValue == "1" ? true : l_sValue == "0" ? false : p_sDefault
 		case "key mode":
-			try {
+			try
+			{
 				l_nValue := l_sValue + 0
 				return (l_nValue >= KEY_MODE_DISABLED && l_nValue <= KEY_MODE_AUTOFIRE_HOLD) ? l_nValue : p_sDefault
-			} catch TypeError {
+			}
+			catch TypeError ; not an integer
+			{
 				return p_sDefault
 			}
 		default:
@@ -522,13 +534,20 @@ IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 
 Init()
 {
-	global g_guiSettings
-
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
-	SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
 	GuiCreate()
+
+	; Process name not valid, show the settings configurator
+	l_bIsProcessNameValid := ValidateProcessName(g_mapSettings["sProcessName"]) == true
+	if (l_bIsProcessNameValid)
+	{
+		MsgBox("Please specify a valid process name.", , 48)
+		g_guiSettings.Show()
+	}
+
 	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure Settings", (*) => g_guiSettings.Show())
+	SetTimer(OnFocusChanged, l_bIsProcessNameValid ? g_mapSettings["nFocusCheckInterval"] : 0)
 }
 
 IsExtraOption(p_sKey)
@@ -821,53 +840,44 @@ ReadConfigFile()
 {
 	global
 
-	l_sConfigFileName := "KeyToggles.ini"
-
-	; Config file is missing, exit
-	if (!FileExist(l_sConfigFileName))
-		ExitWithErrorMessage(l_sConfigFileName " not found! The script will now exit.")
-
 	; General
-	g_mapSettings["sProcessName"]             := IniReadEnforceType(l_sConfigFileName, "General", "processName", "", String)
-	g_mapSettings["sWindowName"]              := IniReadEnforceType(l_sConfigFileName, "General", "windowName", "", String)
-	g_mapSettings["nAutofireKeyInterval"]     := IniReadEnforceType(l_sConfigFileName, "General", "autofireKeyInterval", 100, Number)
-	g_mapSettings["bFixSystemKeys"]           := IniReadEnforceType(l_sConfigFileName, "General", "fixSystemKeys", 1, "bool")
-	g_mapSettings["nFocusCheckInterval"]      := IniReadEnforceType(l_sConfigFileName, "General", "focusCheckInterval", 1000, Number)
-	g_mapSettings["nHookDelay"]               := IniReadEnforceType(l_sConfigFileName, "General", "hookDelay", 0, Number)
-	g_mapSettings["nKeyDelay"]                := IniReadEnforceType(l_sConfigFileName, "General", "keyDelay", 0, Number)
-	g_mapSettings["bRestoreAutofiresOnFocus"] := IniReadEnforceType(l_sConfigFileName, "General", "restoreAutofiresOnFocus", false, "bool")
-	g_mapSettings["bRestoreTogglesOnFocus"]   := IniReadEnforceType(l_sConfigFileName, "General", "restoreTogglesOnFocus", false, "bool")
-	g_mapSettings["bRunAsAdmin"]              := IniReadEnforceType(l_sConfigFileName, "General", "runAsAdmin", false, "bool")
-	g_mapSettings["nShowNotifications"]       := IniReadEnforceType(l_sConfigFileName, "General", "showNotifications", 0, Number)
-	g_mapSettings["nAimMode"]                 := IniReadEnforceType(l_sConfigFileName, "General", "aimMode", 0, "key mode")
-	g_mapSettings["nCrouchMode"]              := IniReadEnforceType(l_sConfigFileName, "General", "crouchMode", 0, "key mode")
-	g_mapSettings["nSprintMode"]              := IniReadEnforceType(l_sConfigFileName, "General", "sprintMode", 0, "key mode")
-	g_mapSettings["bAutorunMode"]             := IniReadEnforceType(l_sConfigFileName, "General", "autorunMode", false, "bool")
+	g_mapSettings["sProcessName"]             := IniReadEnforceType(g_sConfigFileName, "General", "processName", "", String)
+	g_mapSettings["sWindowName"]              :=            IniRead(g_sConfigFileName, "General", "windowName", "")
+	g_mapSettings["nAutofireKeyInterval"]     := IniReadEnforceType(g_sConfigFileName, "General", "autofireKeyInterval", 100, Integer)
+	g_mapSettings["bFixSystemKeys"]           := IniReadEnforceType(g_sConfigFileName, "General", "fixSystemKeys", 1, "bool")
+	g_mapSettings["nFocusCheckInterval"]      := IniReadEnforceType(g_sConfigFileName, "General", "focusCheckInterval", 1000, Integer)
+	g_mapSettings["nHookDelay"]               := IniReadEnforceType(g_sConfigFileName, "General", "hookDelay", 0, Integer)
+	g_mapSettings["nKeyDelay"]                := IniReadEnforceType(g_sConfigFileName, "General", "keyDelay", 0, Integer)
+	g_mapSettings["bRestoreAutofiresOnFocus"] := IniReadEnforceType(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false, "bool")
+	g_mapSettings["bRestoreTogglesOnFocus"]   := IniReadEnforceType(g_sConfigFileName, "General", "restoreTogglesOnFocus", false, "bool")
+	g_mapSettings["bRunAsAdmin"]              := IniReadEnforceType(g_sConfigFileName, "General", "runAsAdmin", false, "bool")
+	g_mapSettings["nShowNotifications"]       := IniReadEnforceType(g_sConfigFileName, "General", "showNotifications", 0, Integer)
+	g_mapSettings["nAimMode"]                 := IniReadEnforceType(g_sConfigFileName, "General", "aimMode", 0, "key mode")
+	g_mapSettings["nCrouchMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "crouchMode", 0, "key mode")
+	g_mapSettings["nSprintMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "sprintMode", 0, "key mode")
+	g_mapSettings["bAutorunMode"]             := IniReadEnforceType(g_sConfigFileName, "General", "autorunMode", false, "bool")
 
 	; Main keys
-	g_mapSettings["sAimKey"]    := IniRead(l_sConfigFileName, "Keys", "aimKey", "RButton")
-	g_mapSettings["sCrouchKey"] := IniRead(l_sConfigFileName, "Keys", "crouchKey", "LCtrl")
-	g_mapSettings["sSprintKey"] := IniRead(l_sConfigFileName, "Keys", "sprintKey", "LShift")
+	g_mapSettings["sAimKey"]    := IniRead(g_sConfigFileName, "Keys", "aimKey", "RButton")
+	g_mapSettings["sCrouchKey"] := IniRead(g_sConfigFileName, "Keys", "crouchKey", "LCtrl")
+	g_mapSettings["sSprintKey"] := IniRead(g_sConfigFileName, "Keys", "sprintKey", "LShift")
 
 	; Autorun keys
-	g_mapSettings["sAutorunKey"]  := IniRead(l_sConfigFileName, "Keys", "autorunKey", "F1")
-	g_mapSettings["sForwardKey"]  := IniRead(l_sConfigFileName, "Keys", "forwardKey", "w")
-	g_mapSettings["sBackwardKey"] := IniRead(l_sConfigFileName, "Keys", "backwardKey", "s")
+	g_mapSettings["sAutorunKey"]  := IniRead(g_sConfigFileName, "Keys", "autorunKey", "F1")
+	g_mapSettings["sForwardKey"]  := IniRead(g_sConfigFileName, "Keys", "forwardKey", "w")
+	g_mapSettings["sBackwardKey"] := IniRead(g_sConfigFileName, "Keys", "backwardKey", "s")
 
 	; Autofire keys
-	g_mapSettings["sAimAutofireKey"]    := IniRead(l_sConfigFileName, "Keys", "aimAutofireKey", "F2")
-	g_mapSettings["sCrouchAutofireKey"] := IniRead(l_sConfigFileName, "Keys", "crouchAutofireKey", "F3")
-	g_mapSettings["sSprintAutofireKey"] := IniRead(l_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
+	g_mapSettings["sAimAutofireKey"]    := IniRead(g_sConfigFileName, "Keys", "aimAutofireKey", "F2")
+	g_mapSettings["sCrouchAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "crouchAutofireKey", "F3")
+	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; Debug
-	g_mapSettings["bDebugMode"] := IniRead(l_sConfigFileName, "Debug", "debugMode", false)
+	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false)
 
-	; Prevent timers from not working if set to 0
-	g_mapSettings["nAutofireKeyInterval"] := Max(1, g_mapSettings["nAutofireKeyInterval"])
-	g_mapSettings["nFocusCheckInterval"] :=  Max(1, g_mapSettings["nFocusCheckInterval"])
-
-	if (g_mapSettings["sProcessName"] == "")
-		ExitWithErrorMessage("You must specify a process name! The script will now exit.")
+	; Prevent timers from not working
+	g_mapSettings["nAutofireKeyInterval"] := Max(g_mapSettings["nAutofireKeyInterval"], 1)
+	g_mapSettings["nFocusCheckInterval"]  := Max(g_mapSettings["nFocusCheckInterval"], 1)
 }
 
 RegisterHotkeys()
@@ -1064,6 +1074,7 @@ ShowNotification(p_sMessage)
 			TrayTip(p_sMessage)
 		case 2:
 			ToolTip(p_sMessage)
+			SoundPlay("*64")
 			SetTimer(() => ToolTip(), -5000)
 	}
 }
@@ -1083,6 +1094,18 @@ TakeToggleKeysSnapshot(p_bReleaseKeys := true)
 
 	if (p_bReleaseKeys)
 		ReleaseAllKeys()
+}
+
+ValidateProcessName(p_sProcessName)
+{
+	l_procNameExt := SubStr(p_sProcessName, -4)
+
+	if (Trim(l_procNameExt) == "")
+		return -1
+	else if (l_procNameExt != ".exe")
+		return false
+
+	return true
 }
 
 ; Fixes an issue where you couldn't click outside the window while toggle keys are mouse buttons and are enabled
