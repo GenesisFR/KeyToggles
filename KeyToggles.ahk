@@ -547,7 +547,7 @@ Init()
 
 	; Process name not valid, show the settings configurator
 	l_bIsProcessNameValid := ValidateProcessName(g_mapSettings["sProcessName"]) == true
-	if (l_bIsProcessNameValid)
+	if (!l_bIsProcessNameValid)
 	{
 		MsgBox("Please specify a valid process name.", , 48)
 		g_guiSettings.Show()
