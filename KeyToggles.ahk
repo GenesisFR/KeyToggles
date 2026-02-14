@@ -6,6 +6,7 @@
 ; add support for hotkey modifiers (e.g., Ctrl+F1)
 ; add text/tooltips when mousing over GUI controls to explain what they do
 ; fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
+; improve process name validation with a RegEx
 ; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 ; replace sleeps with timers
 ; replace ternary operators with coalescing ?? operators where possible
@@ -18,11 +19,11 @@
 OnExit(ExitFunc)
 
 ; Constants
-global KEY_MODE_DISABLED := 0
-global KEY_MODE_TOGGLE := 1
-global KEY_MODE_HOLD := 2
+global KEY_MODE_DISABLED        := 0
+global KEY_MODE_TOGGLE          := 1
+global KEY_MODE_HOLD            := 2
 global KEY_MODE_AUTOFIRE_TOGGLE := 3
-global KEY_MODE_AUTOFIRE_HOLD := 4
+global KEY_MODE_AUTOFIRE_HOLD   := 4
 
 ; Maps
 global g_mapControls := Map()
@@ -71,7 +72,7 @@ global g_mapStates := Map(
 )
 
 ; Functors
-global g_fnAutofireAim := 0
+global g_fnAutofireAim    := 0
 global g_fnAutofireCrouch := 0
 global g_fnAutofireSprint := 0
 
@@ -110,96 +111,22 @@ GuiButtonBrowse_Click(GuiCtrlObj, Info)
 	}
 }
 
+GuiButtonReload_Click(GuiCtrlObj, Info)
+{
+	ReadConfigFile()
+	GuiUpdate()
+	;StartFocusCheck()
+}
+
 ; Validate and save settings to the config file
 GuiButtonSave_Click(GuiCtrlObj, Info)
 {
-	; Strip double quotes
-	l_procNameClean := Trim(g_mapControls["editProcessName"].Value, "`"")
-	l_windowNameClean := Trim(g_mapControls["editWindowName"].Value, "`"")
-
-	; Validate process name
-	l_bIsProcessNameValid := ValidateProcessName(l_procNameClean)
-
-	if (l_bIsProcessNameValid == -1)
+	if (WriteConfigFile())
 	{
-		MsgBox("You must specify a process name.", , 48)
-		return
+		ReadConfigFile()
+		StartFocusCheck()
+		MsgBox("Settings saved!", , 64)
 	}
-	else if (l_bIsProcessNameValid == 0)
-	{
-		MsgBox("The process name `"" l_procNameClean "`" must end with `".exe`".", , 48)
-		return
-	}
-
-	; Surround with double quotes
-	l_procNameClean := "`"" l_procNameClean "`""
-	l_windowNameClean := "`"" l_windowNameClean "`""
-
-	; Validate hotkeys (no duplicates allowed)
-	l_arrHotkeys := [
-		g_mapControls["hkAimKey"].Value,
-		g_mapControls["hkCrouchKey"].Value,
-		g_mapControls["hkSprintKey"].Value,
-		g_mapControls["hkAutorunKey"].Value,
-		g_mapControls["hkForwardKey"].Value,
-		g_mapControls["hkBackwardKey"].Value,
-		g_mapControls["hkAimAutofireKey"].Value,
-		g_mapControls["hkCrouchAutofireKey"].Value,
-		g_mapControls["hkSprintAutofireKey"].Value
-	]
-	l_mapHotkeys := Map()
-
-	for l_sKey, l_sValue in l_arrHotkeys
-	{
-		if (l_sValue != "")
-		{
-			if (l_mapHotkeys.Has(l_sValue))
-			{
-				MsgBox("Duplicate hotkey detected: " l_sValue, , 48)
-				return
-			}
-			else
-				l_mapHotkeys[l_sValue] := true
-		}
-	}
-
-	; Everything ok, save settings
-	try
-	{
-		IniWrite(l_procNameClean,                                  "KeyToggles.ini", "General", "processName")
-		IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
-		IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
-		IniWrite(g_mapControls["cbAutorun"].Value,                 "KeyToggles.ini", "General", "autorunMode")
-		IniWrite(g_mapControls["ddlAimMode"].Value - 1,            "KeyToggles.ini", "General", "aimMode")
-		IniWrite(g_mapControls["ddlCrouchMode"].Value - 1,         "KeyToggles.ini", "General", "crouchMode")
-		IniWrite(g_mapControls["ddlNotifications"].Value - 1,      "KeyToggles.ini", "General", "showNotifications")
-		IniWrite(g_mapControls["ddlSprintMode"].Value - 1,         "KeyToggles.ini", "General", "sprintMode")
-		IniWrite(g_mapControls["cbFixSystemKeys"].Value,           "KeyToggles.ini", "General", "fixSystemKeys")
-		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
-		IniWrite(g_mapControls["udHookDelay"].Value,               "KeyToggles.ini", "General", "hookDelay")
-		IniWrite(g_mapControls["udKeyDelay"].Value,                "KeyToggles.ini", "General", "keyDelay")
-		IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value,   "KeyToggles.ini", "General", "restoreTogglesOnFocus")
-		IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
-		IniWrite(g_mapControls["cbRunAsAdmin"].Value,              "KeyToggles.ini", "General", "runAsAdmin")
-		IniWrite(g_mapControls["hkAimAutofireKey"].Value,          "KeyToggles.ini", "Keys",    "aimAutofireKey")
-		IniWrite(g_mapControls["hkAimKey"].Value,                  "KeyToggles.ini", "Keys",    "aimKey")
-		IniWrite(g_mapControls["hkAutorunKey"].Value,              "KeyToggles.ini", "Keys",    "autorunKey")
-		IniWrite(g_mapControls["hkBackwardKey"].Value,             "KeyToggles.ini", "Keys",    "backwardKey")
-		IniWrite(g_mapControls["hkCrouchAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "crouchAutofireKey")
-		IniWrite(g_mapControls["hkCrouchKey"].Value,               "KeyToggles.ini", "Keys",    "crouchKey")
-		IniWrite(g_mapControls["hkForwardKey"].Value,              "KeyToggles.ini", "Keys",    "forwardKey")
-		IniWrite(g_mapControls["hkSprintAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "sprintAutofireKey")
-		IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
-	}
-	catch as e
-	{
-		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , 48)
-		return
-	}
-
-	ReadConfigFile()
-	MsgBox("Settings saved!", , 64)
-	SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
 }
 
 GuiCreate()
@@ -367,7 +294,8 @@ GuiCreate()
 	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth " Choose"
 	                                                                   g_mapSettings["nShowNotifications"] + 1, ["Disabled", "System notifications", "Tooltips"])
 
-	g_guiSettings.AddButton("x200 w100", "Save").OnEvent("Click", GuiButtonSave_Click)
+	g_guiSettings.AddButton("x140 y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 13 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
+	g_guiSettings.AddButton("x260 y" l_nTopY + l_nSpacingY * l_nCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
 	g_mapControls["hkAimKey"].OnEvent(            "Change", GuiHK_Change)
@@ -511,8 +439,7 @@ IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 			try
 			{
 				l_nValue := l_sValue + 0
-				l_nValue := Max(0, l_nValue) ; no negative integer
-				return l_nValue
+				return Max(0, l_nValue) ; no negative integer
 			}
 			catch TypeError ; not an integer
 			{
@@ -520,11 +447,11 @@ IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 			}
 		case String:
 			; Validate process name
-			l_bIsProcessNameValid := ValidateProcessName(l_sValue)
+			l_bIsProcessNameValid := IsProcessNameValid(l_sValue) == 1
 			return l_bIsProcessNameValid ? l_sValue : p_sDefault
 		case "bool":
 			return l_sValue == "1" ? true : l_sValue == "0" ? false : p_sDefault
-		case "key mode":
+		case "mode":
 			try
 			{
 				l_nValue := l_sValue + 0
@@ -544,17 +471,8 @@ Init()
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
 	GuiCreate()
-
-	; Process name not valid, show the settings configurator
-	l_bIsProcessNameValid := ValidateProcessName(g_mapSettings["sProcessName"]) == true
-	if (!l_bIsProcessNameValid)
-	{
-		MsgBox("Please specify a valid process name.", , 48)
-		g_guiSettings.Show()
-	}
-
+	StartFocusCheck()
 	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure Settings", (*) => g_guiSettings.Show())
-	SetTimer(OnFocusChanged, l_bIsProcessNameValid ? g_mapSettings["nFocusCheckInterval"] : 0)
 }
 
 IsExtraOption(p_sKey)
@@ -578,6 +496,18 @@ IsMouseOverWindow(p_nHwnd)
 {
 	MouseGetPos(, , &l_nMouseWindowID)
 	return p_nHwnd == l_nMouseWindowID
+}
+
+IsProcessNameValid(p_sProcessName)
+{
+	l_procNameExt := SubStr(p_sProcessName, -4)
+
+	if (Trim(l_procNameExt) == "")
+		return -1
+	else if (l_procNameExt != ".exe")
+		return false
+
+	return true
 }
 
 KeyAutofire(p_sAutofireKey)
@@ -642,86 +572,92 @@ OnFocusChanged()
 {
 	global
 
-	if (g_mapSettings["sWindowName"] == "")
-		ShowNotification("Waiting for the process `"" g_mapSettings["sProcessName"] "`" to become active.")
-	else
-		ShowNotification("Waiting for the window `"" g_mapSettings["sWindowName"] "`" of the process `"" g_mapSettings["sProcessName"] "`" to become active.")
+	Output(A_ThisFunc "::waiting")
 
-	Output(A_ThisFunc "::WinWaitActive")
-	WinWaitActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
-	Sleep(g_mapSettings["nHookDelay"])
+	; We need to store this until the function completes as the user could update the process/window name before WinWaitActive times out
+	local l_sWinTitle := g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"]
+	local l_nTimeout := g_mapSettings["nFocusCheckInterval"] * 0.001
 
-	; Make sure to hook the window again if it no longer exists
-	if (g_nWindowID != WinExist(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"]))
+	if (WinWaitActive(l_sWinTitle,, l_nTimeout))
 	{
-		HookWindow()
-		RegisterHotkeys()
+		Sleep(g_mapSettings["nHookDelay"])
 
-		; That's a different window, don't restore toggle states
-		g_mapStates["bRestoreAiming"]            := false
-		g_mapStates["bRestoreCrouching"]         := false
-		g_mapStates["bRestoreSprinting"]         := false
-		g_mapStates["bRestoreAutorunning"]       := false
-		g_mapStates["bRestoreAutofireAiming"]    := false
-		g_mapStates["bRestoreAutofireCrouching"] := false
-		g_mapStates["bRestoreAutofireSprinting"] := false
-	}
-
-	; Restore autofire toggle states
-	if (ShouldRestoreAutofiresOnFocus())
-	{
-		Output(
-			A_ThisFunc "::restoreAutofireToggleStates(" g_mapStates["bRestoreAutofireAiming"] ", " g_mapStates["bRestoreAutofireCrouching"] ", "
-			g_mapStates["bRestoreAutofireSprinting"] ")"
-		)
-
-		if (g_mapStates["bRestoreAutofireAiming"])
-			OnKeyPress(g_mapSettings["sAimAutofireKey"])
-		if (g_mapStates["bRestoreAutofireCrouching"])
-			OnKeyPress(g_mapSettings["sCrouchAutofireKey"])
-		if (g_mapStates["bRestoreAutofireSprinting"])
-			OnKeyPress(g_mapSettings["sSprintAutofireKey"])
-	}
-
-	; Restore toggle states
-	if (ShouldRestoreTogglesOnFocus())
-	{
-		Output(A_ThisFunc "::restoreToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
-
-		if (g_mapStates["bRestoreAiming"])
-			KeyToggle(g_mapSettings["sAimKey"], true)
-		if (g_mapStates["bRestoreCrouching"])
-			KeyToggle(g_mapSettings["sCrouchKey"], true)
-		if (g_mapStates["bRestoreSprinting"])
-			KeyToggle(g_mapSettings["sSprintKey"], true)
-		if (g_mapStates["bRestoreAutorunning"])
-			KeyToggle(g_mapSettings["sForwardKey"], true)
-	}
-
-	Output(A_ThisFunc "::WinWaitNotActive")
-	WinWaitNotActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
-
-	; Save toggle states
-	if (ShouldRestoreTogglesOnFocus())
-	{
-		; A snapshot of the toggle states was already taken elsewhere, don't take another one
-		if (g_bToggleKeysSnapshotTaken)
-			g_bToggleKeysSnapshotTaken := false
-		else
+		; Make sure to hook the window again if it no longer exists
+		if (g_nWindowID != WinExist(l_sWinTitle))
 		{
-			Output(A_ThisFunc "::saveToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
+			g_nWindowID := WinGetID(l_sWinTitle)
+			Output(A_ThisFunc "::WinGet(" g_nWindowID ")")
+			RegisterHotkeys()
 
-			g_mapStates["bRestoreAiming"]            := g_mapStates["bAiming"]
-			g_mapStates["bRestoreCrouching"]         := g_mapStates["bCrouching"]
-			g_mapStates["bRestoreSprinting"]         := g_mapStates["bSprinting"]
-			g_mapStates["bRestoreAutorunning"]       := g_mapStates["bAutorunning"]
-			g_mapStates["bRestoreAutofireAiming"]    := g_mapStates["bAutofireAiming"]
-			g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
-			g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
+			if (g_nWindowID)
+				ShowNotification("The window `"" WinGetTitle(g_nWindowID) "`" has been hooked.")
+
+			; That's a different window, don't restore toggle states
+			g_mapStates["bRestoreAiming"]            := false
+			g_mapStates["bRestoreCrouching"]         := false
+			g_mapStates["bRestoreSprinting"]         := false
+			g_mapStates["bRestoreAutorunning"]       := false
+			g_mapStates["bRestoreAutofireAiming"]    := false
+			g_mapStates["bRestoreAutofireCrouching"] := false
+			g_mapStates["bRestoreAutofireSprinting"] := false
 		}
-	}
 
-	ReleaseAllKeys()
+		; Restore autofire toggle states
+		if (ShouldRestoreAutofiresOnFocus())
+		{
+			Output(
+				A_ThisFunc "::restoreAutofireToggleStates(" g_mapStates["bRestoreAutofireAiming"] ", " g_mapStates["bRestoreAutofireCrouching"] ", "
+				g_mapStates["bRestoreAutofireSprinting"] ")"
+			)
+
+			if (g_mapStates["bRestoreAutofireAiming"])
+				OnKeyPress(g_mapSettings["sAimAutofireKey"])
+			if (g_mapStates["bRestoreAutofireCrouching"])
+				OnKeyPress(g_mapSettings["sCrouchAutofireKey"])
+			if (g_mapStates["bRestoreAutofireSprinting"])
+				OnKeyPress(g_mapSettings["sSprintAutofireKey"])
+		}
+
+		; Restore toggle states
+		if (ShouldRestoreTogglesOnFocus())
+		{
+			Output(A_ThisFunc "::restoreToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
+
+			if (g_mapStates["bRestoreAiming"])
+				KeyToggle(g_mapSettings["sAimKey"], true)
+			if (g_mapStates["bRestoreCrouching"])
+				KeyToggle(g_mapSettings["sCrouchKey"], true)
+			if (g_mapStates["bRestoreSprinting"])
+				KeyToggle(g_mapSettings["sSprintKey"], true)
+			if (g_mapStates["bRestoreAutorunning"])
+				KeyToggle(g_mapSettings["sForwardKey"], true)
+		}
+
+		Output(A_ThisFunc "::WinWaitNotActive")
+		WinWaitNotActive(l_sWinTitle)
+
+		; Save toggle states
+		if (ShouldRestoreTogglesOnFocus())
+		{
+			; A snapshot of the toggle states was already taken elsewhere, don't take another one
+			if (g_bToggleKeysSnapshotTaken)
+				g_bToggleKeysSnapshotTaken := false
+			else
+			{
+				Output(A_ThisFunc "::saveToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
+
+				g_mapStates["bRestoreAiming"]            := g_mapStates["bAiming"]
+				g_mapStates["bRestoreCrouching"]         := g_mapStates["bCrouching"]
+				g_mapStates["bRestoreSprinting"]         := g_mapStates["bSprinting"]
+				g_mapStates["bRestoreAutorunning"]       := g_mapStates["bAutorunning"]
+				g_mapStates["bRestoreAutofireAiming"]    := g_mapStates["bAutofireAiming"]
+				g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
+				g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
+			}
+		}
+
+		ReleaseAllKeys()
+	}
 }
 
 OnKeyPress(p_sThisHotkey)
@@ -848,7 +784,7 @@ ReadConfigFile()
 	global
 
 	; General
-	g_mapSettings["sProcessName"]             := IniReadEnforceType(g_sConfigFileName, "General", "processName", "", String)
+	g_mapSettings["sProcessName"]             :=            IniRead(g_sConfigFileName, "General", "processName", "")
 	g_mapSettings["sWindowName"]              :=            IniRead(g_sConfigFileName, "General", "windowName", "")
 	g_mapSettings["nAutofireKeyInterval"]     := IniReadEnforceType(g_sConfigFileName, "General", "autofireKeyInterval", 100, Integer)
 	g_mapSettings["bFixSystemKeys"]           := IniReadEnforceType(g_sConfigFileName, "General", "fixSystemKeys", 1, "bool")
@@ -859,9 +795,9 @@ ReadConfigFile()
 	g_mapSettings["bRestoreTogglesOnFocus"]   := IniReadEnforceType(g_sConfigFileName, "General", "restoreTogglesOnFocus", false, "bool")
 	g_mapSettings["bRunAsAdmin"]              := IniReadEnforceType(g_sConfigFileName, "General", "runAsAdmin", false, "bool")
 	g_mapSettings["nShowNotifications"]       := IniReadEnforceType(g_sConfigFileName, "General", "showNotifications", 0, Integer)
-	g_mapSettings["nAimMode"]                 := IniReadEnforceType(g_sConfigFileName, "General", "aimMode", 0, "key mode")
-	g_mapSettings["nCrouchMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "crouchMode", 0, "key mode")
-	g_mapSettings["nSprintMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "sprintMode", 0, "key mode")
+	g_mapSettings["nAimMode"]                 := IniReadEnforceType(g_sConfigFileName, "General", "aimMode", 0, "mode")
+	g_mapSettings["nCrouchMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
+	g_mapSettings["nSprintMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
 	g_mapSettings["bAutorunMode"]             := IniReadEnforceType(g_sConfigFileName, "General", "autorunMode", false, "bool")
 
 	; Main keys
@@ -891,7 +827,7 @@ RegisterHotkeys()
 {
 	global
 
-	HotIfWinActive("ahk_group windowIDGroup")
+	HotIfWinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
 
 	; Enabled only for toggle and hold modes
 	Hotkey("*$" g_mapSettings["sAimKey"], OnKeyPress, g_mapSettings["nAimMode"] == KEY_MODE_TOGGLE ||
@@ -902,8 +838,8 @@ RegisterHotkeys()
 	       g_mapSettings["nSprintMode"] == KEY_MODE_HOLD ? "On" : "Off")
 
 	; Enabled only for autorun mode
-	Hotkey("*$" g_mapSettings["sAutorunKey"], OnKeyPress, g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE ? "On" : "Off")
-	Hotkey("~*$" g_mapSettings["sForwardKey"], OnKeyPress, g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE ? "On" : "Off")
+	Hotkey("*$"   g_mapSettings["sAutorunKey"], OnKeyPress, g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE ? "On" : "Off")
+	Hotkey("~*$"  g_mapSettings["sForwardKey"], OnKeyPress, g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE ? "On" : "Off")
 	Hotkey("~*$" g_mapSettings["sBackwardKey"], OnKeyPress, g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE ? "On" : "Off")
 
 	; Enabled only for autofire modes
@@ -1086,6 +1022,27 @@ ShowNotification(p_sMessage)
 	}
 }
 
+StartFocusCheck()
+{
+	; Process name not valid, show the settings configurator
+	l_bIsProcessNameValid := IsProcessNameValid(g_mapSettings["sProcessName"])
+	if (l_bIsProcessNameValid != 1)
+	{
+		MsgBox(l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" g_mapSettings["sProcessName"] "`" must end with `".exe`".", , 48)
+		g_guiSettings.Show()
+	}
+	else
+	{
+		if (g_mapSettings["sWindowName"] == "")
+			ShowNotification("Waiting for the process `"" g_mapSettings["sProcessName"] "`" to become active.")
+		else
+			ShowNotification("Waiting for the window `"" g_mapSettings["sWindowName"] "`" of the process `"" g_mapSettings["sProcessName"] "`" to become active.")
+
+		Output(A_ThisFunc "::WinWaitActive")
+		SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
+	}
+}
+
 TakeToggleKeysSnapshot(p_bReleaseKeys := true)
 {
 	global
@@ -1103,14 +1060,85 @@ TakeToggleKeysSnapshot(p_bReleaseKeys := true)
 		ReleaseAllKeys()
 }
 
-ValidateProcessName(p_sProcessName)
+WriteConfigFile()
 {
-	l_procNameExt := SubStr(p_sProcessName, -4)
+	; Strip double quotes and spaces/tabs
+	l_procNameClean := Trim(g_mapControls["editProcessName"].Value, "`" `t")
+	l_windowNameClean := Trim(g_mapControls["editWindowName"].Value, "`" `t")
 
-	if (Trim(l_procNameExt) == "")
-		return -1
-	else if (l_procNameExt != ".exe")
+	; Validate process name
+	l_bIsProcessNameValid := IsProcessNameValid(l_procNameClean)
+	if (l_bIsProcessNameValid != 1)
+	{
+		MsgBox(l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" l_procNameClean "`" must end with `".exe`".", , 48)
 		return false
+	}
+
+	; Surround with double quotes
+	l_procNameClean := "`"" l_procNameClean "`""
+	l_windowNameClean := "`"" l_windowNameClean "`""
+
+	; Validate hotkeys (no duplicates allowed)
+	l_arrHotkeys := [
+		g_mapControls["hkAimKey"].Value,
+		g_mapControls["hkCrouchKey"].Value,
+		g_mapControls["hkSprintKey"].Value,
+		g_mapControls["hkAutorunKey"].Value,
+		g_mapControls["hkForwardKey"].Value,
+		g_mapControls["hkBackwardKey"].Value,
+		g_mapControls["hkAimAutofireKey"].Value,
+		g_mapControls["hkCrouchAutofireKey"].Value,
+		g_mapControls["hkSprintAutofireKey"].Value
+	]
+	l_mapHotkeys := Map()
+
+	for l_sKey, l_sValue in l_arrHotkeys
+	{
+		if (l_sValue != "")
+		{
+			if (l_mapHotkeys.Has(l_sValue))
+			{
+				MsgBox("Duplicate hotkey detected: " l_sValue, , 48)
+				return false
+			}
+			else
+				l_mapHotkeys[l_sValue] := true
+		}
+	}
+
+	; Everything ok, save settings
+	try
+	{
+		IniWrite(l_procNameClean,                                  "KeyToggles.ini", "General", "processName")
+		IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
+		IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
+		IniWrite(g_mapControls["cbAutorun"].Value,                 "KeyToggles.ini", "General", "autorunMode")
+		IniWrite(g_mapControls["ddlAimMode"].Value - 1,            "KeyToggles.ini", "General", "aimMode")
+		IniWrite(g_mapControls["ddlCrouchMode"].Value - 1,         "KeyToggles.ini", "General", "crouchMode")
+		IniWrite(g_mapControls["ddlNotifications"].Value - 1,      "KeyToggles.ini", "General", "showNotifications")
+		IniWrite(g_mapControls["ddlSprintMode"].Value - 1,         "KeyToggles.ini", "General", "sprintMode")
+		IniWrite(g_mapControls["cbFixSystemKeys"].Value,           "KeyToggles.ini", "General", "fixSystemKeys")
+		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
+		IniWrite(g_mapControls["udHookDelay"].Value,               "KeyToggles.ini", "General", "hookDelay")
+		IniWrite(g_mapControls["udKeyDelay"].Value,                "KeyToggles.ini", "General", "keyDelay")
+		IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value,   "KeyToggles.ini", "General", "restoreTogglesOnFocus")
+		IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
+		IniWrite(g_mapControls["cbRunAsAdmin"].Value,              "KeyToggles.ini", "General", "runAsAdmin")
+		IniWrite(g_mapControls["hkAimAutofireKey"].Value,          "KeyToggles.ini", "Keys",    "aimAutofireKey")
+		IniWrite(g_mapControls["hkAimKey"].Value,                  "KeyToggles.ini", "Keys",    "aimKey")
+		IniWrite(g_mapControls["hkAutorunKey"].Value,              "KeyToggles.ini", "Keys",    "autorunKey")
+		IniWrite(g_mapControls["hkBackwardKey"].Value,             "KeyToggles.ini", "Keys",    "backwardKey")
+		IniWrite(g_mapControls["hkCrouchAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "crouchAutofireKey")
+		IniWrite(g_mapControls["hkCrouchKey"].Value,               "KeyToggles.ini", "Keys",    "crouchKey")
+		IniWrite(g_mapControls["hkForwardKey"].Value,              "KeyToggles.ini", "Keys",    "forwardKey")
+		IniWrite(g_mapControls["hkSprintAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "sprintAutofireKey")
+		IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
+	}
+	catch as e
+	{
+		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , 48)
+		return false
+	}
 
 	return true
 }
