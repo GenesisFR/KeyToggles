@@ -347,8 +347,10 @@ GuiDDLExtra_Change(GuiCtrlObj, Info)
 ; Make sure intervals are 1, otherwise timers won't work
 GuiEdit_Change(GuiCtrlObj, Info)
 {
-	if (GuiCtrlObj.Value == "0")
+	if (GuiCtrlObj.Value == "" || GuiCtrlObj.Value == "0")
 		GuiCtrlObj.Value := "1"
+	else if (SubStr(GuiCtrlObj.Value, 1, 1) == "0")
+		GuiCtrlObj.Value := LTrim(GuiCtrlObj.Value, "0")
 }
 
 ; Prevent modified keys from being used in hotkey controls (could be changed to allow them in the future)
