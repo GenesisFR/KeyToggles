@@ -132,10 +132,7 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 			l_sDuplicateHotkeys .= ", " l_sKey
 	}
 
-	if (l_sDuplicateHotkeys)
-		return Trim(l_sDuplicateHotkeys, ', ')
-
-	return ""
+	return Trim(l_sDuplicateHotkeys, ', ')
 }
 
 ; Browse for process executable
@@ -517,6 +514,8 @@ Init()
 	GuiCreate()
 	StartFocusCheck()
 	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure Settings", (*) => g_guiSettings.Show())
+	A_TrayMenu.ClickCount := 1
+	A_TrayMenu.Default := "Configure Settings"
 }
 
 IsExtraOption(p_sKey)
