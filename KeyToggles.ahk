@@ -7,13 +7,13 @@
 ; add text/tooltips when mousing over GUI controls to explain what they do
 ; fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 ; improve process name validation with a RegEx
-; redo window detection? (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
+; redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 ; replace sleeps with timers
 ; replace ternary operators with coalescing ?? operators where possible
 
-#Requires Autohotkey v2.0  ; Display an error and quit if this version requirement is not met.
-#SingleInstance force      ; Allow only a single instance of the script to run.
-#Warn                      ; Enable warnings to assist with detecting common errors.
+#Requires Autohotkey v2.0 ; Display an error and quit if this version requirement is not met.
+#SingleInstance force     ; Allow only a single instance of the script to run.
+#Warn                     ; Enable warnings to assist with detecting common errors.
 
 ; Register a function to be called on exit
 OnExit(ExitFunc)
@@ -94,6 +94,48 @@ ExitFunc(p_sExitReason, p_nExitCode)
 	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_nExitCode ")")
 	ReleaseAllKeys()
 	TrayTip()
+}
+
+GetDuplicateHotkeys(p_bFromGUI := true)
+{
+	;p_bFromGUI := WinGetStyle("ahk_id " . g_guiSettings.Hwnd) & 0x10000000) ; GUI is visible
+	l_arrHotkeys := [
+		p_bFromGUI ? g_mapControls["hkAimKey"].Value            : g_mapSettings["sAimKey"],
+		p_bFromGUI ? g_mapControls["hkCrouchKey"].Value         : g_mapSettings["sCrouchKey"],
+		p_bFromGUI ? g_mapControls["hkSprintKey"].Value         : g_mapSettings["sSprintKey"],
+		p_bFromGUI ? g_mapControls["hkAutorunKey"].Value        : g_mapSettings["sAutorunKey"],
+		p_bFromGUI ? g_mapControls["hkForwardKey"].Value        : g_mapSettings["sForwardKey"],
+		p_bFromGUI ? g_mapControls["hkBackwardKey"].Value       : g_mapSettings["sBackwardKey"],
+		p_bFromGUI ? g_mapControls["hkAimAutofireKey"].Value    : g_mapSettings["sAimAutofireKey"],
+		p_bFromGUI ? g_mapControls["hkCrouchAutofireKey"].Value : g_mapSettings["sCrouchAutofireKey"],
+		p_bFromGUI ? g_mapControls["hkSprintAutofireKey"].Value : g_mapSettings["sSprintAutofireKey"] 
+	]
+
+	l_mapHotkeys := Map()
+
+	for l_sValue in l_arrHotkeys
+	{
+		if (l_sValue != "")
+		{
+			if (l_mapHotkeys.Has(l_sValue))
+				l_mapHotkeys[l_sValue]++
+			else
+				l_mapHotkeys[l_sValue] := 1
+		}
+	}
+
+	l_sDuplicateHotkeys := ""
+
+	for l_sKey, l_sValue in l_mapHotkeys
+	{
+		if (l_sValue > 1)
+			l_sDuplicateHotkeys .= ", " l_sKey
+	}
+
+	if (l_sDuplicateHotkeys)
+		return Trim(l_sDuplicateHotkeys, ', ')
+
+	return ""
 }
 
 ; Browse for process executable
@@ -344,7 +386,7 @@ GuiDDLExtra_Change(GuiCtrlObj, Info)
 	}
 }
 
-; Make sure intervals are 1, otherwise timers won't work
+; Prevent intervals from being set to 0, otherwise timers won't work
 GuiEdit_Change(GuiCtrlObj, Info)
 {
 	if (GuiCtrlObj.Value == "" || GuiCtrlObj.Value == "0")
@@ -820,7 +862,7 @@ ReadConfigFile()
 	; Debug
 	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false)
 
-	; Prevent timers from not working
+	; Prevent intervals from being set to 0, otherwise timers won't work
 	g_mapSettings["nAutofireKeyInterval"] := Max(g_mapSettings["nAutofireKeyInterval"], 1)
 	g_mapSettings["nFocusCheckInterval"]  := Max(g_mapSettings["nFocusCheckInterval"], 1)
 }
@@ -1026,23 +1068,34 @@ ShowNotification(p_sMessage)
 
 StartFocusCheck()
 {
-	; Process name not valid, show the settings configurator
+	l_sMsgBoxText := ""
+
 	l_bIsProcessNameValid := IsProcessNameValid(g_mapSettings["sProcessName"])
 	if (l_bIsProcessNameValid != 1)
-	{
-		MsgBox(l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" g_mapSettings["sProcessName"] "`" must end with `".exe`".", , 48)
-		g_guiSettings.Show()
-	}
-	else
-	{
-		if (g_mapSettings["sWindowName"] == "")
-			ShowNotification("Waiting for the process `"" g_mapSettings["sProcessName"] "`" to become active.")
-		else
-			ShowNotification("Waiting for the window `"" g_mapSettings["sWindowName"] "`" of the process `"" g_mapSettings["sProcessName"] "`" to become active.")
+		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" g_mapSettings["sProcessName"] "`" must end with `".exe`"."
 
-		Output(A_ThisFunc "::WinWaitActive")
-		SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
+	l_sDuplicateHotkeys := GetDuplicateHotkeys(false)
+	if (l_sDuplicateHotkeys)
+	{
+		l_sMsgBoxText .= l_sMsgBoxText ? "`n`n" : ""
+		l_sMsgBoxText .= "Duplicate hotkeys detected: " l_sDuplicateHotkeys
 	}
+
+	; Process name not valid or duplicate hotkeys, show the settings configurator
+	if (l_sMsgBoxText)
+	{
+		MsgBox(l_sMsgBoxText, , 48)
+		g_guiSettings.Show()
+		return
+	}
+
+	if (g_mapSettings["sWindowName"] == "")
+		ShowNotification("Waiting for the process `"" g_mapSettings["sProcessName"] "`" to become active.")
+	else
+		ShowNotification("Waiting for the window `"" g_mapSettings["sWindowName"] "`" of the process `"" g_mapSettings["sProcessName"] "`" to become active.")
+
+	Output(A_ThisFunc "::WinWaitActive")
+	SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
 }
 
 TakeToggleKeysSnapshot(p_bReleaseKeys := true)
@@ -1067,46 +1120,30 @@ WriteConfigFile()
 	; Strip double quotes and spaces/tabs
 	l_procNameClean := Trim(g_mapControls["editProcessName"].Value, "`" `t")
 	l_windowNameClean := Trim(g_mapControls["editWindowName"].Value, "`" `t")
+	l_sMsgBoxText := ""
 
 	; Validate process name
 	l_bIsProcessNameValid := IsProcessNameValid(l_procNameClean)
 	if (l_bIsProcessNameValid != 1)
+		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" l_procNameClean "`" must end with `".exe`"."
+
+	; Validate hotkeys (no duplicates allowed)
+	l_sDuplicateHotkeys := GetDuplicateHotkeys()
+	if (l_sDuplicateHotkeys)
 	{
-		MsgBox(l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" l_procNameClean "`" must end with `".exe`".", , 48)
+		l_sMsgBoxText .= l_sMsgBoxText ? "`n`n" : ""
+		l_sMsgBoxText .= "Duplicate hotkeys detected: " l_sDuplicateHotkeys
+	}
+
+	if (l_sMsgBoxText)
+	{
+		MsgBox(l_sMsgBoxText, , 48)
 		return false
 	}
 
 	; Surround with double quotes
 	l_procNameClean := "`"" l_procNameClean "`""
 	l_windowNameClean := "`"" l_windowNameClean "`""
-
-	; Validate hotkeys (no duplicates allowed)
-	l_arrHotkeys := [
-		g_mapControls["hkAimKey"].Value,
-		g_mapControls["hkCrouchKey"].Value,
-		g_mapControls["hkSprintKey"].Value,
-		g_mapControls["hkAutorunKey"].Value,
-		g_mapControls["hkForwardKey"].Value,
-		g_mapControls["hkBackwardKey"].Value,
-		g_mapControls["hkAimAutofireKey"].Value,
-		g_mapControls["hkCrouchAutofireKey"].Value,
-		g_mapControls["hkSprintAutofireKey"].Value
-	]
-	l_mapHotkeys := Map()
-
-	for l_sKey, l_sValue in l_arrHotkeys
-	{
-		if (l_sValue != "")
-		{
-			if (l_mapHotkeys.Has(l_sValue))
-			{
-				MsgBox("Duplicate hotkey detected: " l_sValue, , 48)
-				return false
-			}
-			else
-				l_mapHotkeys[l_sValue] := true
-		}
-	}
 
 	; Everything ok, save settings
 	try
