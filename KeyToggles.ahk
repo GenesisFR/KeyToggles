@@ -125,8 +125,7 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 			; That's a duplicate
 			if (l_mapHotkeys.Has(l_sValue))
 			{
-				l_mapHotkeys[l_sValue]++
-				if (l_mapHotkeys[l_sValue] == 2)
+				if (++l_mapHotkeys[l_sValue] == 2)
 					l_sDuplicateHotkeys .= l_sDuplicateHotkeys ? ", " l_sValue : l_sValue
 			}
 			else
@@ -145,10 +144,12 @@ GuiButtonBrowse_Click(GuiCtrlObj, Info)
 
 	; Only allow selecting executables by default
 	l_sSelectedFile := FileSelect("3", , "Select the target executable file", "Executable Files (*.exe)")
+
 	if (l_sSelectedFile != "")
 	{
 		l_sFileName := RegExReplace(l_sSelectedFile, "^.+[\\/]")
 		g_mapControls["editProcessName"].Value := l_sFileName
+		g_mapControls["editWindowName"].Value := ""
 	}
 }
 
@@ -216,11 +217,11 @@ GuiCreate()
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Autofire key interval")
 	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth).OnEvent("Change", GuiEdit_Change)
-	g_mapControls["udAutofireKeyInterval"] := g_guiSettings.AddUpDown("Range1-10000", g_mapSettings["nAutofireKeyInterval"])
+	g_mapControls["udAutofireKeyInterval"] := g_guiSettings.AddUpDown("Range1-10000 0x80", g_mapSettings["nAutofireKeyInterval"])
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Focus check interval")
 	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth).OnEvent("Change", GuiEdit_Change)
-	g_mapControls["udFocusCheckInterval"] := g_guiSettings.AddUpDown("Range1-10000", g_mapSettings["nFocusCheckInterval"])
+	g_mapControls["udFocusCheckInterval"] := g_guiSettings.AddUpDown("Range1-10000 0x80", g_mapSettings["nFocusCheckInterval"])
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Hook delay")
 	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
