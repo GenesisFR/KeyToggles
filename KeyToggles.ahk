@@ -1,15 +1,19 @@
 ; KeyToggles v2.2
 
-; TODO
-; add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
-; add a window picker à la window spy
-; add support for hotkey modifiers (e.g., Ctrl+F1)
-; add text/tooltips when mousing over GUI controls to explain what they do
-; fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
-; improve process name validation with a RegEx
-; redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
-; replace sleeps with timers
-; replace ternary operators with coalescing ?? operators where possible
+/*
+TODO
+add a window picker à la vibranceGUI (https://www.autohotkey.com/docs/v2/lib/WinGetList.htm
+                                      https://www.autohotkey.com/docs/v2/lib/GuiControls.htm#Picture
+                                      https://github.com/juv/vibranceGUI/blob/master/vibrance.GUI/common/ProcessExplorer.cs)
+add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
+add support for hotkey modifiers (e.g., Ctrl+F1)
+add text/tooltips when mousing over GUI controls to explain what they do
+fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
+improve process name validation with a RegEx
+redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
+replace sleeps with timers
+replace ternary operators with coalescing ?? operators where possible
+*/
 
 #Requires Autohotkey v2.0 ; Display an error and quit if this version requirement is not met.
 #SingleInstance force     ; Allow only a single instance of the script to run.
@@ -112,27 +116,25 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 	]
 
 	l_mapHotkeys := Map()
+	l_sDuplicateHotkeys := ""
 
 	for l_sValue in l_arrHotkeys
 	{
 		if (l_sValue != "")
 		{
+			; That's a duplicate
 			if (l_mapHotkeys.Has(l_sValue))
+			{
 				l_mapHotkeys[l_sValue]++
+				if (l_mapHotkeys[l_sValue] == 2)
+					l_sDuplicateHotkeys .= l_sDuplicateHotkeys ? ", " l_sValue : l_sValue
+			}
 			else
 				l_mapHotkeys[l_sValue] := 1
 		}
 	}
 
-	l_sDuplicateHotkeys := ""
-
-	for l_sKey, l_sValue in l_mapHotkeys
-	{
-		if (l_sValue > 1)
-			l_sDuplicateHotkeys .= ", " l_sKey
-	}
-
-	return Trim(l_sDuplicateHotkeys, ', ')
+	return l_sDuplicateHotkeys
 }
 
 ; Browse for process executable
@@ -816,10 +818,15 @@ OnKeyPress(p_sThisHotkey)
 	}
 }
 
-Output(p_sMessage)
+Output(p_sMessage, p_bSeparator := false)
 {
 	if (g_mapSettings["bDebugMode"])
+	{
 		OutputDebug(p_sMessage "`n")
+
+		if (p_bSeparator)
+			OutputDebug("--------------------------------------------------`n")
+	}
 }
 
 ReadConfigFile()
@@ -1055,7 +1062,7 @@ ShowNotification(p_sMessage)
 	switch g_mapSettings["nShowNotifications"]
 	{
 		case 1:
-			 ; Make sure to clear any existing traytip
+			; Make sure to clear any existing traytip
 			TrayTip()
 			TrayTip(p_sMessage)
 		case 2:
