@@ -1,4 +1,4 @@
-; KeyToggles v2.2
+; KeyToggles v2.3
 
 /*
 TODO
