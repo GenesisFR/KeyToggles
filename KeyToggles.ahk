@@ -323,9 +323,11 @@ GuiCreate()
 	g_mapControls["ddlSprintAutofireKey"].Text := IsExtraOption(g_mapSettings["sSprintAutofireKey"]) ? g_mapSettings["sSprintAutofireKey"] : "None"
 
 	; Misc
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 3*33
+	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 4*31
 	                          " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Misc")
 
+	g_mapControls["cbDebugMode"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+                                                              " Checked" g_mapSettings["bDebugMode"], "Debug mode  ")
 	g_mapControls["cbFixSystemKeys"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
 	                                                              " Checked" g_mapSettings["bFixSystemKeys"], "Fix system keys  ")
 	g_mapControls["cbRunAsAdmin"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
@@ -425,6 +427,7 @@ GuiHK_Change(GuiCtrlObj, Info)
 GuiUpdate()
 {
 	g_mapControls["cbAutorun"].Value                 := g_mapSettings["bAutorunMode"]
+	g_mapControls["cbDebugMode"].Value               := g_mapSettings["bDebugMode"]
 	g_mapControls["cbFixSystemKeys"].Value           := g_mapSettings["bFixSystemKeys"]
 	g_mapControls["cbRestoreAutofiresOnFocus"].Value := g_mapSettings["bRestoreAutofiresOnFocus"]
 	g_mapControls["cbRestoreTogglesOnFocus"].Value   := g_mapSettings["bRestoreTogglesOnFocus"]
@@ -478,7 +481,7 @@ IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 
 	switch p_sType
 	{
-		case Integer:
+		case "int":
 			try
 			{
 				l_nValue := l_sValue + 0
@@ -834,15 +837,15 @@ ReadConfigFile()
 	; General
 	g_mapSettings["sProcessName"]             :=            IniRead(g_sConfigFileName, "General", "processName", "")
 	g_mapSettings["sWindowName"]              :=            IniRead(g_sConfigFileName, "General", "windowName", "")
-	g_mapSettings["nAutofireKeyInterval"]     := IniReadEnforceType(g_sConfigFileName, "General", "autofireKeyInterval", 100, Integer)
+	g_mapSettings["nAutofireKeyInterval"]     := IniReadEnforceType(g_sConfigFileName, "General", "autofireKeyInterval", 100, "int")
 	g_mapSettings["bFixSystemKeys"]           := IniReadEnforceType(g_sConfigFileName, "General", "fixSystemKeys", 1, "bool")
-	g_mapSettings["nFocusCheckInterval"]      := IniReadEnforceType(g_sConfigFileName, "General", "focusCheckInterval", 1000, Integer)
-	g_mapSettings["nHookDelay"]               := IniReadEnforceType(g_sConfigFileName, "General", "hookDelay", 0, Integer)
-	g_mapSettings["nKeyDelay"]                := IniReadEnforceType(g_sConfigFileName, "General", "keyDelay", 0, Integer)
+	g_mapSettings["nFocusCheckInterval"]      := IniReadEnforceType(g_sConfigFileName, "General", "focusCheckInterval", 1000, "int")
+	g_mapSettings["nHookDelay"]               := IniReadEnforceType(g_sConfigFileName, "General", "hookDelay", 0, "int")
+	g_mapSettings["nKeyDelay"]                := IniReadEnforceType(g_sConfigFileName, "General", "keyDelay", 0, "int")
 	g_mapSettings["bRestoreAutofiresOnFocus"] := IniReadEnforceType(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false, "bool")
 	g_mapSettings["bRestoreTogglesOnFocus"]   := IniReadEnforceType(g_sConfigFileName, "General", "restoreTogglesOnFocus", false, "bool")
 	g_mapSettings["bRunAsAdmin"]              := IniReadEnforceType(g_sConfigFileName, "General", "runAsAdmin", false, "bool")
-	g_mapSettings["nShowNotifications"]       := IniReadEnforceType(g_sConfigFileName, "General", "showNotifications", 0, Integer)
+	g_mapSettings["nShowNotifications"]       := IniReadEnforceType(g_sConfigFileName, "General", "showNotifications", 0, "int")
 	g_mapSettings["nAimMode"]                 := IniReadEnforceType(g_sConfigFileName, "General", "aimMode", 0, "mode")
 	g_mapSettings["nCrouchMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
 	g_mapSettings["nSprintMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
@@ -864,7 +867,7 @@ ReadConfigFile()
 	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; Debug
-	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false)
+	g_mapSettings["bDebugMode"] := IniReadEnforceType(g_sConfigFileName, "Debug", "debugMode", false, "bool")
 
 	; Prevent intervals from being set to 0, otherwise timers won't work
 	g_mapSettings["nAutofireKeyInterval"] := Max(g_mapSettings["nAutofireKeyInterval"], 1)
@@ -1154,19 +1157,16 @@ WriteConfigFile()
 	{
 		IniWrite(l_procNameClean,                                  "KeyToggles.ini", "General", "processName")
 		IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
-		IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
 		IniWrite(g_mapControls["cbAutorun"].Value,                 "KeyToggles.ini", "General", "autorunMode")
+		IniWrite(g_mapControls["cbDebugMode"].Value,               "KeyToggles.ini", "General", "debugMode")
+		IniWrite(g_mapControls["cbFixSystemKeys"].Value,           "KeyToggles.ini", "General", "fixSystemKeys")
+		IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
+		IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value,   "KeyToggles.ini", "General", "restoreTogglesOnFocus")
+		IniWrite(g_mapControls["cbRunAsAdmin"].Value,              "KeyToggles.ini", "General", "runAsAdmin")
 		IniWrite(g_mapControls["ddlAimMode"].Value - 1,            "KeyToggles.ini", "General", "aimMode")
 		IniWrite(g_mapControls["ddlCrouchMode"].Value - 1,         "KeyToggles.ini", "General", "crouchMode")
 		IniWrite(g_mapControls["ddlNotifications"].Value - 1,      "KeyToggles.ini", "General", "showNotifications")
 		IniWrite(g_mapControls["ddlSprintMode"].Value - 1,         "KeyToggles.ini", "General", "sprintMode")
-		IniWrite(g_mapControls["cbFixSystemKeys"].Value,           "KeyToggles.ini", "General", "fixSystemKeys")
-		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
-		IniWrite(g_mapControls["udHookDelay"].Value,               "KeyToggles.ini", "General", "hookDelay")
-		IniWrite(g_mapControls["udKeyDelay"].Value,                "KeyToggles.ini", "General", "keyDelay")
-		IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value,   "KeyToggles.ini", "General", "restoreTogglesOnFocus")
-		IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
-		IniWrite(g_mapControls["cbRunAsAdmin"].Value,              "KeyToggles.ini", "General", "runAsAdmin")
 		IniWrite(g_mapControls["hkAimAutofireKey"].Value,          "KeyToggles.ini", "Keys",    "aimAutofireKey")
 		IniWrite(g_mapControls["hkAimKey"].Value,                  "KeyToggles.ini", "Keys",    "aimKey")
 		IniWrite(g_mapControls["hkAutorunKey"].Value,              "KeyToggles.ini", "Keys",    "autorunKey")
@@ -1176,6 +1176,10 @@ WriteConfigFile()
 		IniWrite(g_mapControls["hkForwardKey"].Value,              "KeyToggles.ini", "Keys",    "forwardKey")
 		IniWrite(g_mapControls["hkSprintAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "sprintAutofireKey")
 		IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
+		IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
+		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
+		IniWrite(g_mapControls["udHookDelay"].Value,               "KeyToggles.ini", "General", "hookDelay")
+		IniWrite(g_mapControls["udKeyDelay"].Value,                "KeyToggles.ini", "General", "keyDelay")
 	}
 	catch as e
 	{
@@ -1208,7 +1212,7 @@ WriteConfigFile()
 #HotIf
 
 #SuspendExempt
-#HotIf g_mapSettings["bDebugMode"] == true
+#HotIf g_mapSettings["bDebugMode"]
 ; Exit script
 *!F10::ExitApp() ; ALT+F10
 
