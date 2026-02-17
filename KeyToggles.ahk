@@ -9,7 +9,6 @@ add application profiles (https://stackoverflow.com/questions/45190170/how-can-i
 add support for hotkey modifiers (e.g., Ctrl+F1)
 add text/tooltips when mousing over GUI controls to explain what they do
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
-improve process name validation with a RegEx
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 replace sleeps with timers
 replace ternary operators with coalescing ?? operators where possible
@@ -546,14 +545,12 @@ IsMouseOverWindow(p_nHwnd)
 
 IsProcessNameValid(p_sProcessName)
 {
-	l_procNameExt := SubStr(p_sProcessName, -4)
+	p_sProcessName := Trim(p_sProcessName)
 
-	if (Trim(l_procNameExt) == "")
+	if (p_sProcessName == "")
 		return -1
-	else if (l_procNameExt != ".exe")
-		return false
 
-	return true
+	return RegExMatch(p_sProcessName, ".*.exe$")
 }
 
 KeyAutofire(p_sAutofireKey)
@@ -1211,7 +1208,7 @@ WriteConfigFile()
 #HotIf
 
 #SuspendExempt
-#HotIf g_mapSettings["bDebugMode"]
+#HotIf g_mapSettings["bDebugMode"] == true
 ; Exit script
 *!F10::ExitApp() ; ALT+F10
 
