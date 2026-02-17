@@ -626,7 +626,8 @@ OnFocusChanged()
 
 	if (WinWaitActive(l_sWinTitle,, l_nTimeout))
 	{
-		Sleep(g_mapSettings["nHookDelay"])
+		if (g_mapSettings["nHookDelay"] > 0)
+			Sleep(g_mapSettings["nHookDelay"])
 
 		; Make sure to hook the window again if it no longer exists
 		if (g_nWindowID != WinExist(l_sWinTitle))
@@ -1200,13 +1201,13 @@ WriteConfigFile()
 {
 	if (!IsMouseOverWindow(g_nWindowID))
 	{
-		;Output(A_ThisHotkey "::outside window")
-		SendClickOutsideWindow(LTrim(A_ThisHotkey, "*$"))
+		;Output(ThisHotkey "::outside window")
+		SendClickOutsideWindow(LTrim(ThisHotkey, "*$"))
 	}
 	else
 	{
-		;Output(A_ThisHotkey "::inside window")
-		SendKey(LTrim(A_ThisHotkey, "*$"), 0, true)
+		;Output(ThisHotkey "::inside window")
+		SendKey(LTrim(ThisHotkey, "*$"), 0, true)
 	}
 }
 #HotIf
