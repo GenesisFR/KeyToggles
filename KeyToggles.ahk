@@ -5,10 +5,15 @@ TODO
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
-cap Edit control values
+cap Edit control values (seems UD limits are enforced when writing to the config file so may set the UD value on EditChange event?)
+  use Min(*).Max(*)?
+fix Edit control values can be made empty if typing 100 and deleting 1
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
+fix white background in buttons
+redo edit 0 fix (use mapcontrol instead of guicontrolobj to get the old value)
 redo vertical positioning of GUI controls (use R for groupboxes)
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
+remove minimize/maximize buttons from GUIs
 replace sleeps with timers
 replace ternary operators with coalescing ?? operators where possible
 */
@@ -144,7 +149,7 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 }
 
 ; Browse for process executable
-GuiButtonBrowse_Click(GuiCtrlObj, Info)
+GuiButtonBrowse_Click(*)
 {
 	; Turn FileSelect into a modal
 	g_guiSettings.Opt("+OwnDialogs")
@@ -169,7 +174,8 @@ GuiButtonBrowse_Click(GuiCtrlObj, Info)
 	}
 }
 
-GuiButtonReload_Click(GuiCtrlObj, Info)
+; Update the GUI controls with the values from the config file
+GuiButtonReload_Click(*)
 {
 	ReadConfigFile()
 	GuiUpdate()
@@ -177,7 +183,7 @@ GuiButtonReload_Click(GuiCtrlObj, Info)
 }
 
 ; Validate and save settings to the config file
-GuiButtonSave_Click(GuiCtrlObj, Info)
+GuiButtonSave_Click(*)
 {
 	if (WriteConfigFile())
 	{
@@ -187,23 +193,33 @@ GuiButtonSave_Click(GuiCtrlObj, Info)
 	}
 }
 
-GuiButtonSelect_Click(GuiCtrlObj, Info)
+GuiButtonSelect_Click(*)
 {
 	global g_guiWindowSelector
 
 	; Turn the window selector GUI into a modal
 	g_guiSettings.Opt("+Disabled")
 
+	; Create the window selector GUI if it doesn't exist
 	if (!g_guiWindowSelector)
 	{
+		; Gui
 		g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd, "Window selector")
 		g_guiWindowSelector.BackColor := "353434"
-		g_guiWindowSelector.OnEvent("Close", (*) => g_guiSettings.Opt("-Disabled"))
 		g_guiWindowSelector.SetFont("s10")
+		g_guiWindowSelector.OnEvent("Close", (*) => g_guiSettings.Opt("-Disabled"))
+
+		; Button
 		g_guiWindowSelector.AddButton("w100", "Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
+
+		; Checkbox
 		g_guiWindowSelector.SetFont("CWhite")
 		g_mapControls["cbExcludeProcesses"] := g_guiWindowSelector.AddCheckbox("Checked", "Exclude common processes")
 		g_mapControls["cbExcludeProcesses"].OnEvent("Click", (*) => GuiLV_ReloadProcesses())
+
+		; ListView
+		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background353434 -Multi ReadOnly Sort Tile w1050" , ["Icon", "Process"])
+		g_mapControls["lvWindowPicker"].OnEvent("DoubleClick", GuiLV_DoubleClick)
 	}
 
 	GuiLV_ReloadProcesses()
@@ -485,15 +501,6 @@ GuiLV_ReloadProcesses()
 	l_arrHwnds := WinGetList()
 	l_arrHwndsLength := l_arrHwnds.Length
 
-	; Create a ListView if it doesn't exist
-	if (!g_mapControls.Has("lvWindowPicker"))
-	{
-		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background353434 Count" l_arrHwndsLength " -Multi ReadOnly Sort Tile w1050" , ["Icon", "Process"])
-		g_mapControls["lvWindowPicker"].OnEvent("DoubleClick", GuiLV_DoubleClick)
-	}
-	; Otherwise delete all rows
-	else
-		g_mapControls["lvWindowPicker"].Delete()
 
 	; Create an ImageList to hold large icons and assign it to the ListView
 	g_mapControls["ilWindowPicker"] := IL_Create(l_arrHwndsLength, , true)
@@ -505,6 +512,9 @@ GuiLV_ReloadProcesses()
 
 	; Don't redraw until all the rows are added
 	g_mapControls["lvWindowPicker"].Opt("-Redraw")
+
+	; Delete all rows
+	g_mapControls["lvWindowPicker"].Delete()
 
 	; Create all rows
 	for l_hwnd in l_arrHwnds
