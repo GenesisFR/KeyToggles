@@ -2,13 +2,12 @@
 
 /*
 TODO
-add a window picker à la vibranceGUI (https://www.autohotkey.com/docs/v2/lib/WinGetList.htm
-                                      https://www.autohotkey.com/docs/v2/lib/GuiControls.htm#Picture
-                                      https://github.com/juv/vibranceGUI/blob/master/vibrance.GUI/common/ProcessExplorer.cs)
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
-add support for hotkey modifiers (e.g., Ctrl+F1)
+add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
+cap Edit control values
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
+redo vertical positioning of GUI controls (use R for groupboxes)
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 replace sleeps with timers
 replace ternary operators with coalescing ?? operators where possible
@@ -80,13 +79,22 @@ global g_fnAutofireCrouch := 0
 global g_fnAutofireSprint := 0
 
 ; Arrays
-global g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autofire hold"]
 global g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton2", "Space", "Tab", "Enter", "Escape", "Backspace"]
+global g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autofire hold"]
 
 ; Others
 global g_bToggleKeysSnapshotTaken := false
 global g_guiSettings := 0
+global g_guiWindowSelector := 0
 global g_nWindowID := 0
+global g_sCommonProcesses := "
+( Join`s ; AHK | Game launchers | Misc | Web browsers | Windows
+	autohotkey.exe autohotkey32.exe autohotkey64.exe autohotkeyux.exe keytoggles.exe
+	amazon games ui.exe battle.net launcher.exe eadesktop.exe epicgameslauncher.exe galaxyclient.exe steam.exe steamwebhelper.exe upc.exe
+	7zfm.exe discord.exe msiafterburner.exe notepad++.exe nvcplui.exe obs.exe obs64.exe rtss.exe vlc.exe winamp.exe winrar.exe wmplayer.exe
+	brave.exe chrome.exe firefox.exe iexplore.exe msedge.exe opera.exe safari.exe
+	applicationframehost.exe calc.exe cmd.exe explorer.exe hh.exe notepad.exe mspaint.exe powershell.exe regedit.exe rundll32.exe svchost.exe taskmgr.exe windowsterminal.exe
+)"
 global g_sConfigFileName := "KeyToggles.ini"
 
 Init()
@@ -101,7 +109,6 @@ ExitFunc(p_sExitReason, p_nExitCode)
 
 GetDuplicateHotkeys(p_bFromGUI := true)
 {
-	;p_bFromGUI := WinGetStyle("ahk_id " . g_guiSettings.Hwnd) & 0x10000000) ; GUI is visible
 	l_arrHotkeys := [
 		p_bFromGUI ? g_mapControls["hkAimKey"].Value            : g_mapSettings["sAimKey"],
 		p_bFromGUI ? g_mapControls["hkCrouchKey"].Value         : g_mapSettings["sCrouchKey"],
@@ -170,13 +177,32 @@ GuiButtonSave_Click(GuiCtrlObj, Info)
 	}
 }
 
+GuiButtonSelect_Click(GuiCtrlObj, Info)
+{
+	global g_guiWindowSelector
+
+	if (!g_guiWindowSelector)
+	{
+		g_guiWindowSelector := Gui.Call("+OwnDialogs", "Window selector")
+		g_guiWindowSelector.BackColor := "353434"
+		g_guiWindowSelector.SetFont("s10")
+		g_guiWindowSelector.AddButton("w100", "Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
+		g_guiWindowSelector.SetFont("CWhite")
+		g_mapControls["cbExcludeProcesses"] := g_guiWindowSelector.AddCheckbox("Checked", "Exclude common processes")
+		g_mapControls["cbExcludeProcesses"].OnEvent("Click", (*) => GuiLV_ReloadProcesses())
+	}
+
+	GuiLV_ReloadProcesses()
+	g_guiWindowSelector.Show()
+}
+
 GuiCreate()
 {
 	global
-
+	
 	; Safety check
 	if (g_guiSettings)
-		g_guiSettings.Destroy()
+		return
 
 	g_guiSettings := Gui.Call("+OwnDialogs", "Configure settings", )
 	g_guiSettings.BackColor := "353434"
@@ -213,6 +239,8 @@ GuiCreate()
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Window name")
 	g_mapControls["editWindowName"] := g_guiSettings.AddEdit("CBlack x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth,
 	                                                         g_mapSettings["sWindowName"])
+
+	g_guiSettings.AddButton("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Select").OnEvent("Click", GuiButtonSelect_Click)
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Autofire key interval")
 	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth).OnEvent("Change", GuiEdit_Change)
@@ -423,6 +451,73 @@ GuiHK_Change(GuiCtrlObj, Info)
 	}
 }
 
+GuiLV_DoubleClick(GuiCtrlObj, Info)
+{
+	; Retrieve the text from the selected row in the ListView
+	l_sItemText := GuiCtrlObj.GetText(Info)
+	l_arr := StrSplit(l_sItemText, " | ", , 2)
+
+	; Update controls in the settings GUI
+	g_mapControls["editProcessName"].Text := l_arr[1]
+	g_mapControls["editWindowName"].Text := l_arr.Length > 1 ? l_arr[2] : ""
+
+	g_guiWindowSelector.Hide()
+}
+
+GuiLV_ReloadProcesses()
+{
+	; Get a list of all windows
+	l_arrHwnds := WinGetList()
+	l_arrHwndsLength := l_arrHwnds.Length
+
+	; Create a ListView if it doesn't exist
+	if (!g_mapControls.Has("lvWindowPicker"))
+	{
+		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background353434 Count" l_arrHwndsLength " -Multi ReadOnly Sort Tile w1050" , ["Icon", "Process"])
+		g_mapControls["lvWindowPicker"].OnEvent("DoubleClick", GuiLV_DoubleClick)
+	}
+	; Otherwise delete all rows
+	else
+		g_mapControls["lvWindowPicker"].Delete()
+
+	; Create an ImageList to hold large icons and assign it to the ListView
+	g_mapControls["ilWindowPicker"] := IL_Create(l_arrHwndsLength, , true)
+	l_ilPrev := g_mapControls["lvWindowPicker"].SetImageList(g_mapControls["ilWindowPicker"])
+
+	; Free up memory used by the previous ImageList
+	if (l_ilPrev)
+		IL_Destroy(l_ilPrev)
+
+	; Don't redraw until all the rows are added
+	g_mapControls["lvWindowPicker"].Opt("-Redraw")
+
+	; Create all rows
+	for l_hwnd in l_arrHwnds
+	{
+		; Retrieve process info
+		l_sProcName := WinGetProcessName("ahk_id" l_hwnd)
+		l_sProcPath := WinGetProcessPath("ahk_id" l_hwnd)
+		l_sWinClass := WinGetClass("ahk_id" l_hwnd)
+		l_sWinTitle := WinGetTitle("ahk_id" l_hwnd)
+
+		; Skip this iteration if the process is in the exclusion list
+		if (g_mapControls["cbExcludeProcesses"].Value && InStr(g_sCommonProcesses, l_sProcName))
+			continue
+
+		/*
+		Output("process: " l_sProcName)
+		Output("path: "    l_sProcPath)
+		Output("title: "   l_sWinTitle)
+		Output("class: "   l_sWinClass)
+		Output("--------------------------------------------------")
+		*/
+
+		g_mapControls["lvWindowPicker"].Add("Icon" IL_Add(g_mapControls["ilWindowPicker"], l_sProcPath), l_sProcName (l_sWinTitle != "" ? " | " l_sWinTitle : ""))
+	}
+
+	g_mapControls["lvWindowPicker"].Opt("+Redraw")
+}
+
 ; Update GUI controls based on current settings
 GuiUpdate()
 {
@@ -491,7 +586,7 @@ IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 			{
 				return p_sDefault
 			}
-		case String:
+		case "str":
 			; Validate process name
 			l_bIsProcessNameValid := IsProcessNameValid(l_sValue) == 1
 			return l_bIsProcessNameValid ? l_sValue : p_sDefault
@@ -554,6 +649,11 @@ IsProcessNameValid(p_sProcessName)
 		return -1
 
 	return RegExMatch(p_sProcessName, ".*.exe$")
+}
+
+IsWindowVisible(p_hwnd)
+{
+	return WinGetStyle("ahk_id " p_hwnd) & 0x10000000
 }
 
 KeyAutofire(p_sAutofireKey)
@@ -1078,6 +1178,7 @@ StartFocusCheck()
 {
 	l_sMsgBoxText := ""
 
+	g_mapSettings["sProcessName"] := Trim(g_mapSettings["sProcessName"], "`" `t")
 	l_bIsProcessNameValid := IsProcessNameValid(g_mapSettings["sProcessName"])
 	if (l_bIsProcessNameValid != 1)
 		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" g_mapSettings["sProcessName"] "`" must end with `".exe`"."
