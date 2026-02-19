@@ -88,12 +88,13 @@ global g_guiSettings := 0
 global g_guiWindowSelector := 0
 global g_nWindowID := 0
 global g_sCommonProcesses := "
-( Join`s ; AHK | Game launchers | Misc | Web browsers | Windows
-	autohotkey.exe autohotkey32.exe autohotkey64.exe autohotkeyux.exe keytoggles.exe
-	amazon games ui.exe battle.net launcher.exe eadesktop.exe epicgameslauncher.exe galaxyclient.exe steam.exe steamwebhelper.exe upc.exe
-	7zfm.exe discord.exe msiafterburner.exe notepad++.exe nvcplui.exe obs.exe obs64.exe rtss.exe vlc.exe winamp.exe winrar.exe wmplayer.exe
-	brave.exe chrome.exe firefox.exe iexplore.exe msedge.exe opera.exe safari.exe
-	applicationframehost.exe calc.exe cmd.exe explorer.exe hh.exe notepad.exe mspaint.exe powershell.exe regedit.exe rundll32.exe svchost.exe taskmgr.exe windowsterminal.exe
+( Join`s
+	AHK: autohotkey.exe autohotkey32.exe autohotkey64.exe autohotkeyux.exe keytoggles.exe
+	Game launchers: amazon games ui.exe battle.net launcher.exe eadesktop.exe epicgameslauncher.exe galaxyclient.exe steam.exe steamwebhelper.exe upc.exe
+	Misc: 7zfm.exe discord.exe msiafterburner.exe notepad++.exe nvcplui.exe obs.exe obs64.exe rtss.exe vlc.exe winamp.exe winrar.exe wmplayer.exe
+	Web browsers: brave.exe chrome.exe firefox.exe iexplore.exe msedge.exe opera.exe safari.exe
+	Windows: applicationframehost.exe calc.exe cmd.exe control.exe explorer.exe eventvwr.exe hh.exe notepad.exe mspaint.exe powershell.exe regedit.exe
+	rundll32.exe svchost.exe taskmgr.exe windowsterminal.exe
 )"
 global g_sConfigFileName := "KeyToggles.ini"
 
@@ -190,10 +191,14 @@ GuiButtonSelect_Click(GuiCtrlObj, Info)
 {
 	global g_guiWindowSelector
 
+	; Turn the window selector GUI into a modal
+	g_guiSettings.Opt("+Disabled")
+
 	if (!g_guiWindowSelector)
 	{
-		g_guiWindowSelector := Gui.Call("+OwnDialogs", "Window selector")
+		g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd, "Window selector")
 		g_guiWindowSelector.BackColor := "353434"
+		g_guiWindowSelector.OnEvent("Close", (*) => g_guiSettings.Opt("-Disabled"))
 		g_guiWindowSelector.SetFont("s10")
 		g_guiWindowSelector.AddButton("w100", "Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
 		g_guiWindowSelector.SetFont("CWhite")
@@ -471,6 +476,7 @@ GuiLV_DoubleClick(GuiCtrlObj, Info)
 	g_mapControls["editWindowName"].Text := l_arr.Length > 1 ? l_arr[2] : ""
 
 	g_guiWindowSelector.Hide()
+	g_guiSettings.Opt("-Disabled")
 }
 
 GuiLV_ReloadProcesses()
