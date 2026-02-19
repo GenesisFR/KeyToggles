@@ -154,6 +154,15 @@ GuiButtonBrowse_Click(GuiCtrlObj, Info)
 	if (l_sSelectedFile != "")
 	{
 		l_sFileName := RegExReplace(l_sSelectedFile, "^.+[\\/]")
+		l_bIsProcessNameValid := IsProcessNameValid(l_sFileName)
+
+		; Process name not valid, do nothing
+		if (l_bIsProcessNameValid != 1)
+		{
+			MsgBox("`"" l_sFileName "`" is not an executable file.", , 48)
+			return
+		}
+
 		g_mapControls["editProcessName"].Value := l_sFileName
 		g_mapControls["editWindowName"].Value := ""
 	}
