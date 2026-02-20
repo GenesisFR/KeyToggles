@@ -195,7 +195,7 @@ GuiButtonSelect_Click(*)
 	if (!g_guiWindowSelector)
 	{
 		; Gui
-		g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd, "Window selector")
+		g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Window selector")
 		g_guiWindowSelector.BackColor := "353434"
 		g_guiWindowSelector.SetFont("s10")
 		g_guiWindowSelector.OnEvent("Close", (*) => g_guiSettings.Opt("-Disabled"))
@@ -209,7 +209,7 @@ GuiButtonSelect_Click(*)
 		g_mapControls["cbExcludeProcesses"].OnEvent("Click", (*) => GuiLV_ReloadProcesses())
 
 		; ListView
-		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background353434 -Multi ReadOnly Sort Tile w1050" , ["Icon", "Process"])
+		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background353434 -Multi ReadOnly Sort Tile w1045" , ["Icon", "Process"])
 		g_mapControls["lvWindowPicker"].OnEvent("DoubleClick", GuiLV_DoubleClick)
 	}
 
@@ -478,7 +478,7 @@ GuiLV_DoubleClick(GuiCtrlObj, Info)
 	l_sItemText := GuiCtrlObj.GetText(Info)
 	l_arr := StrSplit(l_sItemText, " | ", , 2)
 
-	; Update controls in the settings GUI
+	; Update controls in the main window
 	g_mapControls["editProcessName"].Text := l_arr[1]
 	g_mapControls["editWindowName"].Text := l_arr.Length > 1 ? l_arr[2] : ""
 
@@ -491,7 +491,6 @@ GuiLV_ReloadProcesses()
 	; Get a list of all windows
 	l_arrHwnds := WinGetList()
 	l_arrHwndsLength := l_arrHwnds.Length
-
 
 	; Create an ImageList to hold large icons and assign it to the ListView
 	g_mapControls["ilWindowPicker"] := IL_Create(l_arrHwndsLength, , true)
