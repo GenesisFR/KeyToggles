@@ -484,6 +484,9 @@ GuiLV_DoubleClick(GuiCtrlObj, Info)
 
 	g_guiWindowSelector.Hide()
 	g_guiSettings.Opt("-Disabled")
+
+	; Needed to bring the main window back to the foreground since it was disabled
+	g_guiSettings.Show()
 }
 
 GuiLV_ReloadProcesses()
