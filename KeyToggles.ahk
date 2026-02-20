@@ -92,15 +92,6 @@ global g_bToggleKeysSnapshotTaken := false
 global g_guiSettings := 0
 global g_guiWindowSelector := 0
 global g_nWindowID := 0
-global g_sCommonProcesses := "
-( Join`s
-	AHK: autohotkey.exe autohotkey32.exe autohotkey64.exe autohotkeyux.exe keytoggles.exe
-	Game launchers: amazon games ui.exe battle.net launcher.exe eadesktop.exe epicgameslauncher.exe galaxyclient.exe steam.exe steamwebhelper.exe upc.exe
-	Misc: 7zfm.exe discord.exe msiafterburner.exe notepad++.exe nvcplui.exe obs.exe obs64.exe rtss.exe vlc.exe winamp.exe winrar.exe wmplayer.exe
-	Web browsers: brave.exe chrome.exe firefox.exe iexplore.exe msedge.exe opera.exe safari.exe
-	Windows: applicationframehost.exe calc.exe cmd.exe control.exe explorer.exe eventvwr.exe hh.exe notepad.exe mspaint.exe powershell.exe regedit.exe
-	rundll32.exe svchost.exe taskmgr.exe windowsterminal.exe
-)"
 global g_sConfigFileName := "KeyToggles.ini"
 
 Init()
@@ -526,7 +517,7 @@ GuiLV_ReloadProcesses()
 		l_sWinTitle := WinGetTitle("ahk_id" l_hwnd)
 
 		; Skip this iteration if the process is in the exclusion list
-		if (g_mapControls["cbExcludeProcesses"].Value && InStr(g_sCommonProcesses, l_sProcName))
+		if (g_mapControls["cbExcludeProcesses"].Value && IsCommonProcess(l_sProcName))
 			continue
 
 		/*
@@ -641,6 +632,20 @@ Init()
 	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure Settings", (*) => g_guiSettings.Show())
 	A_TrayMenu.ClickCount := 1
 	A_TrayMenu.Default := "Configure Settings"
+}
+
+IsCommonProcess(p_sProcessName)
+{
+	l_sCommonProcesses := "
+	( Join| ; AHK | Game launchers | Misc | Web browsers | Windows
+		autohotkey.exe|autohotkey32.exe|autohotkey64.exe|autohotkeyux.exe|keytoggles.exe
+		amazon games ui.exe|battle.net launcher.exe|eadesktop.exe|epicgameslauncher.exe|galaxyclient.exe|launcher.exe|steam.exe|steamwebhelper.exe|upc.exe
+		7zfm.exe|discord.exe|msiafterburner.exe|notepad++.exe|nvcplui.exe|obs.exe|obs64.exe|rtss.exe|vlc.exe|winamp.exe|winrar.exe|wmplayer.exe
+		brave.exe|chrome.exe|firefox.exe|iexplore.exe|msedge.exe|opera.exe|safari.exe
+		applicationframehost.exe|calc.exe|cmd.exe|control.exe|explorer.exe|eventvwr.exe|hh.exe|notepad.exe|mspaint.exe|powershell.exe|regedit.exe
+		rundll32.exe|svchost.exe|taskmgr.exe|windowsterminal.exe
+	)"
+	return StrLower(p_sProcessName) ~= l_sCommonProcesses
 }
 
 IsExtraOption(p_sKey)
