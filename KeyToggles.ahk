@@ -2,11 +2,11 @@
 
 /*
 TODO
+add a light theme
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
-fix white background in buttons
 redo vertical positioning of GUI controls (use R for groupboxes)
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 replace sleeps with timers
@@ -199,7 +199,7 @@ GuiButtonSelect_Click(*)
 		g_guiWindowSelector.OnEvent("Close", (*) => g_guiSettings.Opt("-Disabled"))
 
 		; Button
-		g_guiWindowSelector.AddButton("w100", "Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
+		g_guiWindowSelector.AddButton("Background353434 w100", "Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
 
 		; Checkbox
 		g_guiWindowSelector.SetFont("CWhite")
@@ -253,13 +253,13 @@ GuiCreate()
 	;g_mapSettings["editProcessName"].OnEvent("Focus", (*) => ToolTip("Enter the name of the target process executable (e.g., game.exe)."))
 	;g_mapSettings["editProcessName"].OnEvent("LoseFocus", (*) => ToolTip())
 
-	g_guiSettings.AddButton("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Browse").OnEvent("Click", GuiButtonBrowse_Click)
+	g_guiSettings.AddButton("Background353434 x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Browse").OnEvent("Click", GuiButtonBrowse_Click)
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Window name")
 	g_mapControls["editWindowName"] := g_guiSettings.AddEdit("CBlack r1 x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth,
 	                                                         g_mapSettings["sWindowName"])
 
-	g_guiSettings.AddButton("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Select").OnEvent("Click", GuiButtonSelect_Click)
+	g_guiSettings.AddButton("Background353434 x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Select").OnEvent("Click", GuiButtonSelect_Click)
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Autofire key interval")
 	g_mapControls["editAutofireKeyInterval"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
@@ -384,8 +384,8 @@ GuiCreate()
 	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth " Choose"
 	                                                                   g_mapSettings["nShowNotifications"] + 1, ["Disabled", "System notifications", "Tooltips"])
 
-	g_guiSettings.AddButton("x140 y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 13 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
-	g_guiSettings.AddButton("x260 y" l_nTopY + l_nSpacingY * l_nCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
+	g_guiSettings.AddButton("Background353434 x140 y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 13 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
+	g_guiSettings.AddButton("Background353434 x260 y" l_nTopY + l_nSpacingY * l_nCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
 	g_mapControls["editAutofireKeyInterval"].OnEvent("Change", GuiEdit_Change)
