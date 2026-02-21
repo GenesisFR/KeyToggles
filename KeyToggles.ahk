@@ -13,7 +13,6 @@ fix white background in buttons
 redo edit 0 fix (use mapcontrol instead of guicontrolobj to get the old value)
 redo vertical positioning of GUI controls (use R for groupboxes)
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
-remove minimize/maximize buttons from GUIs
 replace sleeps with timers
 replace ternary operators with coalescing ?? operators where possible
 */
@@ -142,7 +141,7 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 ; Browse for process executable
 GuiButtonBrowse_Click(*)
 {
-	; Turn FileSelect into a modal
+	; Turn FileSelect and MsgBox into modals
 	g_guiSettings.Opt("+OwnDialogs")
 
 	; Only allow selecting executables by default
@@ -176,6 +175,9 @@ GuiButtonReload_Click(*)
 ; Validate and save settings to the config file
 GuiButtonSave_Click(*)
 {
+	; Turn MsgBoxes into modals
+	g_guiSettings.Opt("+OwnDialogs")
+
 	if (WriteConfigFile())
 	{
 		ReadConfigFile()
@@ -220,7 +222,7 @@ GuiButtonSelect_Click(*)
 GuiCreate()
 {
 	global
-	
+
 	; Safety check
 	if (g_guiSettings)
 		return
