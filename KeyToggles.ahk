@@ -199,7 +199,7 @@ GuiButtonSelect_Click(*)
 		g_guiWindowSelector.OnEvent("Close", (*) => g_guiSettings.Opt("-Disabled"))
 
 		; Button
-		g_guiWindowSelector.AddButton("Background353434 w100", "Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
+		g_guiWindowSelector.AddButton("Background353434 Default w100", "&Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
 
 		; Checkbox
 		g_guiWindowSelector.SetFont("CWhite")
