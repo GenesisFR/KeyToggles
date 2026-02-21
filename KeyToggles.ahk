@@ -5,12 +5,8 @@ TODO
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
-cap Edit control values (seems UD limits are enforced when writing to the config file so may set the UD value on EditChange event?)
-  use Min(*).Max(*)?
-fix Edit control values can be made empty if typing 100 and deleting 1
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 fix white background in buttons
-redo edit 0 fix (use mapcontrol instead of guicontrolobj to get the old value)
 redo vertical positioning of GUI controls (use R for groupboxes)
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 replace sleeps with timers
@@ -266,20 +262,20 @@ GuiCreate()
 	g_guiSettings.AddButton("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Select").OnEvent("Click", GuiButtonSelect_Click)
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Autofire key interval")
-	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth).OnEvent("Change", GuiEdit_Change)
+	g_mapControls["editAutofireKeyInterval"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
 	g_mapControls["udAutofireKeyInterval"] := g_guiSettings.AddUpDown("Range1-10000 0x80", g_mapSettings["nAutofireKeyInterval"])
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Focus check interval")
-	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth).OnEvent("Change", GuiEdit_Change)
+	g_mapControls["editFocusCheckInterval"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
 	g_mapControls["udFocusCheckInterval"] := g_guiSettings.AddUpDown("Range1-10000 0x80", g_mapSettings["nFocusCheckInterval"])
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Hook delay")
-	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
-	g_mapControls["udHookDelay"] := g_guiSettings.AddUpDown("Range0-30000", g_mapSettings["nHookDelay"])
+	g_mapControls["editHookDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
+	g_mapControls["udHookDelay"] := g_guiSettings.AddUpDown("Range0-10000 0x80", g_mapSettings["nHookDelay"])
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Key delay")
-	g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
-	g_mapControls["udKeyDelay"] := g_guiSettings.AddUpDown("Range0-1000", g_mapSettings["nKeyDelay"])
+	g_mapControls["editKeyDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
+	g_mapControls["udKeyDelay"] := g_guiSettings.AddUpDown("Range0-1000 0x80", g_mapSettings["nKeyDelay"])
 
 	; Save states
 	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 2*35
@@ -392,24 +388,28 @@ GuiCreate()
 	g_guiSettings.AddButton("x260 y" l_nTopY + l_nSpacingY * l_nCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
-	g_mapControls["hkAimKey"].OnEvent(            "Change", GuiHK_Change)
-	g_mapControls["hkCrouchKey"].OnEvent(         "Change", GuiHK_Change)
-	g_mapControls["hkSprintKey"].OnEvent(         "Change", GuiHK_Change)
-	g_mapControls["hkAutorunKey"].OnEvent(        "Change", GuiHK_Change)
-	g_mapControls["hkForwardKey"].OnEvent(        "Change", GuiHK_Change)
-	g_mapControls["hkBackwardKey"].OnEvent(       "Change", GuiHK_Change)
-	g_mapControls["hkAimAutofireKey"].OnEvent(    "Change", GuiHK_Change)
-	g_mapControls["hkCrouchAutofireKey"].OnEvent( "Change", GuiHK_Change)
-	g_mapControls["hkSprintAutofireKey"].OnEvent( "Change", GuiHK_Change)
-	g_mapControls["ddlAimKey"].OnEvent(           "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlCrouchKey"].OnEvent(        "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlSprintKey"].OnEvent(        "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlAutorunKey"].OnEvent(       "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlForwardKey"].OnEvent(       "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlBackwardKey"].OnEvent(      "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlAimAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlCrouchAutofireKey"].OnEvent("Change", GuiDDLExtra_Change)
-	g_mapControls["ddlSprintAutofireKey"].OnEvent("Change", GuiDDLExtra_Change)
+	g_mapControls["editAutofireKeyInterval"].OnEvent("Change", GuiEdit_Change)
+	g_mapControls["editFocusCheckInterval"].OnEvent( "Change", GuiEdit_Change)
+	g_mapControls["editHookDelay"].OnEvent(          "Change", GuiEdit_Change)
+	g_mapControls["editKeyDelay"].OnEvent(           "Change", GuiEdit_Change)
+	g_mapControls["hkAimKey"].OnEvent(               "Change", GuiHK_Change)
+	g_mapControls["hkCrouchKey"].OnEvent(            "Change", GuiHK_Change)
+	g_mapControls["hkSprintKey"].OnEvent(            "Change", GuiHK_Change)
+	g_mapControls["hkAutorunKey"].OnEvent(           "Change", GuiHK_Change)
+	g_mapControls["hkForwardKey"].OnEvent(           "Change", GuiHK_Change)
+	g_mapControls["hkBackwardKey"].OnEvent(          "Change", GuiHK_Change)
+	g_mapControls["hkAimAutofireKey"].OnEvent(       "Change", GuiHK_Change)
+	g_mapControls["hkCrouchAutofireKey"].OnEvent(    "Change", GuiHK_Change)
+	g_mapControls["hkSprintAutofireKey"].OnEvent(    "Change", GuiHK_Change)
+	g_mapControls["ddlAimKey"].OnEvent(              "Change", GuiDDLExtra_Change)
+	g_mapControls["ddlCrouchKey"].OnEvent(           "Change", GuiDDLExtra_Change)
+	g_mapControls["ddlSprintKey"].OnEvent(           "Change", GuiDDLExtra_Change)
+	g_mapControls["ddlAutorunKey"].OnEvent(          "Change", GuiDDLExtra_Change)
+	g_mapControls["ddlForwardKey"].OnEvent(          "Change", GuiDDLExtra_Change)
+	g_mapControls["ddlBackwardKey"].OnEvent(         "Change", GuiDDLExtra_Change)
+	g_mapControls["ddlAimAutofireKey"].OnEvent(      "Change", GuiDDLExtra_Change)
+	g_mapControls["ddlCrouchAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
+	g_mapControls["ddlSprintAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
 }
 
 ; Set hotkey controls text based on selected DDL extra keys
@@ -438,13 +438,39 @@ GuiDDLExtra_Change(GuiCtrlObj, Info)
 	}
 }
 
-; Prevent intervals from being set to 0, otherwise timers won't work
+; Prevent intervals from being out-of-bounds, otherwise timers won't work
 GuiEdit_Change(GuiCtrlObj, Info)
 {
-	if (GuiCtrlObj.Value == "" || GuiCtrlObj.Value == "0")
-		GuiCtrlObj.Value := "1"
-	else if (SubStr(GuiCtrlObj.Value, 1, 1) == "0")
-		GuiCtrlObj.Value := LTrim(GuiCtrlObj.Value, "0")
+	switch GuiCtrlObj
+	{
+		case g_mapControls["editAutofireKeyInterval"]:
+			l_nMinValue := 1
+			l_nMaxValue := 10000
+			l_udControl := g_mapControls["udAutofireKeyInterval"]
+		case g_mapControls["editFocusCheckInterval"]:
+			l_nMinValue := 1
+			l_nMaxValue := 10000
+			l_udControl := g_mapControls["udFocusCheckInterval"]
+		case g_mapControls["editHookDelay"]:
+			l_nMinValue := 0
+			l_nMaxValue := 10000
+			l_udControl := g_mapControls["udHookDelay"]
+		case g_mapControls["editKeyDelay"]:
+			l_nMinValue := 0
+			l_nMaxValue := 1000
+			l_udControl := g_mapControls["udKeyDelay"]
+	}
+
+	if (GuiCtrlObj.Value == "")
+		GuiCtrlObj.Text := l_nMinValue
+	else
+	{
+		l_nValue := Integer(GuiCtrlObj.Value)
+
+		; The UpDown control will automatically clamp the value within its range
+		if (l_nValue < l_nMinValue || l_nValue > l_nMaxValue)
+			l_udControl.Value := l_nValue
+	}
 }
 
 ; Prevent modified keys from being used in hotkey controls (could be changed to allow them in the future)
