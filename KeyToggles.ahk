@@ -151,7 +151,7 @@ GuiButtonBrowse_Click(*)
 		; Process name not valid, do nothing
 		if (l_bIsProcessNameValid != 1)
 		{
-			MsgBox("`"" l_sFileName "`" is not an executable file.", , 48)
+			MsgBox('"' l_sFileName '" is not an executable file.', , 48)
 			return
 		}
 
@@ -613,7 +613,7 @@ HookWindow()
 	GroupAdd("windowIDGroup", "ahk_id " g_nWindowID)
 
 	if (g_nWindowID)
-		ShowNotification("The window `"" WinGetTitle(g_nWindowID) "`" has been hooked.")
+		ShowNotification('The window "' WinGetTitle(g_nWindowID) '" has been hooked.')
 }
 
 IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
@@ -797,7 +797,7 @@ OnFocusChanged()
 			RegisterHotkeys()
 
 			if (g_nWindowID)
-				ShowNotification("The window `"" WinGetTitle(g_nWindowID) "`" has been hooked.")
+				ShowNotification('The window "' WinGetTitle(g_nWindowID) '" has been hooked.')
 
 			; That's a different window, don't restore toggle states
 			g_mapStates["bRestoreAiming"]            := false
@@ -1238,10 +1238,10 @@ StartFocusCheck()
 {
 	l_sMsgBoxText := ""
 
-	g_mapSettings["sProcessName"] := Trim(g_mapSettings["sProcessName"], "`" `t")
+	g_mapSettings["sProcessName"] := Trim(g_mapSettings["sProcessName"], '" `t')
 	l_bIsProcessNameValid := IsProcessNameValid(g_mapSettings["sProcessName"])
 	if (l_bIsProcessNameValid != 1)
-		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" g_mapSettings["sProcessName"] "`" must end with `".exe`"."
+		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" g_mapSettings["sProcessName"] '" must end with ".exe".'
 
 	l_sDuplicateHotkeys := GetDuplicateHotkeys(false)
 	if (l_sDuplicateHotkeys)
@@ -1259,9 +1259,9 @@ StartFocusCheck()
 	}
 
 	if (g_mapSettings["sWindowName"] == "")
-		ShowNotification("Waiting for the process `"" g_mapSettings["sProcessName"] "`" to become active.")
+		ShowNotification('Waiting for the process "' g_mapSettings["sProcessName"] '" to become active.')
 	else
-		ShowNotification("Waiting for the window `"" g_mapSettings["sWindowName"] "`" of the process `"" g_mapSettings["sProcessName"] "`" to become active.")
+		ShowNotification('Waiting for the window "' g_mapSettings["sWindowName"] '" of the process "' g_mapSettings["sProcessName"] '" to become active.')
 
 	Output(A_ThisFunc "::WinWaitActive")
 	SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
@@ -1287,14 +1287,14 @@ TakeToggleKeysSnapshot(p_bReleaseKeys := true)
 WriteConfigFile()
 {
 	; Strip double quotes and spaces/tabs
-	l_procNameClean := Trim(g_mapControls["editProcessName"].Value, "`" `t")
-	l_windowNameClean := Trim(g_mapControls["editWindowName"].Value, "`" `t")
+	l_procNameClean := Trim(g_mapControls["editProcessName"].Value, '" `t')
+	l_windowNameClean := Trim(g_mapControls["editWindowName"].Value, '" `t')
 	l_sMsgBoxText := ""
 
 	; Validate process name
 	l_bIsProcessNameValid := IsProcessNameValid(l_procNameClean)
 	if (l_bIsProcessNameValid != 1)
-		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" l_procNameClean "`" must end with `".exe`"."
+		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : 'The process name "' l_procNameClean '" must end with ".exe".'
 
 	; Validate hotkeys (no duplicates allowed)
 	l_sDuplicateHotkeys := GetDuplicateHotkeys()
@@ -1311,8 +1311,8 @@ WriteConfigFile()
 	}
 
 	; Surround with double quotes
-	l_procNameClean := "`"" l_procNameClean "`""
-	l_windowNameClean := "`"" l_windowNameClean "`""
+	l_procNameClean := '"' l_procNameClean '"'
+	l_windowNameClean := '"' l_windowNameClean '"'
 
 	; Everything ok, save settings
 	try
