@@ -2,4 +2,9 @@ if exist AHKBatchScriptCompiler.exe (
 	AHKBatchScriptCompiler.exe KeyToggles.ahk
 )
 
-powershell -Command Compress-Archive -Path "KeyToggles.ahk", "KeyToggles.exe", "KeyToggles.ini", "README.md" -Update -DestinationPath "KeyToggles.zip"
+if exist KeyToggles.exe (
+	powershell -Command Compress-Archive -Path "KeyToggles.ahk", "KeyToggles.exe", "KeyToggles.ini", "README.md" -Update -DestinationPath "KeyToggles.zip"
+) else (
+	powershell -Command Compress-Archive -Path "KeyToggles.ahk", "KeyToggles.ini", "README.md" -Update -DestinationPath "KeyToggles.zip"
+)
+	
