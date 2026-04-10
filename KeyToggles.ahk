@@ -4,13 +4,18 @@
 TODO
 add a light theme
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
+add loops when adding events
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
+fix AltTab/Escape/Win key combinations broken in some games
+fix registered hotkeys not taking effect until next restart
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
-redo vertical positioning of GUI controls (use R for groupboxes)
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
+replace IniReadType for bools
 replace sleeps with timers
 replace ternary operators with coalescing ?? operators where possible
+shorten lines below 180 characters
+https://dev.to/manikandan/how-to-use-ai-models-locally-in-vs-code-with-the-continue-plugin-with-multi-model-switching-3na0
 */
 
 #Requires Autohotkey v2.0 ; Display an error and quit if this version requirement is not met.
@@ -151,7 +156,7 @@ GuiButtonBrowse_Click(*)
 		; Process name not valid, do nothing
 		if (l_bIsProcessNameValid != 1)
 		{
-			MsgBox('"' l_sFileName '" is not an executable file.', , 48)
+			MsgBox('"' l_sFileName '" is not an executable file.', , "Icon!")
 			return
 		}
 
@@ -178,7 +183,7 @@ GuiButtonSave_Click(*)
 	{
 		ReadConfigFile()
 		StartFocusCheck()
-		MsgBox("Settings saved!", , 64)
+		MsgBox("Settings saved!", , "Iconi")
 	}
 }
 
@@ -496,7 +501,7 @@ GuiHK_Change(GuiCtrlObj, Info)
 	else if (l_bShift || l_bControl || l_bAlt && l_sHotkeyLength > 1)
 	{
 		GuiCtrlObj.Value := ""
-		MsgBox("You can't use modified keys!", , 48)
+		MsgBox("You can't use modified keys!", , "Icon!")
 	}
 }
 
@@ -616,7 +621,7 @@ HookWindow()
 		ShowNotification('The window "' WinGetTitle(g_nWindowID) '" has been hooked.')
 }
 
-IniReadEnforceType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
+IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 {
 	l_sValue := IniRead(p_sFile, p_sSection, p_sKey, p_sDefault)
 
@@ -996,21 +1001,21 @@ ReadConfigFile()
 	global
 
 	; General
-	g_mapSettings["sProcessName"]             :=            IniRead(g_sConfigFileName, "General", "processName", "")
-	g_mapSettings["sWindowName"]              :=            IniRead(g_sConfigFileName, "General", "windowName", "")
-	g_mapSettings["nAutofireKeyInterval"]     := IniReadEnforceType(g_sConfigFileName, "General", "autofireKeyInterval", 100, "int")
-	g_mapSettings["bFixSystemKeys"]           := IniReadEnforceType(g_sConfigFileName, "General", "fixSystemKeys", 1, "bool")
-	g_mapSettings["nFocusCheckInterval"]      := IniReadEnforceType(g_sConfigFileName, "General", "focusCheckInterval", 1000, "int")
-	g_mapSettings["nHookDelay"]               := IniReadEnforceType(g_sConfigFileName, "General", "hookDelay", 0, "int")
-	g_mapSettings["nKeyDelay"]                := IniReadEnforceType(g_sConfigFileName, "General", "keyDelay", 0, "int")
-	g_mapSettings["bRestoreAutofiresOnFocus"] := IniReadEnforceType(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false, "bool")
-	g_mapSettings["bRestoreTogglesOnFocus"]   := IniReadEnforceType(g_sConfigFileName, "General", "restoreTogglesOnFocus", false, "bool")
-	g_mapSettings["bRunAsAdmin"]              := IniReadEnforceType(g_sConfigFileName, "General", "runAsAdmin", false, "bool")
-	g_mapSettings["nShowNotifications"]       := IniReadEnforceType(g_sConfigFileName, "General", "showNotifications", 0, "int")
-	g_mapSettings["nAimMode"]                 := IniReadEnforceType(g_sConfigFileName, "General", "aimMode", 0, "mode")
-	g_mapSettings["nCrouchMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
-	g_mapSettings["nSprintMode"]              := IniReadEnforceType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
-	g_mapSettings["bAutorunMode"]             := IniReadEnforceType(g_sConfigFileName, "General", "autorunMode", false, "bool")
+	g_mapSettings["sProcessName"]             :=     IniRead(g_sConfigFileName, "General", "processName", "")
+	g_mapSettings["sWindowName"]              :=     IniRead(g_sConfigFileName, "General", "windowName", "")
+	g_mapSettings["nAutofireKeyInterval"]     := IniReadType(g_sConfigFileName, "General", "autofireKeyInterval", 100, "int")
+	g_mapSettings["bFixSystemKeys"]           := IniReadType(g_sConfigFileName, "General", "fixSystemKeys", 1, "bool")
+	g_mapSettings["nFocusCheckInterval"]      := IniReadType(g_sConfigFileName, "General", "focusCheckInterval", 1000, "int")
+	g_mapSettings["nHookDelay"]               := IniReadType(g_sConfigFileName, "General", "hookDelay", 0, "int")
+	g_mapSettings["nKeyDelay"]                := IniReadType(g_sConfigFileName, "General", "keyDelay", 0, "int")
+	g_mapSettings["bRestoreAutofiresOnFocus"] := IniReadType(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false, "bool")
+	g_mapSettings["bRestoreTogglesOnFocus"]   := IniReadType(g_sConfigFileName, "General", "restoreTogglesOnFocus", false, "bool")
+	g_mapSettings["bRunAsAdmin"]              := IniReadType(g_sConfigFileName, "General", "runAsAdmin", false, "bool")
+	g_mapSettings["nShowNotifications"]       := IniReadType(g_sConfigFileName, "General", "showNotifications", 0, "int")
+	g_mapSettings["nAimMode"]                 := IniReadType(g_sConfigFileName, "General", "aimMode", 0, "mode")
+	g_mapSettings["nCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
+	g_mapSettings["nSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
+	g_mapSettings["bAutorunMode"]             := IniReadType(g_sConfigFileName, "General", "autorunMode", false, "bool")
 
 	; Main keys
 	g_mapSettings["sAimKey"]    := IniRead(g_sConfigFileName, "Keys", "aimKey", "RButton")
@@ -1028,7 +1033,7 @@ ReadConfigFile()
 	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; Debug
-	g_mapSettings["bDebugMode"] := IniReadEnforceType(g_sConfigFileName, "Debug", "debugMode", false, "bool")
+	g_mapSettings["bDebugMode"] := IniReadType(g_sConfigFileName, "Debug", "debugMode", false, "bool")
 
 	; Prevent intervals from being set to 0, otherwise timers won't work
 	g_mapSettings["nAutofireKeyInterval"] := Max(g_mapSettings["nAutofireKeyInterval"], 1)
@@ -1253,7 +1258,7 @@ StartFocusCheck()
 	; Process name not valid or duplicate hotkeys, show the settings configurator
 	if (l_sMsgBoxText)
 	{
-		MsgBox(l_sMsgBoxText, , 48)
+		MsgBox(l_sMsgBoxText, , "Icon!")
 		g_guiSettings.Show()
 		return
 	}
@@ -1306,7 +1311,7 @@ WriteConfigFile()
 
 	if (l_sMsgBoxText)
 	{
-		MsgBox(l_sMsgBoxText, , 48)
+		MsgBox(l_sMsgBoxText, , "Icon!")
 		return false
 	}
 
@@ -1345,14 +1350,14 @@ WriteConfigFile()
 	}
 	catch as e
 	{
-		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , 48)
+		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
 		return false
 	}
 
 	return true
 }
 
-; Fixes an issue where you couldn't click outside the window while toggle keys are mouse buttons and are enabled
+; Fixes an issue where you couldn't click outside the window if any toggle key was a mouse button and toggled
 #HotIf WinActive("ahk_group windowIDGroup")
 *$LButton::
 *$MButton::
@@ -1388,16 +1393,12 @@ WriteConfigFile()
 	Suspend()
 
 	; Single beep when suspended
+	SoundBeep(1000)
+
 	if (A_IsSuspended)
-	{
-		SoundBeep(1000)
 		ReleaseAllKeys()
-	}
 	; Double beep when resumed
 	else
-	{
 		SoundBeep(1000)
-		SoundBeep(1000)
-	}
 }
 #SuspendExempt False
