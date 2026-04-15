@@ -9,7 +9,8 @@ add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs
 add text/tooltips when mousing over GUI controls to explain what they do
 disable hotkeys when using AltTab/Escape/Win key combinations
 fix "Error: Target window not found: g_nWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
-fix registered hotkeys not taking effect until next restart
+fix #HotIf WinActive("ahk_group windowIDGroup") not working anymore since HookWindow() was removed
+fix modifiers still toggled while clicking outside the window
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 increase default key delay to 25ms to improve compatibility with more games
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
@@ -183,6 +184,9 @@ GuiButtonSave_Click(*)
 
 	if (WriteConfigFile())
 	{
+		UnregisterHotkeys()
+		; Force the hotkeys to be re-registered
+		global g_nWindowID := 0
 		ReadConfigFile()
 		StartFocusCheck()
 		MsgBox("Settings saved!", , "Iconi")
@@ -1334,6 +1338,32 @@ TakeToggleKeysSnapshot()
 	g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
 	g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
 	g_bToggleKeysSnapshotTaken := true
+}
+
+UnregisterHotkeys()
+{
+	global
+
+	HotIfWinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
+
+	Hotkey("*$" g_mapSettings["sAimKey"], OnKeyPress, "Off")
+	Hotkey("*$" g_mapSettings["sCrouchKey"], OnKeyPress, "Off")
+	Hotkey("*$" g_mapSettings["sSprintKey"], OnKeyPress, "Off")
+	Hotkey("*$" g_mapSettings["sAutorunKey"], OnKeyPress, "Off")
+	Hotkey("~*$" g_mapSettings["sForwardKey"], OnKeyPress, "Off")
+	Hotkey("~*$" g_mapSettings["sBackwardKey"], OnKeyPress, "Off")
+	Hotkey("*$" g_mapSettings["sAimAutofireKey"], OnKeyPress, "Off")
+	Hotkey("*$" g_mapSettings["sCrouchAutofireKey"], OnKeyPress, "Off")
+	Hotkey("*$" g_mapSettings["sSprintAutofireKey"], OnKeyPress, "Off")
+	Hotkey("*$" "!Tab", SendAltTab, "Off")
+	Hotkey("*$" "Escape", SendEscape, "Off")
+	Hotkey("*$" "LWin", SendWindows, "Off")
+	Hotkey("*$" "RWin", SendWindows, "Off")
+	g_fnAutofireAim := 0
+	g_fnAutofireCrouch := 0
+	g_fnAutofireSprint := 0
+
+	HotIfWinActive()
 }
 
 WriteConfigFile()
