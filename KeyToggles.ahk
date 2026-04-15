@@ -7,9 +7,11 @@ add application profiles (https://stackoverflow.com/questions/45190170/how-can-i
 add loops when adding events
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
-fix AltTab/Escape/Win key combinations broken in some games
+disable hotkeys when using AltTab/Escape/Win key combinations
+fix "Error: Target window not found: g_nWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
 fix registered hotkeys not taking effect until next restart
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
+increase default key delay to 25ms to improve compatibility with more games
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 replace IniReadType for bools
 replace sleeps with timers
@@ -783,7 +785,7 @@ OnFocusChanged()
 {
 	global
 
-	Output(A_ThisFunc "::waiting")
+	Output(A_ThisFunc "::WinWaitActive")
 
 	; We need to store this until the function completes as the user could update the process/window name before WinWaitActive times out
 	local l_sWinTitle := g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"]
@@ -1068,6 +1070,7 @@ RegisterHotkeys()
 	       g_mapSettings["nSprintMode"] == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 
 	; Fixes issues when pressing system keys while toggle keys are modifiers and toggled
+	; See https://en.wikipedia.org/wiki/Table_of_keyboard_shortcuts#System_navigation
 	Hotkey("*$" "!Tab",   SendAltTab,  g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
 	Hotkey("*$" "Escape", SendEscape,  g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
 	Hotkey("*$" "LWin",   SendWindows, g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
@@ -1135,13 +1138,28 @@ SendAltTab(p_sThisHotkey)
 	if (ShouldRestoreTogglesOnFocus())
 		TakeToggleKeysSnapshot()
 
-	; Check if modifier keys are physically pressed to handle Ctrl+Alt+Tab, Shift+Alt+Tab and Ctrl+Shift+Alt+Tab
-	if (GetKeyState("Control", "P"))
+	ReleaseAllKeys()
+
+	; Check if modifier keys are physically pressed to handle  modifiers + Tab
+	l_bIsControlPressed := GetKeyState("Control", "P")
+	l_bIsShiftPressed := GetKeyState("Shift", "P")
+
+	if (l_bIsControlPressed)
 		SendInput("{Blind}{Control down}")
-	if (GetKeyState("Shift", "P"))
+	if (l_bIsShiftPressed)
 		SendInput("{Blind}{Shift down}")
 
-	SendInput("{Blind}{Alt down}{Tab}")
+	SendInput("{Blind}{Alt down}{Tab down}")
+	SendKey("Alt", , true)
+
+	l_bIsControlPressed := GetKeyState("Control", "P")
+	l_bIsShiftPressed := GetKeyState("Shift", "P")
+
+	if (l_bIsControlPressed)
+		SendInput("{Blind}{Control up}")
+	if (l_bIsShiftPressed)
+		SendInput("{Blind}{Shift up}")
+
 	;Output(A_ThisFunc "::end")
 }
 
@@ -1151,7 +1169,7 @@ SendClickOutsideWindow(p_sKey)
 
 	; Take a snapshot of the toggle states
 	if (ShouldRestoreTogglesOnFocus())
-		TakeToggleKeysSnapshot(false)
+		TakeToggleKeysSnapshot()
 
 	ReleaseAllKeys()
 	SendKey(p_sKey, 0, true)
@@ -1167,16 +1185,35 @@ SendEscape(p_sThisHotkey)
 	if (ShouldRestoreTogglesOnFocus())
 		TakeToggleKeysSnapshot()
 
-	; Check if modifier keys are physically pressed to handle Ctrl+Escape and Ctrl+Shift+Escape
-	if (GetKeyState("Control", "P"))
+	ReleaseAllKeys()
+
+	; Check if modifier keys are physically pressed to handle modifiers + Escape
+	l_bIsAltPressed := GetKeyState("Alt", "P")
+	l_bIsControlPressed := GetKeyState("Control", "P")
+	l_bIsShiftPressed := GetKeyState("Shift", "P")
+
+	if (l_bIsAltPressed)
+		SendInput("{Blind}{Alt down}")
+	if (l_bIsControlPressed)
 		SendInput("{Blind}{Control down}")
-	if (GetKeyState("Shift", "P"))
+	if (l_bIsShiftPressed)
 		SendInput("{Blind}{Shift down}")
 
-	SendInput("{Blind}{Escape}")
+	SendKey("Escape", , true)
+
+	l_bIsAltPressed := GetKeyState("Alt", "P")
+	l_bIsControlPressed := GetKeyState("Control", "P")
+	l_bIsShiftPressed := GetKeyState("Shift", "P")
+
+	if (l_bIsAltPressed)
+		SendInput("{Blind}{Alt up}")
+	if (l_bIsControlPressed)
+		SendInput("{Blind}{Control up}")
+	if (l_bIsShiftPressed)
+		SendInput("{Blind}{Shift up}")
 
 	; Fixes an issue where the window wouldn't receive key up events when pressing Ctrl+Shift+Escape
-	ControlSend("{Blind}{Control up}{Shift up}")
+	ControlSend("{Blind}{Alt up}{Control up}{Shift up}")
 
 	;Output(A_ThisFunc "::end")
 }
@@ -1202,11 +1239,24 @@ SendWindows(p_sThisHotkey)
 	if (ShouldRestoreTogglesOnFocus())
 		TakeToggleKeysSnapshot()
 
-	; Check if modifier keys are physically pressed to handle Shift+Win
-	if (GetKeyState("Shift", "P"))
+	ReleaseAllKeys()
+
+	; Check if modifier keys are physically pressed to handle modifiers + Win
+	l_bIsAltPhysicallyPressed := GetKeyState("Alt", "P")
+	l_bIsShiftPhysicallyPressed := GetKeyState("Shift", "P")
+	if (l_bIsAltPhysicallyPressed)
+		SendInput("{Blind}{Alt down}")
+	if (l_bIsShiftPhysicallyPressed)
 		SendInput("{Blind}{Shift down}")
 
-	SendInput("{Blind}{LWin}")
+	SendKey("LWin", , true)
+
+	l_bIsAltPhysicallyPressed := GetKeyState("Alt", "P")
+	l_bIsShiftPhysicallyPressed := GetKeyState("Shift", "P")
+	if (l_bIsAltPhysicallyPressed)
+		SendInput("{Blind}{Alt up}")
+	if (l_bIsShiftPhysicallyPressed)
+		SendInput("{Blind}{Shift up}")
 
 	;Output(A_ThisFunc "::end")
 }
@@ -1272,7 +1322,7 @@ StartFocusCheck()
 	SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
 }
 
-TakeToggleKeysSnapshot(p_bReleaseKeys := true)
+TakeToggleKeysSnapshot()
 {
 	global
 
@@ -1284,9 +1334,6 @@ TakeToggleKeysSnapshot(p_bReleaseKeys := true)
 	g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
 	g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
 	g_bToggleKeysSnapshotTaken := true
-
-	if (p_bReleaseKeys)
-		ReleaseAllKeys()
 }
 
 WriteConfigFile()
