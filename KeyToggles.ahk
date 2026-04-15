@@ -7,7 +7,6 @@ add application profiles (https://stackoverflow.com/questions/45190170/how-can-i
 add loops when adding events
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
-disable hotkeys when using AltTab/Escape/Win key combinations
 fix "Error: Target window not found: g_nWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
 fix #HotIf WinActive("ahk_group windowIDGroup") not working anymore since HookWindow() was removed
 fix modifiers still toggled while clicking outside the window
@@ -1143,26 +1142,19 @@ SendAltTab(p_sThisHotkey)
 		TakeToggleKeysSnapshot()
 
 	ReleaseAllKeys()
+	Suspend()
 
-	; Check if modifier keys are physically pressed to handle  modifiers + Tab
+	; Check if modifier keys are physically pressed to handle modifiers + Tab correctly
 	l_bIsControlPressed := GetKeyState("Control", "P")
 	l_bIsShiftPressed := GetKeyState("Shift", "P")
-
 	if (l_bIsControlPressed)
 		SendInput("{Blind}{Control down}")
 	if (l_bIsShiftPressed)
 		SendInput("{Blind}{Shift down}")
 
-	SendInput("{Blind}{Alt down}{Tab down}")
+	SendInput("{Blind}{Tab down}")
 	SendKey("Alt", , true)
-
-	l_bIsControlPressed := GetKeyState("Control", "P")
-	l_bIsShiftPressed := GetKeyState("Shift", "P")
-
-	if (l_bIsControlPressed)
-		SendInput("{Blind}{Control up}")
-	if (l_bIsShiftPressed)
-		SendInput("{Blind}{Shift up}")
+	Suspend()
 
 	;Output(A_ThisFunc "::end")
 }
@@ -1190,34 +1182,13 @@ SendEscape(p_sThisHotkey)
 		TakeToggleKeysSnapshot()
 
 	ReleaseAllKeys()
-
-	; Check if modifier keys are physically pressed to handle modifiers + Escape
-	l_bIsAltPressed := GetKeyState("Alt", "P")
-	l_bIsControlPressed := GetKeyState("Control", "P")
-	l_bIsShiftPressed := GetKeyState("Shift", "P")
-
-	if (l_bIsAltPressed)
-		SendInput("{Blind}{Alt down}")
-	if (l_bIsControlPressed)
-		SendInput("{Blind}{Control down}")
-	if (l_bIsShiftPressed)
-		SendInput("{Blind}{Shift down}")
-
+	Suspend()
 	SendKey("Escape", , true)
-
-	l_bIsAltPressed := GetKeyState("Alt", "P")
-	l_bIsControlPressed := GetKeyState("Control", "P")
-	l_bIsShiftPressed := GetKeyState("Shift", "P")
-
-	if (l_bIsAltPressed)
-		SendInput("{Blind}{Alt up}")
-	if (l_bIsControlPressed)
-		SendInput("{Blind}{Control up}")
-	if (l_bIsShiftPressed)
-		SendInput("{Blind}{Shift up}")
 
 	; Fixes an issue where the window wouldn't receive key up events when pressing Ctrl+Shift+Escape
 	ControlSend("{Blind}{Alt up}{Control up}{Shift up}")
+
+	Suspend()
 
 	;Output(A_ThisFunc "::end")
 }
@@ -1244,24 +1215,9 @@ SendWindows(p_sThisHotkey)
 		TakeToggleKeysSnapshot()
 
 	ReleaseAllKeys()
-
-	; Check if modifier keys are physically pressed to handle modifiers + Win
-	l_bIsAltPhysicallyPressed := GetKeyState("Alt", "P")
-	l_bIsShiftPhysicallyPressed := GetKeyState("Shift", "P")
-	if (l_bIsAltPhysicallyPressed)
-		SendInput("{Blind}{Alt down}")
-	if (l_bIsShiftPhysicallyPressed)
-		SendInput("{Blind}{Shift down}")
-
+	Suspend()
 	SendKey("LWin", , true)
-
-	l_bIsAltPhysicallyPressed := GetKeyState("Alt", "P")
-	l_bIsShiftPhysicallyPressed := GetKeyState("Shift", "P")
-	if (l_bIsAltPhysicallyPressed)
-		SendInput("{Blind}{Alt up}")
-	if (l_bIsShiftPhysicallyPressed)
-		SendInput("{Blind}{Shift up}")
-
+	Suspend()
 	;Output(A_ThisFunc "::end")
 }
 
