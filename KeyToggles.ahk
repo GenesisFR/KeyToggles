@@ -613,19 +613,6 @@ GuiUpdate()
 	g_mapControls["udKeyDelay"].Value                := g_mapSettings["nKeyDelay"]
 }
 
-HookWindow()
-{
-	global g_nWindowID
-
-	; Make the hotkeys active only for a specific window
-	g_nWindowID := WinGetID(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
-	Output(A_ThisFunc "::WinGet(" g_nWindowID ")")
-	GroupAdd("windowIDGroup", "ahk_id " g_nWindowID)
-
-	if (g_nWindowID)
-		ShowNotification('The window "' WinGetTitle(g_nWindowID) '" has been hooked.')
-}
-
 IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 {
 	l_sValue := IniRead(p_sFile, p_sSection, p_sKey, p_sDefault)
@@ -1043,13 +1030,16 @@ ReadConfigFile()
 	; Prevent intervals from being set to 0, otherwise timers won't work
 	g_mapSettings["nAutofireKeyInterval"] := Max(g_mapSettings["nAutofireKeyInterval"], 1)
 	g_mapSettings["nFocusCheckInterval"]  := Max(g_mapSettings["nFocusCheckInterval"], 1)
+
+	GroupAdd("windowIDGroup", g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
 }
 
 RegisterHotkeys()
 {
 	global
 
-	HotIfWinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
+	;HotIfWinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
+	HotIfWinActive("ahk_group windowIDGroup")
 
 	; Enabled only for toggle and hold modes
 	Hotkey("*$" g_mapSettings["sAimKey"], OnKeyPress, g_mapSettings["nAimMode"] == KEY_MODE_TOGGLE ||
@@ -1300,7 +1290,8 @@ UnregisterHotkeys()
 {
 	global
 
-	HotIfWinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
+	;HotIfWinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
+	HotIfWinActive("ahk_group windowIDGroup")
 
 	Hotkey("*$" g_mapSettings["sAimKey"], OnKeyPress, "Off")
 	Hotkey("*$" g_mapSettings["sCrouchKey"], OnKeyPress, "Off")
@@ -1391,6 +1382,7 @@ WriteConfigFile()
 }
 
 ; Fixes an issue where you couldn't click outside the window if any toggle key was a mouse button and toggled
+;#HotIf WinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
 #HotIf WinActive("ahk_group windowIDGroup")
 *$LButton::
 *$MButton::
@@ -1398,15 +1390,17 @@ WriteConfigFile()
 *$XButton1::
 *$XButton2::
 {
+	l_sCleanHotkey := LTrim(ThisHotkey, "*$")
+
 	if (!IsMouseOverWindow(g_nWindowID))
 	{
 		;Output(ThisHotkey "::outside window")
-		SendClickOutsideWindow(LTrim(ThisHotkey, "*$"))
+		SendClickOutsideWindow(l_sCleanHotkey)
 	}
 	else
 	{
 		;Output(ThisHotkey "::inside window")
-		SendKey(LTrim(ThisHotkey, "*$"), 0, true)
+		SendKey(l_sCleanHotkey, 0, true)
 	}
 }
 #HotIf
