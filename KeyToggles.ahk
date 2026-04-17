@@ -8,7 +8,6 @@ add loops when adding events
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
 fix "Error: Target window not found: g_nWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
-fix #HotIf WinActive("ahk_group windowIDGroup") not working anymore since HookWindow() was removed
 fix modifiers still toggled while clicking outside the window
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 increase default key delay to 25ms to improve compatibility with more games
@@ -770,6 +769,14 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 	Output(A_ThisFunc "::end")
 }
 
+; Handle clicking outside the window while a mouse button is toggled
+OnClickOutsideWindow(p_sThisHotkey)
+{
+	l_sCleanHotkey := LTrim(p_sThisHotkey, "*$")
+	Output(A_ThisFunc "::" l_sCleanHotkey)
+	SendClickOutsideWindow(l_sCleanHotkey)
+}
+
 ; Hook the window and register hotkeys if necessary, disable toggles on focus lost and optionally restore them on focus
 OnFocusChanged()
 {
@@ -1030,16 +1037,12 @@ ReadConfigFile()
 	; Prevent intervals from being set to 0, otherwise timers won't work
 	g_mapSettings["nAutofireKeyInterval"] := Max(g_mapSettings["nAutofireKeyInterval"], 1)
 	g_mapSettings["nFocusCheckInterval"]  := Max(g_mapSettings["nFocusCheckInterval"], 1)
-
-	GroupAdd("windowIDGroup", g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
 }
 
 RegisterHotkeys()
 {
-	global
-
-	;HotIfWinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
-	HotIfWinActive("ahk_group windowIDGroup")
+	l_sWinTitle := g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"]
+	HotIf((*) => WinActive(l_sWinTitle))
 
 	; Enabled only for toggle and hold modes
 	Hotkey("*$" g_mapSettings["sAimKey"], OnKeyPress, g_mapSettings["nAimMode"] == KEY_MODE_TOGGLE ||
@@ -1062,25 +1065,52 @@ RegisterHotkeys()
 	Hotkey("*$" g_mapSettings["sSprintAutofireKey"], OnKeyPress, g_mapSettings["nSprintMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
 	       g_mapSettings["nSprintMode"] == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 
-	; Fixes issues when pressing system keys while toggle keys are modifiers and toggled
 	; See https://en.wikipedia.org/wiki/Table_of_keyboard_shortcuts#System_navigation
+	; Fixes issues when pressing system keys while toggle keys are modifiers and toggled
 	Hotkey("*$" "!Tab",   SendAltTab,  g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
 	Hotkey("*$" "Escape", SendEscape,  g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
 	Hotkey("*$" "LWin",   SendWindows, g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
 	Hotkey("*$" "RWin",   SendWindows, g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
 
 	; Bind our functors to actual functions
-	g_fnAutofireAim    := KeyAutofire.Bind(g_mapSettings["sAimAutofireKey"])
-	g_fnAutofireCrouch := KeyAutofire.Bind(g_mapSettings["sCrouchAutofireKey"])
-	g_fnAutofireSprint := KeyAutofire.Bind(g_mapSettings["sSprintAutofireKey"])
+	global g_fnAutofireAim    := KeyAutofire.Bind(g_mapSettings["sAimAutofireKey"])
+	global g_fnAutofireCrouch := KeyAutofire.Bind(g_mapSettings["sCrouchAutofireKey"])
+	global g_fnAutofireSprint := KeyAutofire.Bind(g_mapSettings["sSprintAutofireKey"])
 
-	HotIfWinActive()
+	HotIf((*) => WinActive(l_sWinTitle) && !IsMouseOver(l_sWinTitle))
+
+	RegisterMouseHotkeys()
+
+	HotIf()
+}
+
+RegisterMouseHotkeys()
+{
+	l_mapHotkeys := Map(
+		g_mapSettings["sAimKey"], 1,
+		g_mapSettings["sCrouchKey"], 1,
+		g_mapSettings["sSprintKey"], 1,
+		g_mapSettings["sAutorunKey"], 1,
+		g_mapSettings["sForwardKey"], 1,
+		g_mapSettings["sBackwardKey"], 1,
+		g_mapSettings["sAimAutofireKey"], 1,
+		g_mapSettings["sCrouchAutofireKey"], 1,
+		g_mapSettings["sSprintAutofireKey"], 1
+	)
+
+	for l_sValue in ["LButton", "MButton", "RButton", "XButton1", "XButton2"]
+	{
+		; Don't register a mouse hotkey if it's already been registered, otherwise it'll override its action
+		if (!l_mapHotkeys.Has(l_sValue))
+{
+			Output(A_ThisFunc ":: " l_sValue)
+			Hotkey("*$" l_sValue, OnClickOutsideWindow, "On")
+		}
+	}
 }
 
 ReleaseAllKeys()
 {
-	global
-
 	Output(A_ThisFunc "::states(" g_mapStates["bAiming"] ", " g_mapStates["bCrouching"] ", " g_mapStates["bSprinting"] ", " g_mapStates["bAutorunning"] ")")
 
 	; Release all toggle keys
@@ -1288,10 +1318,8 @@ TakeToggleKeysSnapshot()
 
 UnregisterHotkeys()
 {
-	global
-
-	;HotIfWinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
-	HotIfWinActive("ahk_group windowIDGroup")
+	l_sWinTitle := g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"]
+	HotIf((*) => WinActive(l_sWinTitle))
 
 	Hotkey("*$" g_mapSettings["sAimKey"], OnKeyPress, "Off")
 	Hotkey("*$" g_mapSettings["sCrouchKey"], OnKeyPress, "Off")
@@ -1302,15 +1330,25 @@ UnregisterHotkeys()
 	Hotkey("*$" g_mapSettings["sAimAutofireKey"], OnKeyPress, "Off")
 	Hotkey("*$" g_mapSettings["sCrouchAutofireKey"], OnKeyPress, "Off")
 	Hotkey("*$" g_mapSettings["sSprintAutofireKey"], OnKeyPress, "Off")
+
 	Hotkey("*$" "!Tab", SendAltTab, "Off")
 	Hotkey("*$" "Escape", SendEscape, "Off")
 	Hotkey("*$" "LWin", SendWindows, "Off")
 	Hotkey("*$" "RWin", SendWindows, "Off")
-	g_fnAutofireAim := 0
-	g_fnAutofireCrouch := 0
-	g_fnAutofireSprint := 0
 
-	HotIfWinActive()
+	global g_fnAutofireAim := 0
+	global g_fnAutofireCrouch := 0
+	global g_fnAutofireSprint := 0
+
+	HotIf((*) => WinActive(l_sWinTitle) && !IsMouseOver(l_sWinTitle))
+
+	Hotkey("*$LButton", OnClickOutsideWindow, "Off")
+	Hotkey("*$MButton", OnClickOutsideWindow, "Off")
+	Hotkey("*$RButton", OnClickOutsideWindow, "Off")
+	Hotkey("*$XButton1", OnClickOutsideWindow, "Off")
+	Hotkey("*$XButton2", OnClickOutsideWindow, "Off")
+
+	HotIf()
 }
 
 WriteConfigFile()
@@ -1380,30 +1418,6 @@ WriteConfigFile()
 
 	return true
 }
-
-; Fixes an issue where you couldn't click outside the window if any toggle key was a mouse button and toggled
-;#HotIf WinActive(g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"])
-#HotIf WinActive("ahk_group windowIDGroup")
-*$LButton::
-*$MButton::
-*$RButton::
-*$XButton1::
-*$XButton2::
-{
-	l_sCleanHotkey := LTrim(ThisHotkey, "*$")
-
-	if (!IsMouseOverWindow(g_nWindowID))
-	{
-		;Output(ThisHotkey "::outside window")
-		SendClickOutsideWindow(l_sCleanHotkey)
-	}
-	else
-	{
-		;Output(ThisHotkey "::inside window")
-		SendKey(l_sCleanHotkey, 0, true)
-	}
-}
-#HotIf
 
 #SuspendExempt
 #HotIf g_mapSettings["bDebugMode"]
