@@ -902,13 +902,14 @@ OnKeyPress(p_sThisHotkey)
 			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and toggled
 			if (l_bIsMouseButton && !l_bIsMouseOverWindow)
 			{
-				;Output(A_ThisFunc "::" l_sCleanHotkey " outside window")
+				Output(A_ThisFunc "::" l_sCleanHotkey " outside window")
 				SendClickOutsideWindow(l_sCleanHotkey)
 			}
 			; Otherwise toggle the key
 			else
 			{
-				;Output(A_ThisFunc "::" l_sCleanHotkey " inside window")
+				if (l_bIsMouseButton)
+					Output(A_ThisFunc "::" l_sCleanHotkey " inside window")
 
 				if (l_sCleanHotkey == g_mapSettings["sAimKey"])
 					KeyToggle(g_mapSettings["sAimKey"], !g_mapStates["bAiming"], true)
