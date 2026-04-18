@@ -193,8 +193,6 @@ GuiButtonSave_Click(*)
 
 GuiButtonSelect_Click(*)
 {
-	global g_guiWindowSelector
-
 	; Turn the window selector GUI into a modal
 	g_guiSettings.Opt("+Disabled")
 
@@ -202,7 +200,7 @@ GuiButtonSelect_Click(*)
 	if (!g_guiWindowSelector)
 	{
 		; Gui
-		g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Window selector")
+		global g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Window selector")
 		g_guiWindowSelector.BackColor := "353434"
 		g_guiWindowSelector.SetFont("s10")
 		g_guiWindowSelector.OnEvent("Close", (*) => g_guiSettings.Opt("-Disabled"))
@@ -226,32 +224,30 @@ GuiButtonSelect_Click(*)
 
 GuiCreate()
 {
-	global
-
 	; Safety check
 	if (g_guiSettings)
 		return
 
-	g_guiSettings := Gui.Call("+OwnDialogs", "Configure settings", )
+	global g_guiSettings := Gui.Call("+OwnDialogs", "Configure settings", )
 	g_guiSettings.BackColor := "353434"
 	g_guiSettings.MarginX := 20
 	g_guiSettings.MarginY := 10
 	g_guiSettings.SetFont("s10 CWhite")
 
 	; Layout constants
-	local l_nCurrentRow := 0
-	local l_nSpacingX := 10
-	local l_nSpacingY := 25
-	local l_nTopY := 10
+	l_nCurrentRow := 0
+	l_nSpacingX := 10
+	l_nSpacingY := 25
+	l_nTopY := 10
 	; Leftmost controls
-	local l_nLeftWidth := 170
-	local l_nLeftX := 25
+	l_nLeftWidth := 170
+	l_nLeftX := 25
 	; Middle controls
-	local l_nMiddleX := l_nLeftX + l_nLeftWidth + l_nSpacingX
-	local l_nMiddleWidth := 170
+	l_nMiddleX := l_nLeftX + l_nLeftWidth + l_nSpacingX
+	l_nMiddleWidth := 170
 	; Rightmost controls
-	local l_nRightX := l_nMiddleX + l_nMiddleWidth + l_nSpacingX
-	local l_nRightWidth := 100
+	l_nRightX := l_nMiddleX + l_nMiddleWidth + l_nSpacingX
+	l_nRightWidth := 100
 
 	; General
 	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY " h" 6*30 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + l_nSpacingX * 4), "General")
@@ -740,8 +736,6 @@ KeyHold(p_sKey)
 
 KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 {
-	global
-
 	Output(A_ThisFunc "::begin")
 
 	switch p_sKey
@@ -780,13 +774,11 @@ OnClickOutsideWindow(p_sThisHotkey)
 ; Hook the window and register hotkeys if necessary, disable toggles on focus lost and optionally restore them on focus
 OnFocusChanged()
 {
-	global
-
 	Output(A_ThisFunc "::WinWaitActive")
 
 	; We need to store this until the function completes as the user could update the process/window name before WinWaitActive times out
-	local l_sWinTitle := g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"]
-	local l_nTimeout := g_mapSettings["nFocusCheckInterval"] * 0.001
+	l_sWinTitle := g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"]
+	l_nTimeout := g_mapSettings["nFocusCheckInterval"] * 0.001
 
 	if (WinWaitActive(l_sWinTitle,, l_nTimeout))
 	{
@@ -796,7 +788,7 @@ OnFocusChanged()
 		; Make sure to hook the window again if it no longer exists
 		if (g_nWindowID != WinExist(l_sWinTitle))
 		{
-			g_nWindowID := WinGetID(l_sWinTitle)
+			global g_nWindowID := WinGetID(l_sWinTitle)
 			Output(A_ThisFunc "::WinGet(" g_nWindowID ")")
 			RegisterHotkeys()
 
@@ -852,7 +844,7 @@ OnFocusChanged()
 		{
 			; A snapshot of the toggle states was already taken elsewhere, don't take another one
 			if (g_bToggleKeysSnapshotTaken)
-				g_bToggleKeysSnapshotTaken := false
+				global g_bToggleKeysSnapshotTaken := false
 			else
 			{
 				Output(A_ThisFunc "::saveToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
@@ -873,11 +865,9 @@ OnFocusChanged()
 
 OnKeyPress(p_sThisHotkey)
 {
-	global
-
-	local l_sCleanHotkey := LTrim(p_sThisHotkey, "~*$")
-	;local l_sCleanHotkeyNoModifiers := LTrim(p_sThisHotkey, "~*$#!^+")
-	local l_nKeyMode := KEY_MODE_DISABLED
+	l_sCleanHotkey := LTrim(p_sThisHotkey, "~*$")
+	;l_sCleanHotkeyNoModifiers := LTrim(p_sThisHotkey, "~*$#!^+")
+	l_nKeyMode := KEY_MODE_DISABLED
 
 	switch l_sCleanHotkey
 	{
@@ -997,8 +987,6 @@ Output(p_sMessage, p_bSeparator := false)
 
 ReadConfigFile()
 {
-	global
-
 	; General
 	g_mapSettings["sProcessName"]             :=     IniRead(g_sConfigFileName, "General", "processName", "")
 	g_mapSettings["sWindowName"]              :=     IniRead(g_sConfigFileName, "General", "windowName", "")
@@ -1065,8 +1053,8 @@ RegisterHotkeys()
 	Hotkey("*$" g_mapSettings["sSprintAutofireKey"], OnKeyPress, g_mapSettings["nSprintMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
 	       g_mapSettings["nSprintMode"] == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 
-	; See https://en.wikipedia.org/wiki/Table_of_keyboard_shortcuts#System_navigation
 	; Fixes issues when pressing system keys while toggle keys are modifiers and toggled
+	; See https://en.wikipedia.org/wiki/Table_of_keyboard_shortcuts#System_navigation
 	Hotkey("*$" "!Tab",   SendAltTab,  g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
 	Hotkey("*$" "Escape", SendEscape,  g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
 	Hotkey("*$" "LWin",   SendWindows, g_mapSettings["bFixSystemKeys"] ? "On" : "Off")
@@ -1102,7 +1090,7 @@ RegisterMouseHotkeys()
 	{
 		; Don't register a mouse hotkey if it's already been registered, otherwise it'll override its action
 		if (!l_mapHotkeys.Has(l_sValue))
-{
+		{
 			Output(A_ThisFunc ":: " l_sValue)
 			Hotkey("*$" l_sValue, OnClickOutsideWindow, "On")
 		}
@@ -1304,8 +1292,6 @@ StartFocusCheck()
 
 TakeToggleKeysSnapshot()
 {
-	global
-
 	g_mapStates["bRestoreAiming"]            := g_mapStates["bAiming"]
 	g_mapStates["bRestoreCrouching"]         := g_mapStates["bCrouching"]
 	g_mapStates["bRestoreSprinting"]         := g_mapStates["bSprinting"]
@@ -1313,7 +1299,8 @@ TakeToggleKeysSnapshot()
 	g_mapStates["bRestoreAutofireAiming"]    := g_mapStates["bAutofireAiming"]
 	g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
 	g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
-	g_bToggleKeysSnapshotTaken := true
+
+	global g_bToggleKeysSnapshotTaken := true
 }
 
 UnregisterHotkeys()
