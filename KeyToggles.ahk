@@ -6,11 +6,11 @@ add application profiles (https://stackoverflow.com/questions/45190170/how-can-i
 add loops when adding events
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
-fix "Error: Target window not found: g_nWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
+fix "Error: Target window not found: g_iWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
 fix modifiers still toggled while clicking outside the window
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
-replace "ahk_id " g_nWindowID with window name and process name
+replace "ahk_id " g_iWindowID with window name and process name
 replace sleeps with timers
 replace ternary operators with coalescing ?? operators where possible
 https://dev.to/manikandan/how-to-use-ai-models-locally-in-vs-code-with-the-continue-plugin-with-multi-model-switching-3na0
@@ -35,19 +35,20 @@ g_mapControls := Map()
 g_mapSettings := Map(
 	"sProcessName",             "",
 	"sWindowName",              "",
-	"nAutofireKeyInterval",     100,
+	"iAutofireKeyInterval",     100,
 	"bFixSystemKeys",           true,
-	"nFocusCheckInterval",      1000,
-	"nHookDelay",               0,
-	"nKeyDelay",                0,
+	"iFocusCheckInterval",      1000,
+	"iHookDelay",               0,
+	"iKeyDelay",                0,
 	"bRestoreAutofiresOnFocus", false,
 	"bRestoreTogglesOnFocus",   false,
 	"bRunAsAdmin",              false,
-	"nShowNotifications",       0,
-	"nAimMode",                 0,
-	"nCrouchMode",              0,
-	"nSprintMode",              0,
-	"bAutorunMode",             0,
+	"iShowNotifications",       0,
+	"iAimMode",                 0,
+	"iCrouchMode",              0,
+	"iSprintMode",              0,
+	"bAutorunMode",             false,
+	"bDarkMode",                true,
 	"sAimKey",                  "RButton",
 	"sCrouchKey",               "LCtrl",
 	"sSprintKey",               "LShift",
@@ -93,15 +94,15 @@ g_guiTextColor := "CBlack"
 g_bToggleKeysSnapshotTaken := false
 g_guiSettings := 0
 g_guiWindowSelector := 0
-g_nWindowID := 0
+g_iWindowID := 0
 g_sConfigFileName := "KeyToggles.ini"
 
 Init()
 
 ; Exit script
-ExitFunc(p_sExitReason, p_nExitCode)
+ExitFunc(p_sExitReason, p_iExitCode)
 {
-	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_nExitCode ")")
+	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_iExitCode ")")
 	ReleaseAllKeys()
 	TrayTip()
 }
@@ -195,7 +196,7 @@ GuiButtonSave_Click(*)
 	{
 		UnregisterHotkeys()
 		; Force the hotkeys to be re-registered
-		global g_nWindowID := 0
+		global g_iWindowID := 0
 		ReadConfigFile()
 		StartFocusCheck()
 		MsgBox("Settings saved!", , "Iconi")
@@ -264,152 +265,152 @@ GuiCreate()
 	g_guiSettings.SetFont("s10 " g_guiTextColor)
 
 	; Layout constants
-	l_nCurrentRow := 0
-	l_nSpacingX := 10
-	l_nSpacingY := 25
-	l_nTopY := 10
+	l_iCurrentRow := 0
+	l_iSpacingX := 10
+	l_iSpacingY := 25
+	l_iTopY := 10
 	; Leftmost controls
-	l_nLeftWidth := 170
-	l_nLeftX := 25
+	l_iLeftWidth := 170
+	l_iLeftX := 25
 	; Middle controls
-	l_nMiddleX := l_nLeftX + l_nLeftWidth + l_nSpacingX
-	l_nMiddleWidth := 170
+	l_iMiddleX := l_iLeftX + l_iLeftWidth + l_iSpacingX
+	l_iMiddleWidth := 170
 	; Rightmost controls
-	l_nRightX := l_nMiddleX + l_nMiddleWidth + l_nSpacingX
-	l_nRightWidth := 100
+	l_iRightX := l_iMiddleX + l_iMiddleWidth + l_iSpacingX
+	l_iRightWidth := 100
 
 	; General
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY " h" 6*30 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + l_nSpacingX * 4), "General")
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY " h" 6*30 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + l_iSpacingX * 4), "General")
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Process name")
-	g_mapControls["editProcessName"] := g_guiSettings.AddEdit("CBlack r1 x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth,
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Process name")
+	g_mapControls["editProcessName"] := g_guiSettings.AddEdit("CBlack r1 x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth,
 	                                                          g_mapSettings["sProcessName"])
 	;g_mapSettings["editProcessName"].OnEvent("Focus", (*) => ToolTip("Enter the name of the target process executable (e.g., game.exe)."))
 	;g_mapSettings["editProcessName"].OnEvent("LoseFocus", (*) => ToolTip())
 
-	g_guiSettings.AddButton("Background" g_guiBackColor " x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Browse").OnEvent("Click",
+	g_guiSettings.AddButton("Background" g_guiBackColor " x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " h23 w" l_iRightWidth, "Browse").OnEvent("Click",
 	                        GuiButtonBrowse_Click)
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Window name")
-	g_mapControls["editWindowName"] := g_guiSettings.AddEdit("CBlack r1 x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth,
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Window name")
+	g_mapControls["editWindowName"] := g_guiSettings.AddEdit("CBlack r1 x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth,
 	                                                         g_mapSettings["sWindowName"])
 
-	g_guiSettings.AddButton("Background" g_guiBackColor " x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Select").OnEvent("Click",
+	g_guiSettings.AddButton("Background" g_guiBackColor " x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " h23 w" l_iRightWidth, "Select").OnEvent("Click",
 	                        GuiButtonSelect_Click)
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Autofire key interval")
-	g_mapControls["editAutofireKeyInterval"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
-	g_mapControls["udAutofireKeyInterval"] := g_guiSettings.AddUpDown("Range1-10000 0x80", g_mapSettings["nAutofireKeyInterval"])
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Autofire key interval")
+	g_mapControls["editAutofireKeyInterval"] := g_guiSettings.AddEdit("CBlack Number x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
+	g_mapControls["udAutofireKeyInterval"] := g_guiSettings.AddUpDown("Range1-10000 0x80", g_mapSettings["iAutofireKeyInterval"])
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Focus check interval")
-	g_mapControls["editFocusCheckInterval"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
-	g_mapControls["udFocusCheckInterval"] := g_guiSettings.AddUpDown("Range1-10000 0x80", g_mapSettings["nFocusCheckInterval"])
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Focus check interval")
+	g_mapControls["editFocusCheckInterval"] := g_guiSettings.AddEdit("CBlack Number x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
+	g_mapControls["udFocusCheckInterval"] := g_guiSettings.AddUpDown("Range1-10000 0x80", g_mapSettings["iFocusCheckInterval"])
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Hook delay")
-	g_mapControls["editHookDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
-	g_mapControls["udHookDelay"] := g_guiSettings.AddUpDown("Range0-10000 0x80", g_mapSettings["nHookDelay"])
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Hook delay")
+	g_mapControls["editHookDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
+	g_mapControls["udHookDelay"] := g_guiSettings.AddUpDown("Range0-10000 0x80", g_mapSettings["iHookDelay"])
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Key delay")
-	g_mapControls["editKeyDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
-	g_mapControls["udKeyDelay"] := g_guiSettings.AddUpDown("Range0-1000 0x80", g_mapSettings["nKeyDelay"])
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Key delay")
+	g_mapControls["editKeyDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
+	g_mapControls["udKeyDelay"] := g_guiSettings.AddUpDown("Range0-1000 0x80", g_mapSettings["iKeyDelay"])
 
 	; Save states
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 2*35 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)),
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 2*35 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
 	                          "Save states")
-	g_mapControls["cbRestoreAutofiresOnFocus"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+	g_mapControls["cbRestoreAutofiresOnFocus"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23
 	                                                                        " Checked" g_mapSettings["bRestoreAutofiresOnFocus"], "Restore autofires on focus  ")
-	g_mapControls["cbRestoreTogglesOnFocus"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+	g_mapControls["cbRestoreTogglesOnFocus"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23
 	                                                                      " Checked" g_mapSettings["bRestoreTogglesOnFocus"], "Restore toggles on focus  ")
 
 	; Key modes
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " h" 4*31 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)),
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " h" 4*31 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
 	                          "Key modes")
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Aim")
-	g_mapControls["ddlAimMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth
-	                                                             " Choose" g_mapSettings["nAimMode"] + 1, g_arrKeyModes)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Aim")
+	g_mapControls["ddlAimMode"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth
+	                                                             " Choose" g_mapSettings["iAimMode"] + 1, g_arrKeyModes)
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Crouch")
-	g_mapControls["ddlCrouchMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth
-	                                                                " Choose" g_mapSettings["nCrouchMode"] + 1, g_arrKeyModes)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Crouch")
+	g_mapControls["ddlCrouchMode"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth
+	                                                                " Choose" g_mapSettings["iCrouchMode"] + 1, g_arrKeyModes)
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Sprint")
-	g_mapControls["ddlSprintMode"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth
-	                                                                " Choose" g_mapSettings["nSprintMode"] + 1, g_arrKeyModes)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Sprint")
+	g_mapControls["ddlSprintMode"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth
+	                                                                " Choose" g_mapSettings["iSprintMode"] + 1, g_arrKeyModes)
 
-	g_mapControls["cbAutorun"] := g_guiSettings.AddCheckBox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+	g_mapControls["cbAutorun"] := g_guiSettings.AddCheckBox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23
 	                                                        " Checked" g_mapSettings["bAutorunMode"], "Autorun  ")
 
 	; Hotkeys
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " h" 9*28 + 3 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)),
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " h" 9*28 + 3 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
 	                          "Hotkeys")
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Aim")
-	g_mapControls["hkAimKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth, g_mapSettings["sAimKey"])
-	g_mapControls["ddlAimKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Aim")
+	g_mapControls["hkAimKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_mapSettings["sAimKey"])
+	g_mapControls["ddlAimKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlAimKey"].Text := IsExtraOption(g_mapSettings["sAimKey"]) ? g_mapSettings["sAimKey"] : "None"
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Crouch")
-	g_mapControls["hkCrouchKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth, g_mapSettings["sCrouchKey"])
-	g_mapControls["ddlCrouchKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Crouch")
+	g_mapControls["hkCrouchKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_mapSettings["sCrouchKey"])
+	g_mapControls["ddlCrouchKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlCrouchKey"].Text := IsExtraOption(g_mapSettings["sCrouchKey"]) ? g_mapSettings["sCrouchKey"] : "None"
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Sprint")
-	g_mapControls["hkSprintKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth, g_mapSettings["sSprintKey"])
-	g_mapControls["ddlSprintKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Sprint")
+	g_mapControls["hkSprintKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_mapSettings["sSprintKey"])
+	g_mapControls["ddlSprintKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlSprintKey"].Text := IsExtraOption(g_mapSettings["sSprintKey"]) ? g_mapSettings["sSprintKey"] : "None"
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Autorun")
-	g_mapControls["hkAutorunKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth, g_mapSettings["sAutorunKey"])
-	g_mapControls["ddlAutorunKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Autorun")
+	g_mapControls["hkAutorunKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_mapSettings["sAutorunKey"])
+	g_mapControls["ddlAutorunKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlAutorunKey"].Text := IsExtraOption(g_mapSettings["sAutorunKey"]) ? g_mapSettings["sAutorunKey"] : "None"
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Forward")
-	g_mapControls["hkForwardKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth, g_mapSettings["sForwardKey"])
-	g_mapControls["ddlForwardKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Forward")
+	g_mapControls["hkForwardKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_mapSettings["sForwardKey"])
+	g_mapControls["ddlForwardKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlForwardKey"].Text := IsExtraOption(g_mapSettings["sForwardKey"]) ? g_mapSettings["sForwardKey"] : "None"
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Backward")
-	g_mapControls["hkBackwardKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth, g_mapSettings["sBackwardKey"])
-	g_mapControls["ddlBackwardKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Backward")
+	g_mapControls["hkBackwardKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_mapSettings["sBackwardKey"])
+	g_mapControls["ddlBackwardKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlBackwardKey"].Text := IsExtraOption(g_mapSettings["sBackwardKey"]) ? g_mapSettings["sBackwardKey"] : "None"
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Aim autofire")
-	g_mapControls["hkAimAutofireKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth,
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Aim autofire")
+	g_mapControls["hkAimAutofireKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth,
 	                                                             g_mapSettings["sAimAutofireKey"])
-	g_mapControls["ddlAimAutofireKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_mapControls["ddlAimAutofireKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlAimAutofireKey"].Text := IsExtraOption(g_mapSettings["sAimAutofireKey"]) ? g_mapSettings["sAimAutofireKey"] : "None"
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Crouch autofire")
-	g_mapControls["hkCrouchAutofireKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth,
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Crouch autofire")
+	g_mapControls["hkCrouchAutofireKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth,
 	                                                                g_mapSettings["sCrouchAutofireKey"])
-	g_mapControls["ddlCrouchAutofireKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_mapControls["ddlCrouchAutofireKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlCrouchAutofireKey"].Text := IsExtraOption(g_mapSettings["sCrouchAutofireKey"]) ? g_mapSettings["sCrouchAutofireKey"] : "None"
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Sprint autofire")
-	g_mapControls["hkSprintAutofireKey"] := g_guiSettings.AddHotkey("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth,
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Sprint autofire")
+	g_mapControls["hkSprintAutofireKey"] := g_guiSettings.AddHotkey("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth,
 	                                                                g_mapSettings["sSprintAutofireKey"])
-	g_mapControls["ddlSprintAutofireKey"] := g_guiSettings.AddDropDownList("x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nRightWidth, g_arrExtraKeys)
+	g_mapControls["ddlSprintAutofireKey"] := g_guiSettings.AddDropDownList("x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth, g_arrExtraKeys)
 	g_mapControls["ddlSprintAutofireKey"].Text := IsExtraOption(g_mapSettings["sSprintAutofireKey"]) ? g_mapSettings["sSprintAutofireKey"] : "None"
 
 	; Misc
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 5*30 " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)),
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 5*30 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
 	                          "Misc")
 
-	g_mapControls["cbDarkMode"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+	g_mapControls["cbDarkMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23
                                                              " Checked" g_mapSettings["bDarkMode"], "Dark mode  ")
-	g_mapControls["cbDebugMode"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+	g_mapControls["cbDebugMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23
                                                               " Checked" g_mapSettings["bDebugMode"], "Debug mode  ")
-	g_mapControls["cbFixSystemKeys"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+	g_mapControls["cbFixSystemKeys"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23
 	                                                              " Checked" g_mapSettings["bFixSystemKeys"], "Fix system keys  ")
-	g_mapControls["cbRunAsAdmin"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+	g_mapControls["cbRunAsAdmin"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23
 	                                                           " Checked" g_mapSettings["bRunAsAdmin"], "Run as admin  ")
 
-	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Notifications")
-	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth " Choose"
-	                                                                   g_mapSettings["nShowNotifications"] + 1, ["Disabled", "System notifications", "Tooltips"])
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Notifications")
+	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth " Choose"
+	                                                                   g_mapSettings["iShowNotifications"] + 1, ["Disabled", "System notifications", "Tooltips"])
 
-	g_guiSettings.AddButton("Background" g_guiBackColor " x140 y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 13 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
-	g_guiSettings.AddButton("Background" g_guiBackColor " x260 y" l_nTopY + l_nSpacingY * l_nCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x140 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 13 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x260 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
 	g_mapControls["editAutofireKeyInterval"].OnEvent("Change", GuiEdit_Change)
@@ -469,32 +470,32 @@ GuiEdit_Change(GuiCtrlObj, *)
 	switch GuiCtrlObj
 	{
 		case g_mapControls["editAutofireKeyInterval"]:
-			l_nMinValue := 1
-			l_nMaxValue := 10000
+			l_iMinValue := 1
+			l_iMaxValue := 10000
 			l_udControl := g_mapControls["udAutofireKeyInterval"]
 		case g_mapControls["editFocusCheckInterval"]:
-			l_nMinValue := 1
-			l_nMaxValue := 10000
+			l_iMinValue := 1
+			l_iMaxValue := 10000
 			l_udControl := g_mapControls["udFocusCheckInterval"]
 		case g_mapControls["editHookDelay"]:
-			l_nMinValue := 0
-			l_nMaxValue := 10000
+			l_iMinValue := 0
+			l_iMaxValue := 10000
 			l_udControl := g_mapControls["udHookDelay"]
 		case g_mapControls["editKeyDelay"]:
-			l_nMinValue := 0
-			l_nMaxValue := 1000
+			l_iMinValue := 0
+			l_iMaxValue := 1000
 			l_udControl := g_mapControls["udKeyDelay"]
 	}
 
 	if (GuiCtrlObj.Value == "")
-		GuiCtrlObj.Text := l_nMinValue
+		GuiCtrlObj.Text := l_iMinValue
 	else
 	{
-		l_nValue := Integer(GuiCtrlObj.Value)
+		l_iValue := Integer(GuiCtrlObj.Value)
 
 		; The UpDown control will automatically clamp the value within its range
-		if (l_nValue < l_nMinValue || l_nValue > l_nMaxValue)
-			l_udControl.Value := l_nValue
+		if (l_iValue < l_iMinValue || l_iValue > l_iMaxValue)
+			l_udControl.Value := l_iValue
 	}
 }
 
@@ -527,6 +528,9 @@ GuiHK_Change(GuiCtrlObj, *)
 
 GuiLV_DoubleClick(GuiCtrlObj, Info)
 {
+	g_guiWindowSelector.Hide()
+	g_guiSettings.Opt("-Disabled")
+
 	; Retrieve the text from the selected row in the ListView
 	l_sItemText := GuiCtrlObj.GetText(Info)
 	l_arr := StrSplit(l_sItemText, " | ", , 2)
@@ -536,8 +540,6 @@ GuiLV_DoubleClick(GuiCtrlObj, Info)
 	g_mapControls["editWindowName"].Text := l_arr.Length > 1 ? l_arr[2] : ""
 
 	; Needed to bring the main window back to the foreground since it was disabled
-	g_guiWindowSelector.Hide()
-	g_guiSettings.Opt("-Disabled")
 	g_guiSettings.Show()
 }
 
@@ -600,17 +602,17 @@ GuiUpdate()
 	g_mapControls["cbRunAsAdmin"].Value              := g_mapSettings["bRunAsAdmin"]
 	g_mapControls["ddlAimAutofireKey"].Text          := IsExtraOption(g_mapSettings["sAimAutofireKey"])    ? g_mapSettings["sAimAutofireKey"] : "None"
 	g_mapControls["ddlAimKey"].Text                  := IsExtraOption(g_mapSettings["sAimKey"])            ? g_mapSettings["sAimKey"] : "None"
-	g_mapControls["ddlAimMode"].Value                := g_mapSettings["nAimMode"] + 1
+	g_mapControls["ddlAimMode"].Value                := g_mapSettings["iAimMode"] + 1
 	g_mapControls["ddlAutorunKey"].Text              := IsExtraOption(g_mapSettings["sAutorunKey"])        ? g_mapSettings["sAutorunKey"] : "None"
 	g_mapControls["ddlBackwardKey"].Text             := IsExtraOption(g_mapSettings["sBackwardKey"])       ? g_mapSettings["sBackwardKey"] : "None"
 	g_mapControls["ddlCrouchAutofireKey"].Text       := IsExtraOption(g_mapSettings["sCrouchAutofireKey"]) ? g_mapSettings["sCrouchAutofireKey"] : "None"
 	g_mapControls["ddlCrouchKey"].Text               := IsExtraOption(g_mapSettings["sCrouchKey"])         ? g_mapSettings["sCrouchKey"] : "None"
-	g_mapControls["ddlCrouchMode"].Value             := g_mapSettings["nCrouchMode"] + 1
+	g_mapControls["ddlCrouchMode"].Value             := g_mapSettings["iCrouchMode"] + 1
 	g_mapControls["ddlForwardKey"].Text              := IsExtraOption(g_mapSettings["sForwardKey"])        ? g_mapSettings["sForwardKey"] : "None"
-	g_mapControls["ddlNotifications"].Value          := g_mapSettings["nShowNotifications"] + 1
+	g_mapControls["ddlNotifications"].Value          := g_mapSettings["iShowNotifications"] + 1
 	g_mapControls["ddlSprintAutofireKey"].Text       := IsExtraOption(g_mapSettings["sSprintAutofireKey"]) ? g_mapSettings["sSprintAutofireKey"] : "None"
 	g_mapControls["ddlSprintKey"].Text               := IsExtraOption(g_mapSettings["sSprintKey"])         ? g_mapSettings["sSprintKey"] : "None"
-	g_mapControls["ddlSprintMode"].Value             := g_mapSettings["nSprintMode"] + 1
+	g_mapControls["ddlSprintMode"].Value             := g_mapSettings["iSprintMode"] + 1
 	g_mapControls["editProcessName"].Value           := g_mapSettings["sProcessName"]
 	g_mapControls["editWindowName"].Value            := g_mapSettings["sWindowName"]
 	g_mapControls["hkAimAutofireKey"].Value          := g_mapSettings["sAimAutofireKey"]
@@ -622,10 +624,10 @@ GuiUpdate()
 	g_mapControls["hkForwardKey"].Value              := g_mapSettings["sForwardKey"]
 	g_mapControls["hkSprintAutofireKey"].Value       := g_mapSettings["sSprintAutofireKey"]
 	g_mapControls["hkSprintKey"].Value               := g_mapSettings["sSprintKey"]
-	g_mapControls["udAutofireKeyInterval"].Value     := g_mapSettings["nAutofireKeyInterval"]
-	g_mapControls["udFocusCheckInterval"].Value      := g_mapSettings["nFocusCheckInterval"]
-	g_mapControls["udHookDelay"].Value               := g_mapSettings["nHookDelay"]
-	g_mapControls["udKeyDelay"].Value                := g_mapSettings["nKeyDelay"]
+	g_mapControls["udAutofireKeyInterval"].Value     := g_mapSettings["iAutofireKeyInterval"]
+	g_mapControls["udFocusCheckInterval"].Value      := g_mapSettings["iFocusCheckInterval"]
+	g_mapControls["udHookDelay"].Value               := g_mapSettings["iHookDelay"]
+	g_mapControls["udKeyDelay"].Value                := g_mapSettings["iKeyDelay"]
 }
 
 IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
@@ -637,8 +639,8 @@ IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 		case "int":
 			try
 			{
-				l_nValue := l_sValue + 0
-				return Max(0, l_nValue) ; no negative integer
+				l_iValue := l_sValue + 0
+				return Max(0, l_iValue) ; no negative integer
 			}
 			catch TypeError ; not an integer
 			{
@@ -647,8 +649,8 @@ IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 		case "mode":
 			try
 			{
-				l_nValue := l_sValue + 0
-				return (l_nValue >= KEY_MODE_DISABLED && l_nValue <= KEY_MODE_AUTOFIRE_HOLD) ? l_nValue : p_sDefault
+				l_iValue := l_sValue + 0
+				return (l_iValue >= KEY_MODE_DISABLED && l_iValue <= KEY_MODE_AUTOFIRE_HOLD) ? l_iValue : p_sDefault
 			}
 			catch TypeError ; not an integer
 			{
@@ -698,14 +700,14 @@ IsMouseButton(p_sKey)
 
 IsMouseOver(p_sWinTitle)
 {
-	MouseGetPos(, , &l_nWinID)
-	return WinExist(p_sWinTitle " ahk_id " l_nWinID)
+	MouseGetPos(, , &l_iWinID)
+	return WinExist(p_sWinTitle " ahk_id " l_iWinID)
 }
 
-IsMouseOverWindow(p_nHwnd)
+IsMouseOverWindow(p_iHwnd)
 {
-	MouseGetPos(, , &l_nMouseWindowID)
-	return p_nHwnd == l_nMouseWindowID
+	MouseGetPos(, , &l_iMouseWindowID)
+	return p_iHwnd == l_iMouseWindowID
 }
 
 IsProcessNameValid(p_sProcessName)
@@ -730,11 +732,11 @@ KeyAutofire(p_sAutofireKey)
 	switch p_sAutofireKey
 	{
 		case g_mapSettings["sAimAutofireKey"]:
-			SendKey(g_mapSettings["sAimKey"], g_mapSettings["nKeyDelay"])
+			SendKey(g_mapSettings["sAimKey"], g_mapSettings["iKeyDelay"])
 		case g_mapSettings["sCrouchAutofireKey"]:
-			SendKey(g_mapSettings["sCrouchKey"], g_mapSettings["nKeyDelay"])
+			SendKey(g_mapSettings["sCrouchKey"], g_mapSettings["iKeyDelay"])
 		case g_mapSettings["sSprintAutofireKey"]:
-			SendKey(g_mapSettings["sSprintKey"], g_mapSettings["nKeyDelay"])
+			SendKey(g_mapSettings["sSprintKey"], g_mapSettings["iKeyDelay"])
 	}
 
 	Output(A_ThisFunc "::end")
@@ -743,9 +745,9 @@ KeyAutofire(p_sAutofireKey)
 KeyHold(p_sKey)
 {
 	;Output(A_ThisFunc "::begin")
-	SendKey(p_sKey, g_mapSettings["nKeyDelay"])
+	SendKey(p_sKey, g_mapSettings["iKeyDelay"])
 	KeyWait(p_sKey)
-	SendKey(p_sKey, g_mapSettings["nKeyDelay"])
+	SendKey(p_sKey, g_mapSettings["iKeyDelay"])
 	;Output(A_ThisFunc "::end")
 }
 
@@ -793,22 +795,22 @@ OnFocusChanged()
 
 	; We need to store this until the function completes as the user could update the process/window name before WinWaitActive times out
 	l_sWinTitle := g_mapSettings["sWindowName"] " ahk_exe " g_mapSettings["sProcessName"]
-	l_nTimeout := g_mapSettings["nFocusCheckInterval"] * 0.001
+	l_iTimeout := g_mapSettings["iFocusCheckInterval"] * 0.001
 
-	if (WinWaitActive(l_sWinTitle,, l_nTimeout))
+	if (WinWaitActive(l_sWinTitle,, l_iTimeout))
 	{
-		if (g_mapSettings["nHookDelay"] > 0)
-			Sleep(g_mapSettings["nHookDelay"])
+		if (g_mapSettings["iHookDelay"] > 0)
+			Sleep(g_mapSettings["iHookDelay"])
 
 		; Make sure to hook the window again if it no longer exists
-		if (g_nWindowID != WinExist(l_sWinTitle))
+		if (g_iWindowID != WinExist(l_sWinTitle))
 		{
-			global g_nWindowID := WinGetID(l_sWinTitle)
-			Output(A_ThisFunc "::WinGet(" g_nWindowID ")")
+			global g_iWindowID := WinGetID(l_sWinTitle)
+			Output(A_ThisFunc "::WinGet(" g_iWindowID ")")
 			RegisterHotkeys()
 
-			if (g_nWindowID)
-				ShowNotification('The window "' WinGetTitle(g_nWindowID) '" has been hooked.')
+			if (g_iWindowID)
+				ShowNotification('The window "' WinGetTitle(g_iWindowID) '" has been hooked.')
 
 			; That's a different window, don't restore toggle states
 			g_mapStates["bRestoreAiming"]            := false
@@ -882,18 +884,18 @@ OnKeyPress(p_sThisHotkey)
 {
 	l_sCleanHotkey := LTrim(p_sThisHotkey, "~*$")
 	;l_sCleanHotkeyNoModifiers := LTrim(p_sThisHotkey, "~*$#!^+")
-	l_nKeyMode := KEY_MODE_DISABLED
+	l_iKeyMode := KEY_MODE_DISABLED
 
 	switch l_sCleanHotkey
 	{
 		case g_mapSettings["sAimKey"], g_mapSettings["sAimAutofireKey"]:
-			l_nKeyMode := g_mapSettings["nAimMode"]
+			l_iKeyMode := g_mapSettings["iAimMode"]
 		case g_mapSettings["sCrouchKey"], g_mapSettings["sCrouchAutofireKey"]:
-			l_nKeyMode := g_mapSettings["nCrouchMode"]
+			l_iKeyMode := g_mapSettings["iCrouchMode"]
 		case g_mapSettings["sSprintKey"], g_mapSettings["sSprintAutofireKey"]:
-			l_nKeyMode := g_mapSettings["nSprintMode"]
+			l_iKeyMode := g_mapSettings["iSprintMode"]
 		case g_mapSettings["sAutorunKey"]:
-			l_nKeyMode := g_mapSettings["bAutorunMode"]
+			l_iKeyMode := g_mapSettings["bAutorunMode"]
 		; Pressing the forward/backward key disables autorunning
 		case g_mapSettings["sForwardKey"]:
 			g_mapStates["bAutorunning"] := false
@@ -907,11 +909,11 @@ OnKeyPress(p_sThisHotkey)
 
 	;Output(A_ThisFunc "::" pThisHotkey " lKeyMode(" lKeyMode ")")
 
-	switch l_nKeyMode
+	switch l_iKeyMode
 	{
 		case KEY_MODE_TOGGLE:
 			l_bIsMouseButton := IsMouseButton(l_sCleanHotkey)
-			l_bIsMouseOverWindow := IsMouseOverWindow(g_nWindowID)
+			l_bIsMouseOverWindow := IsMouseOverWindow(g_iWindowID)
 			; Output(A_ThisFunc "::" l_sCleanHotkey " l_bIsMouseButton(" l_bIsMouseButton ") l_bIsMouseOverWindow(" l_bIsMouseOverWindow ")")
 
 			; Fixes an issue where you couldn't click outside the window if the toggle key was a mouse button and toggled
@@ -951,17 +953,17 @@ OnKeyPress(p_sThisHotkey)
 			if (l_sCleanHotkey == g_mapSettings["sAimAutofireKey"])
 			{
 				g_mapStates["bAutofireAiming"] := !g_mapStates["bAutofireAiming"]
-				SetTimer(g_fnAutofireAim, g_mapStates["bAutofireAiming"] ? g_mapSettings["nAutofireKeyInterval"] : 0)
+				SetTimer(g_fnAutofireAim, g_mapStates["bAutofireAiming"] ? g_mapSettings["iAutofireKeyInterval"] : 0)
 			}
 			else if (l_sCleanHotkey == g_mapSettings["sCrouchAutofireKey"])
 			{
 				g_mapStates["bAutofireCrouching"] := !g_mapStates["bAutofireCrouching"]
-				SetTimer(g_fnAutofireCrouch, g_mapStates["bAutofireCrouching"] ? g_mapSettings["nAutofireKeyInterval"] : 0)
+				SetTimer(g_fnAutofireCrouch, g_mapStates["bAutofireCrouching"] ? g_mapSettings["iAutofireKeyInterval"] : 0)
 			}
 			else if (l_sCleanHotkey == g_mapSettings["sSprintAutofireKey"])
 			{
 				g_mapStates["bAutofireSprinting"] := !g_mapStates["bAutofireSprinting"]
-				SetTimer(g_fnAutofireSprint, g_mapStates["bAutofireSprinting"] ? g_mapSettings["nAutofireKeyInterval"] : 0)
+				SetTimer(g_fnAutofireSprint, g_mapStates["bAutofireSprinting"] ? g_mapSettings["iAutofireKeyInterval"] : 0)
 			}
 
 			KeyWait(l_sCleanHotkey)
@@ -970,11 +972,11 @@ OnKeyPress(p_sThisHotkey)
 			SendInput("{Blind}{" l_sCleanHotkey " up}")
 		case KEY_MODE_AUTOFIRE_HOLD:
 			if (l_sCleanHotkey == g_mapSettings["sAimAutofireKey"])
-				SetTimer(g_fnAutofireAim, g_mapSettings["nAutofireKeyInterval"])
+				SetTimer(g_fnAutofireAim, g_mapSettings["iAutofireKeyInterval"])
 			else if (l_sCleanHotkey == g_mapSettings["sCrouchAutofireKey"])
-				SetTimer(g_fnAutofireCrouch, g_mapSettings["nAutofireKeyInterval"])
+				SetTimer(g_fnAutofireCrouch, g_mapSettings["iAutofireKeyInterval"])
 			else if (l_sCleanHotkey == g_mapSettings["sSprintAutofireKey"])
-				SetTimer(g_fnAutofireSprint, g_mapSettings["nAutofireKeyInterval"])
+				SetTimer(g_fnAutofireSprint, g_mapSettings["iAutofireKeyInterval"])
 
 			KeyWait(l_sCleanHotkey)
 
@@ -1006,18 +1008,18 @@ ReadConfigFile()
 	; General
 	g_mapSettings["sProcessName"]             :=     IniRead(g_sConfigFileName, "General", "processName", "")
 	g_mapSettings["sWindowName"]              :=     IniRead(g_sConfigFileName, "General", "windowName", "")
-	g_mapSettings["nAutofireKeyInterval"]     := IniReadType(g_sConfigFileName, "General", "autofireKeyInterval", 100, "int")
+	g_mapSettings["iAutofireKeyInterval"]     := IniReadType(g_sConfigFileName, "General", "autofireKeyInterval", 100, "int")
 	g_mapSettings["bFixSystemKeys"]           :=     IniRead(g_sConfigFileName, "General", "fixSystemKeys", true) == true
-	g_mapSettings["nFocusCheckInterval"]      := IniReadType(g_sConfigFileName, "General", "focusCheckInterval", 1000, "int")
-	g_mapSettings["nHookDelay"]               := IniReadType(g_sConfigFileName, "General", "hookDelay", 0, "int")
-	g_mapSettings["nKeyDelay"]                := IniReadType(g_sConfigFileName, "General", "keyDelay", 0, "int")
+	g_mapSettings["iFocusCheckInterval"]      := IniReadType(g_sConfigFileName, "General", "focusCheckInterval", 1000, "int")
+	g_mapSettings["iHookDelay"]               := IniReadType(g_sConfigFileName, "General", "hookDelay", 0, "int")
+	g_mapSettings["iKeyDelay"]                := IniReadType(g_sConfigFileName, "General", "keyDelay", 0, "int")
 	g_mapSettings["bRestoreAutofiresOnFocus"] :=     IniRead(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false) == true
 	g_mapSettings["bRestoreTogglesOnFocus"]   :=     IniRead(g_sConfigFileName, "General", "restoreTogglesOnFocus", false) == true
 	g_mapSettings["bRunAsAdmin"]              :=     IniRead(g_sConfigFileName, "General", "runAsAdmin", false) == true
-	g_mapSettings["nShowNotifications"]       := IniReadType(g_sConfigFileName, "General", "showNotifications", 0, "int")
-	g_mapSettings["nAimMode"]                 := IniReadType(g_sConfigFileName, "General", "aimMode", 0, "mode")
-	g_mapSettings["nCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
-	g_mapSettings["nSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
+	g_mapSettings["iShowNotifications"]       := IniReadType(g_sConfigFileName, "General", "showNotifications", 0, "int")
+	g_mapSettings["iAimMode"]                 := IniReadType(g_sConfigFileName, "General", "aimMode", 0, "mode")
+	g_mapSettings["iCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
+	g_mapSettings["iSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
 	g_mapSettings["bAutorunMode"]             :=     IniRead(g_sConfigFileName, "General", "autorunMode", false) == true
 	g_mapSettings["bDarkMode"]                :=     IniRead(g_sConfigFileName, "General", "darkMode", true) == true
 
@@ -1040,8 +1042,8 @@ ReadConfigFile()
 	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false) == true
 
 	; Prevent intervals from being set to 0, otherwise timers won't work
-	g_mapSettings["nAutofireKeyInterval"] := Max(g_mapSettings["nAutofireKeyInterval"], 1)
-	g_mapSettings["nFocusCheckInterval"]  := Max(g_mapSettings["nFocusCheckInterval"], 1)
+	g_mapSettings["iAutofireKeyInterval"] := Max(g_mapSettings["iAutofireKeyInterval"], 1)
+	g_mapSettings["iFocusCheckInterval"]  := Max(g_mapSettings["iFocusCheckInterval"], 1)
 }
 
 RegisterHotkeys()
@@ -1050,12 +1052,12 @@ RegisterHotkeys()
 	HotIf((*) => WinActive(l_sWinTitle))
 
 	; Enabled only for toggle and hold modes
-	Hotkey("*$" g_mapSettings["sAimKey"], OnKeyPress, g_mapSettings["nAimMode"] == KEY_MODE_TOGGLE ||
-	       g_mapSettings["nAimMode"] == KEY_MODE_HOLD ? "On" : "Off")
-	Hotkey("*$" g_mapSettings["sCrouchKey"], OnKeyPress, g_mapSettings["nCrouchMode"] == KEY_MODE_TOGGLE ||
-	       g_mapSettings["nCrouchMode"] == KEY_MODE_HOLD ? "On" : "Off")
-	Hotkey("*$" g_mapSettings["sSprintKey"], OnKeyPress, g_mapSettings["nSprintMode"] == KEY_MODE_TOGGLE ||
-	       g_mapSettings["nSprintMode"] == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_mapSettings["sAimKey"], OnKeyPress, g_mapSettings["iAimMode"] == KEY_MODE_TOGGLE ||
+	       g_mapSettings["iAimMode"] == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_mapSettings["sCrouchKey"], OnKeyPress, g_mapSettings["iCrouchMode"] == KEY_MODE_TOGGLE ||
+	       g_mapSettings["iCrouchMode"] == KEY_MODE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_mapSettings["sSprintKey"], OnKeyPress, g_mapSettings["iSprintMode"] == KEY_MODE_TOGGLE ||
+	       g_mapSettings["iSprintMode"] == KEY_MODE_HOLD ? "On" : "Off")
 
 	; Enabled only for autorun mode
 	Hotkey("*$"   g_mapSettings["sAutorunKey"], OnKeyPress, g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE ? "On" : "Off")
@@ -1063,12 +1065,12 @@ RegisterHotkeys()
 	Hotkey("~*$" g_mapSettings["sBackwardKey"], OnKeyPress, g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE ? "On" : "Off")
 
 	; Enabled only for autofire modes
-	Hotkey("*$" g_mapSettings["sAimAutofireKey"], OnKeyPress, g_mapSettings["nAimMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
-	       g_mapSettings["nAimMode"] == KEY_MODE_AUTOFIRE_HOLD  ? "On" : "Off")
-	Hotkey("*$" g_mapSettings["sCrouchAutofireKey"], OnKeyPress, g_mapSettings["nCrouchMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
-	       g_mapSettings["nCrouchMode"] == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
-	Hotkey("*$" g_mapSettings["sSprintAutofireKey"], OnKeyPress, g_mapSettings["nSprintMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
-	       g_mapSettings["nSprintMode"] == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_mapSettings["sAimAutofireKey"], OnKeyPress, g_mapSettings["iAimMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
+	       g_mapSettings["iAimMode"] == KEY_MODE_AUTOFIRE_HOLD  ? "On" : "Off")
+	Hotkey("*$" g_mapSettings["sCrouchAutofireKey"], OnKeyPress, g_mapSettings["iCrouchMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
+	       g_mapSettings["iCrouchMode"] == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
+	Hotkey("*$" g_mapSettings["sSprintAutofireKey"], OnKeyPress, g_mapSettings["iSprintMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
+	       g_mapSettings["iSprintMode"] == KEY_MODE_AUTOFIRE_HOLD ? "On" : "Off")
 
 	; Fixes issues when pressing system keys while toggle keys are modifiers and toggled
 	; See https://en.wikipedia.org/wiki/Table_of_keyboard_shortcuts#System_navigation
@@ -1218,12 +1220,12 @@ SendEscape(*)
 	;Output(A_ThisFunc "::end")
 }
 
-SendKey(p_sKey, p_nHoldDuration := 0, p_bWait := false)
+SendKey(p_sKey, p_iHoldDuration := 0, p_bWait := false)
 {
 	SendInput("{Blind}{" p_sKey " down}")
 
-	if (p_nHoldDuration > 0)
-		Sleep(p_nHoldDuration)
+	if (p_iHoldDuration > 0)
+		Sleep(p_iHoldDuration)
 
 	if (p_bWait)
 		KeyWait(p_sKey)
@@ -1248,20 +1250,20 @@ SendWindows(*)
 
 ShouldRestoreAutofiresOnFocus()
 {
-	return g_mapSettings["bRestoreAutofiresOnFocus"] && (g_mapSettings["nAimMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
-	       g_mapSettings["nCrouchMode"] == KEY_MODE_AUTOFIRE_TOGGLE || g_mapSettings["nSprintMode"] == KEY_MODE_AUTOFIRE_TOGGLE)
-	       && WinExist("ahk_id " g_nWindowID)
+	return g_mapSettings["bRestoreAutofiresOnFocus"] && (g_mapSettings["iAimMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
+	       g_mapSettings["iCrouchMode"] == KEY_MODE_AUTOFIRE_TOGGLE || g_mapSettings["iSprintMode"] == KEY_MODE_AUTOFIRE_TOGGLE)
+	       && WinExist("ahk_id " g_iWindowID)
 }
 
 ShouldRestoreTogglesOnFocus()
 {
-	return g_mapSettings["bRestoreTogglesOnFocus"] && (g_mapSettings["nAimMode"] == KEY_MODE_TOGGLE || g_mapSettings["nCrouchMode"] == KEY_MODE_TOGGLE ||
-	       g_mapSettings["nSprintMode"] == KEY_MODE_TOGGLE || g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE) && WinExist("ahk_id " g_nWindowID)
+	return g_mapSettings["bRestoreTogglesOnFocus"] && (g_mapSettings["iAimMode"] == KEY_MODE_TOGGLE || g_mapSettings["iCrouchMode"] == KEY_MODE_TOGGLE ||
+	       g_mapSettings["iSprintMode"] == KEY_MODE_TOGGLE || g_mapSettings["bAutorunMode"] == KEY_MODE_TOGGLE) && WinExist("ahk_id " g_iWindowID)
 }
 
 ShowNotification(p_sMessage)
 {
-	switch g_mapSettings["nShowNotifications"]
+	switch g_mapSettings["iShowNotifications"]
 	{
 		case 1:
 			; Make sure to clear any existing traytip
@@ -1306,7 +1308,7 @@ StartFocusCheck()
 		ShowNotification('Waiting for the window "' g_mapSettings["sWindowName"] '" of the process "' g_mapSettings["sProcessName"] '" to become active.')
 
 	Output(A_ThisFunc "::WinWaitActive")
-	SetTimer(OnFocusChanged, g_mapSettings["nFocusCheckInterval"])
+	SetTimer(OnFocusChanged, g_mapSettings["iFocusCheckInterval"])
 }
 
 TakeToggleKeysSnapshot()
