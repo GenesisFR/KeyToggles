@@ -12,7 +12,7 @@ fix modifiers still toggled while clicking outside the window
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
 increase default key delay to 25ms to improve compatibility with more games
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
-replace IniReadType for bools
+replace "ahk_id " g_nWindowID with window name and process name
 replace sleeps with timers
 replace ternary operators with coalescing ?? operators where possible
 shorten lines below 180 characters
@@ -624,12 +624,6 @@ IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 			{
 				return p_sDefault
 			}
-		case "str":
-			; Validate process name
-			l_bIsProcessNameValid := IsProcessNameValid(l_sValue) == 1
-			return l_bIsProcessNameValid ? l_sValue : p_sDefault
-		case "bool":
-			return l_sValue == "1" ? true : l_sValue == "0" ? false : p_sDefault
 		case "mode":
 			try
 			{
@@ -992,18 +986,18 @@ ReadConfigFile()
 	g_mapSettings["sProcessName"]             :=     IniRead(g_sConfigFileName, "General", "processName", "")
 	g_mapSettings["sWindowName"]              :=     IniRead(g_sConfigFileName, "General", "windowName", "")
 	g_mapSettings["nAutofireKeyInterval"]     := IniReadType(g_sConfigFileName, "General", "autofireKeyInterval", 100, "int")
-	g_mapSettings["bFixSystemKeys"]           := IniReadType(g_sConfigFileName, "General", "fixSystemKeys", 1, "bool")
+	g_mapSettings["bFixSystemKeys"]           :=     IniRead(g_sConfigFileName, "General", "fixSystemKeys", true) == true
 	g_mapSettings["nFocusCheckInterval"]      := IniReadType(g_sConfigFileName, "General", "focusCheckInterval", 1000, "int")
 	g_mapSettings["nHookDelay"]               := IniReadType(g_sConfigFileName, "General", "hookDelay", 0, "int")
 	g_mapSettings["nKeyDelay"]                := IniReadType(g_sConfigFileName, "General", "keyDelay", 0, "int")
-	g_mapSettings["bRestoreAutofiresOnFocus"] := IniReadType(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false, "bool")
-	g_mapSettings["bRestoreTogglesOnFocus"]   := IniReadType(g_sConfigFileName, "General", "restoreTogglesOnFocus", false, "bool")
-	g_mapSettings["bRunAsAdmin"]              := IniReadType(g_sConfigFileName, "General", "runAsAdmin", false, "bool")
+	g_mapSettings["bRestoreAutofiresOnFocus"] :=     IniRead(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false) == true
+	g_mapSettings["bRestoreTogglesOnFocus"]   :=     IniRead(g_sConfigFileName, "General", "restoreTogglesOnFocus", false) == true
+	g_mapSettings["bRunAsAdmin"]              :=     IniRead(g_sConfigFileName, "General", "runAsAdmin", false) == true
 	g_mapSettings["nShowNotifications"]       := IniReadType(g_sConfigFileName, "General", "showNotifications", 0, "int")
 	g_mapSettings["nAimMode"]                 := IniReadType(g_sConfigFileName, "General", "aimMode", 0, "mode")
 	g_mapSettings["nCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
 	g_mapSettings["nSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
-	g_mapSettings["bAutorunMode"]             := IniReadType(g_sConfigFileName, "General", "autorunMode", false, "bool")
+	g_mapSettings["bAutorunMode"]             := IniRead(g_sConfigFileName, "General", "autorunMode", false) == true
 
 	; Main keys
 	g_mapSettings["sAimKey"]    := IniRead(g_sConfigFileName, "Keys", "aimKey", "RButton")
@@ -1021,7 +1015,7 @@ ReadConfigFile()
 	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; Debug
-	g_mapSettings["bDebugMode"] := IniReadType(g_sConfigFileName, "Debug", "debugMode", false, "bool")
+	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false) == true
 
 	; Prevent intervals from being set to 0, otherwise timers won't work
 	g_mapSettings["nAutofireKeyInterval"] := Max(g_mapSettings["nAutofireKeyInterval"], 1)
@@ -1092,7 +1086,7 @@ RegisterMouseHotkeys()
 		; Don't register a mouse hotkey if it's already been registered, otherwise it'll override its action
 		if (!l_mapHotkeys.Has(l_sValue))
 		{
-			Output(A_ThisFunc ":: " l_sValue)
+			Output(A_ThisFunc "::" l_sValue)
 			Hotkey("*$" l_sValue, OnClickOutsideWindow, "On")
 		}
 	}
