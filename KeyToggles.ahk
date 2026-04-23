@@ -25,15 +25,15 @@ https://dev.to/manikandan/how-to-use-ai-models-locally-in-vs-code-with-the-conti
 OnExit(ExitFunc)
 
 ; Constants
-global KEY_MODE_DISABLED        := 0
-global KEY_MODE_TOGGLE          := 1
-global KEY_MODE_HOLD            := 2
-global KEY_MODE_AUTOFIRE_TOGGLE := 3
-global KEY_MODE_AUTOFIRE_HOLD   := 4
+KEY_MODE_DISABLED        := 0
+KEY_MODE_TOGGLE          := 1
+KEY_MODE_HOLD            := 2
+KEY_MODE_AUTOFIRE_TOGGLE := 3
+KEY_MODE_AUTOFIRE_HOLD   := 4
 
 ; Maps
-global g_mapControls := Map()
-global g_mapSettings := Map(
+g_mapControls := Map()
+g_mapSettings := Map(
 	"sProcessName",             "",
 	"sWindowName",              "",
 	"nAutofireKeyInterval",     100,
@@ -60,7 +60,7 @@ global g_mapSettings := Map(
 	"sSprintAutofireKey",       "F4",
 	"bDebugMode",               false
 )
-global g_mapStates := Map(
+g_mapStates := Map(
 	"bAiming",                   false,
 	"bCrouching",                false,
 	"bSprinting",                false,
@@ -78,24 +78,24 @@ global g_mapStates := Map(
 )
 
 ; Functors
-global g_fnAutofireAim    := 0
-global g_fnAutofireCrouch := 0
-global g_fnAutofireSprint := 0
+g_fnAutofireAim    := 0
+g_fnAutofireCrouch := 0
+g_fnAutofireSprint := 0
 
 ; Arrays
-global g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton2", "Space", "Tab", "Enter", "Escape", "Backspace"]
-global g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autofire hold"]
+g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton2", "Space", "Tab", "Enter", "Escape", "Backspace"]
+g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autofire hold"]
 
 ; UI
-global g_guiBackColor := "White"
-global g_guiTextColor := "CBlack"
+g_guiBackColor := "White"
+g_guiTextColor := "CBlack"
 
 ; Others
-global g_bToggleKeysSnapshotTaken := false
-global g_guiSettings := 0
-global g_guiWindowSelector := 0
-global g_nWindowID := 0
-global g_sConfigFileName := "KeyToggles.ini"
+g_bToggleKeysSnapshotTaken := false
+g_guiSettings := 0
+g_guiWindowSelector := 0
+g_nWindowID := 0
+g_sConfigFileName := "KeyToggles.ini"
 
 Init()
 
@@ -234,7 +234,7 @@ GuiButtonSelect_Click(*)
 	g_guiWindowSelector.Show()
 }
 
-GuiCB_Click(GuiCtrlObj, Info)
+GuiCB_Click(*)
 {
 	; Turn MsgBox into a modal
 	g_guiSettings.Opt("+OwnDialogs")
@@ -451,7 +451,7 @@ GuiCreate()
 }
 
 ; Set hotkey controls text based on selected DDL extra keys
-GuiDDLExtra_Change(GuiCtrlObj, Info)
+GuiDDLExtra_Change(GuiCtrlObj, *)
 {
 	switch GuiCtrlObj
 	{
@@ -477,7 +477,7 @@ GuiDDLExtra_Change(GuiCtrlObj, Info)
 }
 
 ; Prevent intervals from being out-of-bounds, otherwise timers won't work
-GuiEdit_Change(GuiCtrlObj, Info)
+GuiEdit_Change(GuiCtrlObj, *)
 {
 	switch GuiCtrlObj
 	{
@@ -512,7 +512,7 @@ GuiEdit_Change(GuiCtrlObj, Info)
 }
 
 ; Prevent modified keys from being used in hotkey controls (could be changed to allow them in the future)
-GuiHK_Change(GuiCtrlObj, Info)
+GuiHK_Change(GuiCtrlObj, *)
 {
 	; Turn MsgBox into a modal
 	g_guiSettings.Opt("+OwnDialogs")
@@ -548,10 +548,9 @@ GuiLV_DoubleClick(GuiCtrlObj, Info)
 	g_mapControls["editProcessName"].Text := l_arr[1]
 	g_mapControls["editWindowName"].Text := l_arr.Length > 1 ? l_arr[2] : ""
 
+	; Needed to bring the main window back to the foreground since it was disabled
 	g_guiWindowSelector.Hide()
 	g_guiSettings.Opt("-Disabled")
-
-	; Needed to bring the main window back to the foreground since it was disabled
 	g_guiSettings.Show()
 }
 
@@ -1157,11 +1156,11 @@ ReleaseAllKeys()
 
 RestartAsAdminIfNeeded()
 {
-	; Restart the script as admin
 	if (g_mapSettings["bRunAsAdmin"] && !A_IsAdmin)
 	{
 		try
 		{
+			; Restart the script as admin
 			if A_IsCompiled
 				Run("*RunAs " A_ScriptFullPath " /restart")
 			else
@@ -1172,7 +1171,7 @@ RestartAsAdminIfNeeded()
 	}
 }
 
-SendAltTab(p_sThisHotkey)
+SendAltTab(*)
 {
 	;Output(A_ThisFunc "::begin")
 
@@ -1212,7 +1211,7 @@ SendClickOutsideWindow(p_sKey)
 	;Output(A_ThisFunc "::end")
 }
 
-SendEscape(p_sThisHotkey)
+SendEscape(*)
 {
 	;Output(A_ThisFunc "::begin")
 
@@ -1245,7 +1244,7 @@ SendKey(p_sKey, p_nHoldDuration := 0, p_bWait := false)
 	SendInput("{Blind}{" p_sKey " up}")
 }
 
-SendWindows(p_sThisHotkey)
+SendWindows(*)
 {
 	;Output(A_ThisFunc "::begin")
 
