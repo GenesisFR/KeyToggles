@@ -10,7 +10,6 @@ add text/tooltips when mousing over GUI controls to explain what they do
 fix "Error: Target window not found: g_nWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
 fix modifiers still toggled while clicking outside the window
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
-increase default key delay to 25ms to improve compatibility with more games
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 replace "ahk_id " g_nWindowID with window name and process name
 replace sleeps with timers
