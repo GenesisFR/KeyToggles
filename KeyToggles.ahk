@@ -2,7 +2,6 @@
 
 /*
 TODO
-add a light theme
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 add loops when adding events
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
@@ -87,6 +86,10 @@ global g_fnAutofireSprint := 0
 global g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton2", "Space", "Tab", "Enter", "Escape", "Backspace"]
 global g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autofire hold"]
 
+; UI
+global g_guiBackColor := "White"
+global g_guiTextColor := "CBlack"
+
 ; Others
 global g_bToggleKeysSnapshotTaken := false
 global g_guiSettings := 0
@@ -137,6 +140,16 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 	}
 
 	return l_sDuplicateHotkeys
+}
+
+GuiApplyTheme()
+{
+	; Set theme to dark mode
+	if (g_mapSettings["bDarkMode"])
+	{
+		global g_guiBackColor := "353434"
+		global g_guiTextColor := "CWhite"
+	}
 }
 
 ; Browse for process executable
@@ -200,25 +213,43 @@ GuiButtonSelect_Click(*)
 	{
 		; Gui
 		global g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Window selector")
-		g_guiWindowSelector.BackColor := "353434"
+		g_guiWindowSelector.BackColor := g_guiBackColor
 		g_guiWindowSelector.SetFont("s10")
 		g_guiWindowSelector.OnEvent("Close", (*) => g_guiSettings.Opt("-Disabled"))
 
 		; Button
-		g_guiWindowSelector.AddButton("Background353434 Default w100", "&Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
+		g_guiWindowSelector.AddButton("Background" g_guiBackColor " Default w100", "&Refresh").OnEvent("Click", (*) => GuiLV_ReloadProcesses())
 
 		; Checkbox
-		g_guiWindowSelector.SetFont("CWhite")
+		g_guiWindowSelector.SetFont(g_guiTextColor)
 		g_mapControls["cbExcludeProcesses"] := g_guiWindowSelector.AddCheckbox("Checked", "Exclude common processes")
 		g_mapControls["cbExcludeProcesses"].OnEvent("Click", (*) => GuiLV_ReloadProcesses())
 
 		; ListView
-		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background353434 -Multi ReadOnly Sort Tile w1045" , ["Icon", "Process"])
+		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background" g_guiBackColor " -Multi ReadOnly Sort Tile w1045" , ["Icon", "Process"])
 		g_mapControls["lvWindowPicker"].OnEvent("DoubleClick", GuiLV_DoubleClick)
 	}
 
 	GuiLV_ReloadProcesses()
 	g_guiWindowSelector.Show()
+}
+
+GuiCB_Click(GuiCtrlObj, Info)
+{
+	; Turn MsgBox into a modal
+	g_guiSettings.Opt("+OwnDialogs")
+
+	; We reuse the variable to avoid showing the MsgBox multiple times
+	if (g_mapSettings["bDarkMode"] != -1)
+	{
+		g_mapSettings["bDarkMode"] := -1
+		MsgBox("Please restart the script to apply the new theme.", , "Icon!")
+	}
+
+	; We save the change immediately to avoid having to hit Save
+	try IniWrite(g_mapControls["cbDarkMode"].Value, "KeyToggles.ini", "General", "darkMode")
+	catch as e
+		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
 }
 
 GuiCreate()
@@ -228,10 +259,10 @@ GuiCreate()
 		return
 
 	global g_guiSettings := Gui.Call("+OwnDialogs", "Configure settings", )
-	g_guiSettings.BackColor := "353434"
+	g_guiSettings.BackColor := g_guiBackColor
 	g_guiSettings.MarginX := 20
 	g_guiSettings.MarginY := 10
-	g_guiSettings.SetFont("s10 CWhite")
+	g_guiSettings.SetFont("s10 " g_guiTextColor)
 
 	; Layout constants
 	l_nCurrentRow := 0
@@ -257,13 +288,13 @@ GuiCreate()
 	;g_mapSettings["editProcessName"].OnEvent("Focus", (*) => ToolTip("Enter the name of the target process executable (e.g., game.exe)."))
 	;g_mapSettings["editProcessName"].OnEvent("LoseFocus", (*) => ToolTip())
 
-	g_guiSettings.AddButton("Background353434 x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Browse").OnEvent("Click", GuiButtonBrowse_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Browse").OnEvent("Click", GuiButtonBrowse_Click)
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Window name")
 	g_mapControls["editWindowName"] := g_guiSettings.AddEdit("CBlack r1 x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth,
 	                                                         g_mapSettings["sWindowName"])
 
-	g_guiSettings.AddButton("Background353434 x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Select").OnEvent("Click", GuiButtonSelect_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x" l_nRightX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " h23 w" l_nRightWidth, "Select").OnEvent("Click", GuiButtonSelect_Click)
 
 	g_guiSettings.AddText("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth, "Autofire key interval")
 	g_mapControls["editAutofireKeyInterval"] := g_guiSettings.AddEdit("CBlack Number x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth)
@@ -374,9 +405,11 @@ GuiCreate()
 	g_mapControls["ddlSprintAutofireKey"].Text := IsExtraOption(g_mapSettings["sSprintAutofireKey"]) ? g_mapSettings["sSprintAutofireKey"] : "None"
 
 	; Misc
-	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 4*31
+	g_guiSettings.AddGroupBox("x" l_nLeftX - 5 " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 5 " h" 5*30
 	                          " w" (l_nLeftWidth + l_nMiddleWidth + l_nRightWidth + (l_nSpacingX * 4)), "Misc")
 
+	g_mapControls["cbDarkMode"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
+                                                             " Checked" g_mapSettings["bDarkMode"], "Dark mode  ")
 	g_mapControls["cbDebugMode"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
                                                               " Checked" g_mapSettings["bDebugMode"], "Debug mode  ")
 	g_mapControls["cbFixSystemKeys"] := g_guiSettings.AddCheckbox("Right x" l_nLeftX " y" l_nTopY + l_nSpacingY * ++l_nCurrentRow " w" l_nLeftWidth + 23
@@ -388,8 +421,8 @@ GuiCreate()
 	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_nMiddleX " y" l_nTopY + l_nSpacingY * l_nCurrentRow - 5 " w" l_nMiddleWidth " Choose"
 	                                                                   g_mapSettings["nShowNotifications"] + 1, ["Disabled", "System notifications", "Tooltips"])
 
-	g_guiSettings.AddButton("Background353434 x140 y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 13 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
-	g_guiSettings.AddButton("Background353434 x260 y" l_nTopY + l_nSpacingY * l_nCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x140 y" l_nTopY + l_nSpacingY * ++l_nCurrentRow + 13 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x260 y" l_nTopY + l_nSpacingY * l_nCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
 	g_mapControls["editAutofireKeyInterval"].OnEvent("Change", GuiEdit_Change)
@@ -414,6 +447,7 @@ GuiCreate()
 	g_mapControls["ddlAimAutofireKey"].OnEvent(      "Change", GuiDDLExtra_Change)
 	g_mapControls["ddlCrouchAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
 	g_mapControls["ddlSprintAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
+	g_mapControls["cbDarkMode"].OnEvent(              "Click", GuiCB_Click)
 }
 
 ; Set hotkey controls text based on selected DDL extra keys
@@ -572,6 +606,7 @@ GuiLV_ReloadProcesses()
 GuiUpdate()
 {
 	g_mapControls["cbAutorun"].Value                 := g_mapSettings["bAutorunMode"]
+	g_mapControls["cbDarkMode"].Value                := g_mapSettings["bDarkMode"]
 	g_mapControls["cbDebugMode"].Value               := g_mapSettings["bDebugMode"]
 	g_mapControls["cbFixSystemKeys"].Value           := g_mapSettings["bFixSystemKeys"]
 	g_mapControls["cbRestoreAutofiresOnFocus"].Value := g_mapSettings["bRestoreAutofiresOnFocus"]
@@ -642,6 +677,7 @@ Init()
 {
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
+	GuiApplyTheme()
 	GuiCreate()
 	StartFocusCheck()
 	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure Settings", (*) => g_guiSettings.Show())
@@ -996,7 +1032,8 @@ ReadConfigFile()
 	g_mapSettings["nAimMode"]                 := IniReadType(g_sConfigFileName, "General", "aimMode", 0, "mode")
 	g_mapSettings["nCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
 	g_mapSettings["nSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
-	g_mapSettings["bAutorunMode"]             := IniRead(g_sConfigFileName, "General", "autorunMode", false) == true
+	g_mapSettings["bAutorunMode"]             :=     IniRead(g_sConfigFileName, "General", "autorunMode", false) == true
+	g_mapSettings["bDarkMode"]                :=     IniRead(g_sConfigFileName, "General", "darkMode", true) == true
 
 	; Main keys
 	g_mapSettings["sAimKey"]    := IniRead(g_sConfigFileName, "Keys", "aimKey", "RButton")
@@ -1255,11 +1292,13 @@ StartFocusCheck()
 {
 	l_sMsgBoxText := ""
 
+	; Validate process name
 	g_mapSettings["sProcessName"] := Trim(g_mapSettings["sProcessName"], '" `t')
 	l_bIsProcessNameValid := IsProcessNameValid(g_mapSettings["sProcessName"])
 	if (l_bIsProcessNameValid != 1)
 		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" g_mapSettings["sProcessName"] '" must end with ".exe".'
 
+	; Validate hotkeys (no duplicates allowed)
 	l_sDuplicateHotkeys := GetDuplicateHotkeys(false)
 	if (l_sDuplicateHotkeys)
 	{
@@ -1368,6 +1407,7 @@ WriteConfigFile()
 		IniWrite(l_procNameClean,                                  "KeyToggles.ini", "General", "processName")
 		IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
 		IniWrite(g_mapControls["cbAutorun"].Value,                 "KeyToggles.ini", "General", "autorunMode")
+		IniWrite(g_mapControls["cbDarkMode"].Value,                "KeyToggles.ini", "General", "darkMode")
 		IniWrite(g_mapControls["cbFixSystemKeys"].Value,           "KeyToggles.ini", "General", "fixSystemKeys")
 		IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
 		IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value,   "KeyToggles.ini", "General", "restoreTogglesOnFocus")
