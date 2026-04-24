@@ -83,7 +83,7 @@ g_fnAutofireCrouch := 0
 g_fnAutofireSprint := 0
 
 ; Arrays
-g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton2", "Space", "Tab", "Enter", "Escape", "Backspace"]
+g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton2", "Space", "Tab", "Enter", "Backspace"]
 g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autofire hold"]
 
 ; UI
@@ -690,7 +690,7 @@ IsCommonProcess(p_sProcessName)
 IsExtraOption(p_sKey)
 {
 	; https://www.autohotkey.com/docs/v2/lib/If.htm#ExIfInContains
-	return StrLower(p_sKey) ~= "i)\A(lbutton|mbutton|rbutton|xbutton1|xbutton2|space|tab|enter|escape|backspace)\z"
+	return StrLower(p_sKey) ~= "i)\A(lbutton|mbutton|rbutton|xbutton1|xbutton2|space|tab|enter|backspace)\z"
 }
 
 IsMouseButton(p_sKey)
