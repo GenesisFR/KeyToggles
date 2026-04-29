@@ -52,4 +52,4 @@ Left ALT + F12: suspend the script (disables all hotkeys)
 
 ## Disclaimer
 - I've only tested the script in Aliens: Colonial Marines, Half-Life 1, Half-Life 2 and some Unity games but it should work in most cases. If it doesn't, feel free to post an issue about it.
-- I won't be held responsible for unexpected behavior such as loss of data. Use at your own risk!
+- I won't be held responsible for unexpected behavior such as game bans or loss of data. Use at your own risk!

@@ -3,7 +3,6 @@
 /*
 TODO
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
-add loops when adding events
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
 fix "Error: Target window not found: g_iWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
@@ -492,7 +491,7 @@ GuiHK_Change(GuiCtrlObj, *)
 	l_bControl := InStr(GuiCtrlObj.Value, "^")
 	l_bAlt := InStr(GuiCtrlObj.Value, "!")
 
-	Output("l_hotkey(" l_sHotkey ") l_bShift(" l_bShift ") l_bControl(" l_bControl ") l_bAlt(" l_bAlt ")")
+	Output("l_sHotkey(" l_sHotkey ") l_bShift(" l_bShift ") l_bControl(" l_bControl ") l_bAlt(" l_bAlt ")")
 
 	if (l_bShift && !l_bControl && !l_bAlt && l_sHotkeyLength == 1)
 		GuiCtrlObj.Value := "LShift"
@@ -705,7 +704,8 @@ IsProcessNameValid(p_sProcessName)
 
 IsWindowVisible(p_hwnd)
 {
-	return WinGetStyle("ahk_id " p_hwnd) & 0x10000000
+	;return DllCall("IsWindowVisible", "Ptr", p_hwnd)
+	return WinGetStyle("ahk_id " p_hwnd) & 0x10000000 ; WS_VISIBLE
 }
 
 KeyAutofire(p_sAutofireKey)
@@ -1233,9 +1233,8 @@ SendWindows(*)
 
 ShouldRestoreAutofiresOnFocus()
 {
-	return g_mapSettings["bRestoreAutofiresOnFocus"] && (g_mapSettings["iAimMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
-	       g_mapSettings["iCrouchMode"] == KEY_MODE_AUTOFIRE_TOGGLE || g_mapSettings["iSprintMode"] == KEY_MODE_AUTOFIRE_TOGGLE)
-	       && WinExist("ahk_id " g_iWindowID)
+	return g_mapSettings["bRestoreAutofiresOnFocus"] && (g_mapSettings["iAimMode"] == KEY_MODE_AUTOFIRE_TOGGLE || g_mapSettings["iCrouchMode"] == KEY_MODE_AUTOFIRE_TOGGLE ||
+	       g_mapSettings["iSprintMode"] == KEY_MODE_AUTOFIRE_TOGGLE) && WinExist("ahk_id " g_iWindowID)
 }
 
 ShouldRestoreTogglesOnFocus()
@@ -1249,7 +1248,7 @@ ShowNotification(p_sMessage)
 	switch g_mapSettings["iShowNotifications"]
 	{
 		case 1:
-			; Make sure to clear any existing traytip
+			; Make sure to clear any existing TrayTip
 			TrayTip()
 			TrayTip(p_sMessage)
 		case 2:
