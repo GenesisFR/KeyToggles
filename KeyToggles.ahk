@@ -231,11 +231,14 @@ GuiButtonSelect_Click(*)
 		g_mapControls["lvWindowPicker"].OnEvent("DoubleClick", GuiLV_DoubleClick)
 	}
 
+	; 0x00000011 = WDA_EXCLUDEFROMCAPTURE
+	DllCall("user32\SetWindowDisplayAffinity", "Int", g_guiWindowSelector.Hwnd, "Int", 0x00000011 * g_mapControls["cbHideFromCapture"].Value)
+
 	GuiLV_ReloadProcesses()
 	g_guiWindowSelector.Show()
 }
 
-GuiCB_Click(*)
+GuiCB_Click(GuiCtrlObj, *)
 {
 	switch GuiCtrlObj
 	{
@@ -263,6 +266,7 @@ GuiCB_Click(*)
 		IniWrite(g_mapControls["cbAlwaysOnTop"].Value, "KeyToggles.ini", "UI", "alwaysOnTop")
 		IniWrite(g_mapControls["cbCloseToTray"].Value, "KeyToggles.ini", "UI", "closeToTray")
 		IniWrite(g_mapControls["cbDarkMode"].Value, "KeyToggles.ini", "UI", "darkMode")
+		IniWrite(g_mapControls["cbHideFromCapture"].Value, "KeyToggles.ini", "UI", "hideFromCapture")
 		IniWrite(g_mapControls["cbMinimizeToTray"].Value, "KeyToggles.ini", "UI", "minimizeToTray")
 	}
 	catch as e
@@ -409,7 +413,7 @@ GuiCreate()
 	                                                                       g_arrExtraKeys)
 
 	; Misc
-	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 5*30 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 3*33 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
 	                          "Misc")
 
 	g_mapControls["cbDebugMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Debug mode  ")
@@ -422,13 +426,14 @@ GuiCreate()
 	g_mapControls["cbAlwaysOnTop"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Always on top  ")
 	g_mapControls["cbCloseToTray"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Close to tray  ")
 	g_mapControls["cbDarkMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Dark mode  ")
+	g_mapControls["cbHideFromCapture"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Hide window from capture  ")
 	g_mapControls["cbMinimizeToTray"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Minimize to tray  ")
 
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Notifications")
 	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_arrNotificationTypes)
 
-	g_guiSettings.AddButton("Background" g_guiBackColor " x140 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 13 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
-	g_guiSettings.AddButton("Background" g_guiBackColor " x260 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 13 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x140 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 15 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x260 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
 	g_mapControls["editAutofireKeyInterval"].OnEvent("Change", GuiEdit_Change)
@@ -456,6 +461,7 @@ GuiCreate()
 	g_mapControls["cbAlwaysOnTop"].OnEvent(           "Click", GuiCB_Click)
 	g_mapControls["cbCloseToTray"].OnEvent(           "Click", GuiCB_Click)
 	g_mapControls["cbDarkMode"].OnEvent(              "Click", GuiCB_Click)
+	g_mapControls["cbHideFromCapture"].OnEvent(       "Click", GuiCB_Click)
 	g_mapControls["cbMinimizeToTray"].OnEvent(        "Click", GuiCB_Click)
 
 	GuiUpdate()
@@ -610,6 +616,7 @@ GuiUpdate()
 	g_mapControls["cbDarkMode"].Value                := g_mapSettings["bDarkMode"]
 	g_mapControls["cbDebugMode"].Value               := g_mapSettings["bDebugMode"]
 	g_mapControls["cbFixSystemKeys"].Value           := g_mapSettings["bFixSystemKeys"]
+	g_mapControls["cbHideFromCapture"].Value         := g_mapSettings["bHideFromCapture"]
 	g_mapControls["cbMinimizeToTray"].Value          := g_mapSettings["bMinimizeToTray"]
 	g_mapControls["cbRestoreAutofiresOnFocus"].Value := g_mapSettings["bRestoreAutofiresOnFocus"]
 	g_mapControls["cbRestoreTogglesOnFocus"].Value   := g_mapSettings["bRestoreTogglesOnFocus"]
@@ -1058,6 +1065,7 @@ ReadConfigFile()
 	g_mapSettings["bAlwaysOnTop"]     := IniRead(g_sConfigFileName, "UI", "alwaysOnTop", false) == true
 	g_mapSettings["bCloseToTray"]     := IniRead(g_sConfigFileName, "UI", "closeToTray", false) == true
 	g_mapSettings["bDarkMode"]        := IniRead(g_sConfigFileName, "UI", "darkMode", true) == true
+	g_mapSettings["bHideFromCapture"] := IniRead(g_sConfigFileName, "UI", "hideFromCapture", true) == true
 	g_mapSettings["bMinimizeToTray"]  := IniRead(g_sConfigFileName, "UI", "minimizeToTray", false) == true
 
 	; Debug
@@ -1440,6 +1448,7 @@ WriteConfigFile()
 		IniWrite(g_mapControls["cbAlwaysOnTop"].Value,             "KeyToggles.ini", "UI",      "alwaysOnTop")
 		IniWrite(g_mapControls["cbCloseToTray"].Value,             "KeyToggles.ini", "UI",      "closeToTray")
 		IniWrite(g_mapControls["cbDarkMode"].Value,                "KeyToggles.ini", "UI",      "darkMode")
+		IniWrite(g_mapControls["cbHideFromCapture"].Value,         "KeyToggles.ini", "UI",      "hideFromCapture")
 		IniWrite(g_mapControls["cbMinimizeToTray"].Value,          "KeyToggles.ini", "UI",      "minimizeToTray")
 		IniWrite(g_mapControls["cbDebugMode"].Value,               "KeyToggles.ini", "Debug",   "debugMode")
 	}
