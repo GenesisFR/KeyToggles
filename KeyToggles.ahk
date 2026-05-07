@@ -251,6 +251,8 @@ GuiCB_Click(*)
 				g_mapSettings["bDarkMode"] := -1
 				MsgBox("Please restart the script to apply the new theme.", , "Icon!")
 			}
+		case g_mapControls["cbMinimizeToTray"]:
+			g_mapSettings["bMinimizeToTray"] := g_mapControls["cbMinimizeToTray"].Value
 	}
 
 	; We save the changes immediately to avoid having to hit Save
@@ -258,6 +260,7 @@ GuiCB_Click(*)
 	{
 		IniWrite(g_mapControls["cbAlwaysOnTop"].Value, "KeyToggles.ini", "UI", "alwaysOnTop")
 		IniWrite(g_mapControls["cbDarkMode"].Value, "KeyToggles.ini", "UI", "darkMode")
+		IniWrite(g_mapControls["cbMinimizeToTray"].Value, "KeyToggles.ini", "UI", "minimizeToTray")
 	}
 	catch as e
 		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -266,7 +269,9 @@ GuiOnSize(GuiObj, MinMax, *)
 {
 	switch GuiObj {
 		case g_guiSettings:
-			if (MinMax == 0)
+			if (MinMax == -1 && g_mapControls["cbMinimizeToTray"].Value)
+				GuiObj.Hide()
+			else if (MinMax == 0)
 				WinSetAlwaysOnTop(g_mapControls["cbAlwaysOnTop"].Value, "ahk_id" g_guiSettings.Hwnd)
 	}
 }
@@ -411,6 +416,7 @@ GuiCreate()
 
 	g_mapControls["cbAlwaysOnTop"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Always on top  ")
 	g_mapControls["cbDarkMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Dark mode  ")
+	g_mapControls["cbMinimizeToTray"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Minimize to tray  ")
 
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Notifications")
 	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_arrNotificationTypes)
@@ -443,6 +449,7 @@ GuiCreate()
 	g_mapControls["ddlSprintAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
 	g_mapControls["cbAlwaysOnTop"].OnEvent(           "Click", GuiCB_Click)
 	g_mapControls["cbDarkMode"].OnEvent(              "Click", GuiCB_Click)
+	g_mapControls["cbMinimizeToTray"].OnEvent(        "Click", GuiCB_Click)
 
 	GuiUpdate()
 }
@@ -595,6 +602,7 @@ GuiUpdate()
 	g_mapControls["cbDarkMode"].Value                := g_mapSettings["bDarkMode"]
 	g_mapControls["cbDebugMode"].Value               := g_mapSettings["bDebugMode"]
 	g_mapControls["cbFixSystemKeys"].Value           := g_mapSettings["bFixSystemKeys"]
+	g_mapControls["cbMinimizeToTray"].Value          := g_mapSettings["bMinimizeToTray"]
 	g_mapControls["cbRestoreAutofiresOnFocus"].Value := g_mapSettings["bRestoreAutofiresOnFocus"]
 	g_mapControls["cbRestoreTogglesOnFocus"].Value   := g_mapSettings["bRestoreTogglesOnFocus"]
 	g_mapControls["cbRunAsAdmin"].Value              := g_mapSettings["bRunAsAdmin"]
@@ -1041,6 +1049,7 @@ ReadConfigFile()
 	; UI
 	g_mapSettings["bAlwaysOnTop"]     := IniRead(g_sConfigFileName, "UI", "alwaysOnTop", false) == true
 	g_mapSettings["bDarkMode"]        := IniRead(g_sConfigFileName, "UI", "darkMode", true) == true
+	g_mapSettings["bMinimizeToTray"]  := IniRead(g_sConfigFileName, "UI", "minimizeToTray", false) == true
 
 	; Debug
 	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false) == true
@@ -1421,6 +1430,7 @@ WriteConfigFile()
 		IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
 		IniWrite(g_mapControls["cbAlwaysOnTop"].Value,             "KeyToggles.ini", "UI",      "alwaysOnTop")
 		IniWrite(g_mapControls["cbDarkMode"].Value,                "KeyToggles.ini", "UI",      "darkMode")
+		IniWrite(g_mapControls["cbMinimizeToTray"].Value,          "KeyToggles.ini", "UI",      "minimizeToTray")
 		IniWrite(g_mapControls["cbDebugMode"].Value,               "KeyToggles.ini", "Debug",   "debugMode")
 	}
 	catch as e
