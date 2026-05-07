@@ -1,17 +1,21 @@
-﻿; KeyToggles v2.3
+﻿; KeyToggles v2.4
 
 /*
 TODO
+add a setting to change the send mode
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
+add update checker (https://www.reddit.com/r/AutoHotkey/comments/1rio81z/github_repo_update_checker_for_ahk_any_anything)
 fix "Error: Target window not found: g_iWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
 fix modifiers still toggled while clicking outside the window
-fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu/)
+fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu)
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
+refactor the project to use classes (https://www.reddit.com/r/AutoHotkey/comments/1sumsfy/comment/ok3us2f)
 replace "ahk_id " g_iWindowID with window name and process name
-replace sleeps with timers
+replace sleeps with timers or SetKeyDelay (SendEvent only)
 replace ternary operators with coalescing ?? operators where possible
+simpler solution for system keys? https://www.reddit.com/r/AutoHotkey/comments/1t5r12b/comment/okcfvod
 https://dev.to/manikandan/how-to-use-ai-models-locally-in-vs-code-with-the-continue-plugin-with-multi-model-switching-3na0
 */
 
@@ -164,7 +168,7 @@ GuiButtonBrowse_Click(*)
 
 	if (l_sSelectedFile != "")
 	{
-		l_sFileName := RegExReplace(l_sSelectedFile, "^.+[\\/]")
+		SplitPath(l_sSelectedFile, &l_sFileName)
 		l_bIsProcessNameValid := IsProcessNameValid(l_sFileName)
 
 		; Process name not valid, do nothing
@@ -227,7 +231,8 @@ GuiButtonSelect_Click(*)
 		g_mapControls["cbExcludeProcesses"].OnEvent("Click", (*) => GuiLV_ReloadProcesses())
 
 		; ListView
-		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background" g_guiBackColor " -Multi ReadOnly Sort Tile w1045", ["Icon", "Process"])
+		l_iLvWidth := A_ScreenWidth * .41
+		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background" g_guiBackColor " -Multi ReadOnly Sort Tile w" l_iLvWidth)
 		g_mapControls["lvWindowPicker"].OnEvent("DoubleClick", GuiLV_DoubleClick)
 	}
 
@@ -290,7 +295,7 @@ GuiCreate()
 	if (g_guiSettings)
 		return
 
-	global g_guiSettings := Gui.Call("+OwnDialogs", "Configure settings", )
+	global g_guiSettings := Gui.Call("+OwnDialogs", "Settings", )
 	g_guiSettings.BackColor := g_guiBackColor
 	g_guiSettings.MarginX := 20
 	g_guiSettings.MarginY := 10
@@ -597,8 +602,7 @@ GuiLV_ReloadProcesses()
 		Output("process: " l_sProcName)
 		Output("path: "    l_sProcPath)
 		Output("title: "   l_sWinTitle)
-		Output("class: "   l_sWinClass)
-		Output("--------------------------------------------------")
+		Output("class: "   l_sWinClass, true)
 		*/
 
 		g_mapControls["lvWindowPicker"].Add("Icon" IL_Add(g_mapControls["ilWindowPicker"], l_sProcPath), l_sProcName (l_sWinTitle != "" ? " | " l_sWinTitle : ""))
@@ -689,9 +693,9 @@ Init()
 	GuiApplyTheme()
 	GuiCreate()
 	StartFocusCheck()
-	A_TrayMenu.Insert("&Suspend Hotkeys", "Configure Settings", (*) => g_guiSettings.Show())
+	A_TrayMenu.Insert("&Suspend Hotkeys", "Settings", (*) => g_guiSettings.Show())
 	A_TrayMenu.ClickCount := 1
-	A_TrayMenu.Default := "Configure Settings"
+	A_TrayMenu.Default := "Settings"
 }
 
 IsCommonProcess(p_sProcessName)
@@ -740,7 +744,8 @@ IsProcessNameValid(p_sProcessName)
 	if (p_sProcessName == "")
 		return -1
 
-	return RegExMatch(p_sProcessName, ".*.exe$")
+	SplitPath(p_sProcessName, , , &l_sExt)
+	return l_sExt == "exe"
 }
 
 IsWindowVisible(p_hwnd)
