@@ -248,7 +248,7 @@ GuiCB_Click(*)
 	}
 
 	; We save the change immediately to avoid having to hit Save
-	try IniWrite(g_mapControls["cbDarkMode"].Value, "KeyToggles.ini", "General", "darkMode")
+	try IniWrite(g_mapControls["cbDarkMode"].Value, "KeyToggles.ini", "UI", "darkMode")
 	catch as e
 		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
 }
@@ -379,10 +379,14 @@ GuiCreate()
 	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 5*30 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
 	                          "Misc")
 
-	g_mapControls["cbDarkMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Dark mode  ")
 	g_mapControls["cbDebugMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Debug mode  ")
 	g_mapControls["cbFixSystemKeys"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Fix system keys  ")
 	g_mapControls["cbRunAsAdmin"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Run as admin  ")
+
+	; UI
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 6*29 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)), "UI")
+
+	g_mapControls["cbDarkMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Dark mode  ")
 
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Notifications")
 	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_arrNotificationTypes)
@@ -1004,7 +1008,6 @@ ReadConfigFile()
 	g_mapSettings["iCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
 	g_mapSettings["iSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
 	g_mapSettings["bAutorunMode"]             :=     IniRead(g_sConfigFileName, "General", "autorunMode", false) == true
-	g_mapSettings["bDarkMode"]                :=     IniRead(g_sConfigFileName, "General", "darkMode", true) == true
 
 	; Main keys
 	g_mapSettings["sAimKey"]    := IniRead(g_sConfigFileName, "Keys", "aimKey", "RButton")
@@ -1020,6 +1023,9 @@ ReadConfigFile()
 	g_mapSettings["sAimAutofireKey"]    := IniRead(g_sConfigFileName, "Keys", "aimAutofireKey", "F2")
 	g_mapSettings["sCrouchAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "crouchAutofireKey", "F3")
 	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
+
+	; UI
+	g_mapSettings["bDarkMode"]        := IniRead(g_sConfigFileName, "UI", "darkMode", true) == true
 
 	; Debug
 	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false) == true
@@ -1377,7 +1383,6 @@ WriteConfigFile()
 		IniWrite(l_procNameClean,                                  "KeyToggles.ini", "General", "processName")
 		IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
 		IniWrite(g_mapControls["cbAutorun"].Value,                 "KeyToggles.ini", "General", "autorunMode")
-		IniWrite(g_mapControls["cbDarkMode"].Value,                "KeyToggles.ini", "General", "darkMode")
 		IniWrite(g_mapControls["cbFixSystemKeys"].Value,           "KeyToggles.ini", "General", "fixSystemKeys")
 		IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
 		IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value,   "KeyToggles.ini", "General", "restoreTogglesOnFocus")
@@ -1399,6 +1404,7 @@ WriteConfigFile()
 		IniWrite(g_mapControls["hkForwardKey"].Value,              "KeyToggles.ini", "Keys",    "forwardKey")
 		IniWrite(g_mapControls["hkSprintAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "sprintAutofireKey")
 		IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
+		IniWrite(g_mapControls["cbDarkMode"].Value,                "KeyToggles.ini", "UI",      "darkMode")
 		IniWrite(g_mapControls["cbDebugMode"].Value,               "KeyToggles.ini", "Debug",   "debugMode")
 	}
 	catch as e
