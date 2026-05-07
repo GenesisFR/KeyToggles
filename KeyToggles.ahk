@@ -237,20 +237,38 @@ GuiButtonSelect_Click(*)
 
 GuiCB_Click(*)
 {
-	; Turn MsgBox into a modal
-	g_guiSettings.Opt("+OwnDialogs")
-
-	; We reuse the variable to avoid showing the MsgBox multiple times
-	if (g_mapSettings["bDarkMode"] != -1)
+	switch GuiCtrlObj
 	{
-		g_mapSettings["bDarkMode"] := -1
-		MsgBox("Please restart the script to apply the new theme.", , "Icon!")
+		case g_mapControls["cbAlwaysOnTop"]:
+			WinSetAlwaysOnTop(g_mapControls["cbAlwaysOnTop"].Value, "ahk_id" g_guiSettings.Hwnd)
+		case g_mapControls["cbDarkMode"]:
+			; Turn MsgBox into a modal
+			g_guiSettings.Opt("+OwnDialogs")
+
+			; We reuse the variable to avoid showing the MsgBox multiple times
+			if (g_mapSettings["bDarkMode"] != -1)
+			{
+				g_mapSettings["bDarkMode"] := -1
+				MsgBox("Please restart the script to apply the new theme.", , "Icon!")
+			}
 	}
 
-	; We save the change immediately to avoid having to hit Save
-	try IniWrite(g_mapControls["cbDarkMode"].Value, "KeyToggles.ini", "UI", "darkMode")
+	; We save the changes immediately to avoid having to hit Save
+	try
+	{
+		IniWrite(g_mapControls["cbAlwaysOnTop"].Value, "KeyToggles.ini", "UI", "alwaysOnTop")
+		IniWrite(g_mapControls["cbDarkMode"].Value, "KeyToggles.ini", "UI", "darkMode")
+	}
 	catch as e
 		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
+}
+GuiOnSize(GuiObj, MinMax, *)
+{
+	switch GuiObj {
+		case g_guiSettings:
+			if (MinMax == 0)
+				WinSetAlwaysOnTop(g_mapControls["cbAlwaysOnTop"].Value, "ahk_id" g_guiSettings.Hwnd)
+	}
 }
 
 GuiCreate()
@@ -263,6 +281,7 @@ GuiCreate()
 	g_guiSettings.BackColor := g_guiBackColor
 	g_guiSettings.MarginX := 20
 	g_guiSettings.MarginY := 10
+	g_guiSettings.OnEvent("Size", GuiOnSize)
 	g_guiSettings.SetFont("s10 " g_guiTextColor)
 
 	; Layout constants
@@ -390,6 +409,7 @@ GuiCreate()
 	; UI
 	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 6*29 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)), "UI")
 
+	g_mapControls["cbAlwaysOnTop"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Always on top  ")
 	g_mapControls["cbDarkMode"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23, "Dark mode  ")
 
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Notifications")
@@ -421,6 +441,7 @@ GuiCreate()
 	g_mapControls["ddlAimAutofireKey"].OnEvent(      "Change", GuiDDLExtra_Change)
 	g_mapControls["ddlCrouchAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
 	g_mapControls["ddlSprintAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
+	g_mapControls["cbAlwaysOnTop"].OnEvent(           "Click", GuiCB_Click)
 	g_mapControls["cbDarkMode"].OnEvent(              "Click", GuiCB_Click)
 
 	GuiUpdate()
@@ -569,6 +590,7 @@ GuiLV_ReloadProcesses()
 ; Update GUI controls based on current settings
 GuiUpdate()
 {
+	g_mapControls["cbAlwaysOnTop"].Value             := g_mapSettings["bAlwaysOnTop"]
 	g_mapControls["cbAutorun"].Value                 := g_mapSettings["bAutorunMode"]
 	g_mapControls["cbDarkMode"].Value                := g_mapSettings["bDarkMode"]
 	g_mapControls["cbDebugMode"].Value               := g_mapSettings["bDebugMode"]
@@ -1017,6 +1039,7 @@ ReadConfigFile()
 	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; UI
+	g_mapSettings["bAlwaysOnTop"]     := IniRead(g_sConfigFileName, "UI", "alwaysOnTop", false) == true
 	g_mapSettings["bDarkMode"]        := IniRead(g_sConfigFileName, "UI", "darkMode", true) == true
 
 	; Debug
@@ -1396,6 +1419,7 @@ WriteConfigFile()
 		IniWrite(g_mapControls["hkForwardKey"].Value,              "KeyToggles.ini", "Keys",    "forwardKey")
 		IniWrite(g_mapControls["hkSprintAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "sprintAutofireKey")
 		IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
+		IniWrite(g_mapControls["cbAlwaysOnTop"].Value,             "KeyToggles.ini", "UI",      "alwaysOnTop")
 		IniWrite(g_mapControls["cbDarkMode"].Value,                "KeyToggles.ini", "UI",      "darkMode")
 		IniWrite(g_mapControls["cbDebugMode"].Value,               "KeyToggles.ini", "Debug",   "debugMode")
 	}
