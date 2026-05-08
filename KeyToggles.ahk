@@ -33,6 +33,11 @@ KEY_MODE_HOLD            := 2
 KEY_MODE_AUTOFIRE_TOGGLE := 3
 KEY_MODE_AUTOFIRE_HOLD   := 4
 
+SEND_MODE_EVENT          := 0
+SEND_MODE_INPUT          := 1
+SEND_MODE_PLAY           := 2
+SEND_MODE_INPUTTHENPLAY  := 3
+
 ; Maps
 g_mapControls := Map()
 g_mapSettings := Map()
@@ -63,6 +68,7 @@ g_arrExtraKeys := ["None", "LButton", "RButton", "MButton", "XButton1", "XButton
 g_arrKeyModes := ["Disabled", "Toggle", "Hold", "Autofire toggle", "Autofire hold"]
 g_arrMouseButtons := ["LButton", "MButton", "RButton", "XButton1", "XButton2"]
 g_arrNotificationTypes := ["Disabled", "System notifications", "Tooltips"]
+g_arrSendModes := ["Event", "Input", "Play", "InputThenPlay"]
 
 ; UI
 g_guiBackColor := "White"
@@ -297,7 +303,7 @@ GuiCreate()
 	l_iRightWidth := 100
 
 	; General
-	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY " h" 6*30 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + l_iSpacingX * 4), "General")
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY " h" 7*29 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + l_iSpacingX * 4), "General")
 
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Process name")
 	g_mapControls["editProcessName"] := g_guiSettings.AddEdit("CBlack r1 x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
@@ -326,6 +332,9 @@ GuiCreate()
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Key delay")
 	g_mapControls["editKeyDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
 	g_mapControls["udKeyDelay"] := g_guiSettings.AddUpDown("Range0-1000 0x80")
+
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Send mode")
+	g_mapControls["ddlSendMode"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, g_arrSendModes)
 
 	; Save states
 	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 2*35 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
@@ -429,7 +438,7 @@ GuiCreate()
 			case "Hotkey":
 				l_guiCtrl.OnEvent("Change", GuiHK_Change)
 			case "DDL":
-				l_guiCtrl.OnEvent("Change", GuiDDLExtra_Change)
+				l_guiCtrl.OnEvent("Change", GuiDDL_Change)
 			case "CheckBox":
 				l_guiCtrl.OnEvent("Click", GuiCB_Click)
 		}
@@ -439,12 +448,23 @@ GuiCreate()
 }
 
 ; Set hotkey controls text based on selected DDL extra keys
-GuiDDLExtra_Change(p_guiCtrl, *)
+GuiDDL_Change(p_guiCtrl, *)
 {
-	; Set the corresponding hotkey control's text to the selected DDL value
-	l_sHkControlName := StrReplace(p_guiCtrl.Name, "ddl", "hk", , , 1)
-	l_hkControl := g_mapControls[l_sHkControlName]
-	l_hkControl.Value := p_guiCtrl.Value == 1 ? "" : p_guiCtrl.Text
+	switch p_guiCtrl
+	{
+		case g_mapControls["ddlAimMode"]:
+		case g_mapControls["ddlCrouchMode"]:
+		case g_mapControls["ddlSprintMode"]:
+			return
+		case g_mapControls["ddlSendMode"]:
+			SendMode(g_mapControls["ddlSendMode"].Text)
+		; Hotkey DDLs
+		default:
+			; Set the corresponding hotkey control's text to the selected DDL value
+			l_sHkControlName := StrReplace(p_guiCtrl.Name, "ddl", "hk", , , 1)
+			l_hkControl := g_mapControls[l_sHkControlName]
+			l_hkControl.Value := p_guiCtrl.Value == 1 ? "" : p_guiCtrl.Text
+	}
 }
 
 ; Prevent intervals from being out-of-bounds, otherwise timers won't work
@@ -621,6 +641,7 @@ GuiUpdate()
 	g_mapControls["ddlCrouchMode"].Value             := g_mapSettings["iCrouchMode"] + 1
 	g_mapControls["ddlForwardKey"].Text              := IsExtraOption(g_mapSettings["sForwardKey"])        ? g_mapSettings["sForwardKey"] : "None"
 	g_mapControls["ddlNotifications"].Value          := g_mapSettings["iShowNotifications"] + 1
+	g_mapControls["ddlSendMode"].Value               := g_mapSettings["iSendMode"] + 1
 	g_mapControls["ddlSprintAutofireKey"].Text       := IsExtraOption(g_mapSettings["sSprintAutofireKey"]) ? g_mapSettings["sSprintAutofireKey"] : "None"
 	g_mapControls["ddlSprintKey"].Text               := IsExtraOption(g_mapSettings["sSprintKey"])         ? g_mapSettings["sSprintKey"] : "None"
 	g_mapControls["ddlSprintMode"].Value             := g_mapSettings["iSprintMode"] + 1
@@ -657,11 +678,21 @@ IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 			{
 				return p_sDefault
 			}
-		case "mode":
+		case "keyMode":
 			try
 			{
 				l_iValue := l_sValue + 0
 				return (l_iValue >= KEY_MODE_DISABLED && l_iValue <= KEY_MODE_AUTOFIRE_HOLD) ? l_iValue : p_sDefault
+			}
+			catch TypeError ; not an integer
+			{
+				return p_sDefault
+			}
+		case "sendMode":
+			try
+			{
+				l_iValue := l_sValue + 0
+				return (l_iValue >= SEND_MODE_INPUT && l_iValue <= SEND_MODE_PLAY) ? l_iValue : p_sDefault
 			}
 			catch TypeError ; not an integer
 			{
@@ -678,6 +709,7 @@ Init()
 	RestartAsAdminIfNeeded()
 	GuiApplyTheme()
 	GuiCreate()
+	SendMode(g_mapControls["ddlSendMode"].Text)
 	StartFocusCheck()
 	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", (*) => g_guiSettings.Show())
 	A_TrayMenu.ClickCount := 1
@@ -787,7 +819,7 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 		A_ThisFunc "::bCrouching(" g_mapStates["bCrouching"] ")" : p_sKey == g_mapSettings["sSprintKey"] ? A_ThisFunc "::bSprinting("
 		g_mapStates["bSprinting"] ")" : A_ThisFunc "::bAutorunning(" g_mapStates["bAutorunning"] ")"
 	)
-	SendInput("{Blind}{" p_sKey (p_bToggle ? " down}" : " up}"))
+	Send("{Blind}{" p_sKey (p_bToggle ? " down}" : " up}"))
 
 	if (p_bWait)
 		KeyWait(p_sKey)
@@ -984,7 +1016,7 @@ OnKeyPress(p_sThisHotkey)
 			KeyWait(l_sCleanHotkey)
 
 			; Fixes a weird bug where the autofire key would stay permanently pressed after holding it down for a few seconds
-			SendInput("{Blind}{" l_sCleanHotkey " up}")
+			Send("{Blind}{" l_sCleanHotkey " up}")
 		case KEY_MODE_AUTOFIRE_HOLD:
 			if (l_sCleanHotkey == g_mapSettings["sAimAutofireKey"])
 				SetTimer(g_fnAutofireAim, g_mapSettings["iAutofireKeyInterval"])
@@ -1003,7 +1035,7 @@ OnKeyPress(p_sThisHotkey)
 				SetTimer(g_fnAutofireSprint, 0)
 
 			; Fixes a weird bug where the autofire key would stay permanently pressed after holding it down for a few seconds
-			SendInput("{Blind}{" l_sCleanHotkey " up}")
+			Send("{Blind}{" l_sCleanHotkey " up}")
 	}
 }
 
@@ -1031,23 +1063,20 @@ ReadConfigFile()
 	g_mapSettings["bRestoreAutofiresOnFocus"] :=     IniRead(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false) == true
 	g_mapSettings["bRestoreTogglesOnFocus"]   :=     IniRead(g_sConfigFileName, "General", "restoreTogglesOnFocus", false) == true
 	g_mapSettings["bRunAsAdmin"]              :=     IniRead(g_sConfigFileName, "General", "runAsAdmin", false) == true
+	g_mapSettings["iSendMode"]                := IniReadType(g_sConfigFileName, "General", "sendMode", SEND_MODE_INPUT, "sendMode")
 	g_mapSettings["iShowNotifications"]       := IniReadType(g_sConfigFileName, "General", "showNotifications", 0, "int")
-	g_mapSettings["iAimMode"]                 := IniReadType(g_sConfigFileName, "General", "aimMode", 0, "mode")
-	g_mapSettings["iCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "mode")
-	g_mapSettings["iSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "mode")
+	g_mapSettings["iAimMode"]                 := IniReadType(g_sConfigFileName, "General", "aimMode", 0, "keyMode")
+	g_mapSettings["iCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "keyMode")
+	g_mapSettings["iSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "keyMode")
 	g_mapSettings["bAutorunMode"]             :=     IniRead(g_sConfigFileName, "General", "autorunMode", false) == true
 
-	; Main keys
+	; Keys
 	g_mapSettings["sAimKey"]    := IniRead(g_sConfigFileName, "Keys", "aimKey", "RButton")
 	g_mapSettings["sCrouchKey"] := IniRead(g_sConfigFileName, "Keys", "crouchKey", "LCtrl")
 	g_mapSettings["sSprintKey"] := IniRead(g_sConfigFileName, "Keys", "sprintKey", "LShift")
-
-	; Autorun keys
 	g_mapSettings["sAutorunKey"]  := IniRead(g_sConfigFileName, "Keys", "autorunKey", "F1")
 	g_mapSettings["sForwardKey"]  := IniRead(g_sConfigFileName, "Keys", "forwardKey", "w")
 	g_mapSettings["sBackwardKey"] := IniRead(g_sConfigFileName, "Keys", "backwardKey", "s")
-
-	; Autofire keys
 	g_mapSettings["sAimAutofireKey"]    := IniRead(g_sConfigFileName, "Keys", "aimAutofireKey", "F2")
 	g_mapSettings["sCrouchAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "crouchAutofireKey", "F3")
 	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
@@ -1199,11 +1228,11 @@ SendAltTab(*)
 	l_bIsControlPressed := GetKeyState("Control", "P")
 	l_bIsShiftPressed := GetKeyState("Shift", "P")
 	if (l_bIsControlPressed)
-		SendInput("{Blind}{Control down}")
+		Send("{Blind}{Control down}")
 	if (l_bIsShiftPressed)
-		SendInput("{Blind}{Shift down}")
+		Send("{Blind}{Shift down}")
 
-	SendInput("{Blind}{Tab down}")
+	Send("{Blind}{Tab down}")
 	SendKey("Alt", , true)
 	Suspend()
 
@@ -1246,7 +1275,7 @@ SendEscape(*)
 
 SendKey(p_sKey, p_iHoldDuration := 0, p_bWait := false)
 {
-	SendInput("{Blind}{" p_sKey " down}")
+	Send("{Blind}{" p_sKey " down}")
 
 	if (p_iHoldDuration > 0)
 		Sleep(p_iHoldDuration)
@@ -1254,7 +1283,7 @@ SendKey(p_sKey, p_iHoldDuration := 0, p_bWait := false)
 	if (p_bWait)
 		KeyWait(p_sKey)
 
-	SendInput("{Blind}{" p_sKey " up}")
+	Send("{Blind}{" p_sKey " up}")
 }
 
 SendWindows(*)
@@ -1425,6 +1454,7 @@ WriteConfigFile()
 		IniWrite(g_mapControls["ddlAimMode"].Value - 1,            "KeyToggles.ini", "General", "aimMode")
 		IniWrite(g_mapControls["ddlCrouchMode"].Value - 1,         "KeyToggles.ini", "General", "crouchMode")
 		IniWrite(g_mapControls["ddlNotifications"].Value - 1,      "KeyToggles.ini", "General", "showNotifications")
+		IniWrite(g_mapControls["ddlSendMode"].Value - 1,           "KeyToggles.ini", "General", "sendMode")
 		IniWrite(g_mapControls["ddlSprintMode"].Value - 1,         "KeyToggles.ini", "General", "sprintMode")
 		IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
 		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
