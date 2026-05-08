@@ -263,6 +263,8 @@ GuiCB_Click(GuiCtrlObj, *)
 			}
 		case g_mapControls["cbMinimizeToTray"]:
 			g_mapSettings["bMinimizeToTray"] := g_mapControls["cbMinimizeToTray"].Value
+		default:
+			return
 	}
 
 	; We save the changes immediately to avoid having to hit Save
@@ -441,33 +443,19 @@ GuiCreate()
 	g_guiSettings.AddButton("Background" g_guiBackColor " x260 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
-	g_mapControls["editAutofireKeyInterval"].OnEvent("Change", GuiEdit_Change)
-	g_mapControls["editFocusCheckInterval"].OnEvent( "Change", GuiEdit_Change)
-	g_mapControls["editHookDelay"].OnEvent(          "Change", GuiEdit_Change)
-	g_mapControls["editKeyDelay"].OnEvent(           "Change", GuiEdit_Change)
-	g_mapControls["hkAimKey"].OnEvent(               "Change", GuiHK_Change)
-	g_mapControls["hkCrouchKey"].OnEvent(            "Change", GuiHK_Change)
-	g_mapControls["hkSprintKey"].OnEvent(            "Change", GuiHK_Change)
-	g_mapControls["hkAutorunKey"].OnEvent(           "Change", GuiHK_Change)
-	g_mapControls["hkForwardKey"].OnEvent(           "Change", GuiHK_Change)
-	g_mapControls["hkBackwardKey"].OnEvent(          "Change", GuiHK_Change)
-	g_mapControls["hkAimAutofireKey"].OnEvent(       "Change", GuiHK_Change)
-	g_mapControls["hkCrouchAutofireKey"].OnEvent(    "Change", GuiHK_Change)
-	g_mapControls["hkSprintAutofireKey"].OnEvent(    "Change", GuiHK_Change)
-	g_mapControls["ddlAimKey"].OnEvent(              "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlCrouchKey"].OnEvent(           "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlSprintKey"].OnEvent(           "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlAutorunKey"].OnEvent(          "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlForwardKey"].OnEvent(          "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlBackwardKey"].OnEvent(         "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlAimAutofireKey"].OnEvent(      "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlCrouchAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
-	g_mapControls["ddlSprintAutofireKey"].OnEvent(   "Change", GuiDDLExtra_Change)
-	g_mapControls["cbAlwaysOnTop"].OnEvent(           "Click", GuiCB_Click)
-	g_mapControls["cbCloseToTray"].OnEvent(           "Click", GuiCB_Click)
-	g_mapControls["cbDarkMode"].OnEvent(              "Click", GuiCB_Click)
-	g_mapControls["cbHideFromCapture"].OnEvent(       "Click", GuiCB_Click)
-	g_mapControls["cbMinimizeToTray"].OnEvent(        "Click", GuiCB_Click)
+	for l_guiCtrl in g_guiSettings
+	{
+		switch l_guiCtrl.Type {
+			case "Edit":
+				l_guiCtrl.OnEvent("Change", GuiEdit_Change)
+			case "Hotkey":
+				l_guiCtrl.OnEvent("Change", GuiHK_Change)
+			case "DDL":
+				l_guiCtrl.OnEvent("Change", GuiDDLExtra_Change)
+			case "CheckBox":
+				l_guiCtrl.OnEvent("Click", GuiCB_Click)
+		}
+	}
 
 	GuiUpdate()
 }
@@ -502,6 +490,8 @@ GuiEdit_Change(GuiCtrlObj, *)
 			l_iMinValue := 0
 			l_iMaxValue := 1000
 			l_udControl := g_mapControls["udKeyDelay"]
+		default:
+			return
 	}
 
 	if (GuiCtrlObj.Value == "")
