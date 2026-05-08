@@ -233,6 +233,12 @@ GuiButtonSelect_Click(*)
 	g_guiWindowSelector.Show()
 }
 
+GuiButtonViewLog_Click(*)
+{
+	g_guiLog.Show()
+	ControlSend("^{End}", g_mapControls["editLog"])
+}
+
 GuiCB_Click(p_guiCtrl, *)
 {
 	switch p_guiCtrl
@@ -427,6 +433,7 @@ GuiCreate()
 
 	g_guiSettings.AddButton("Background" g_guiBackColor " x140 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 15 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
 	g_guiSettings.AddButton("Background" g_guiBackColor " x260 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x380 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "View log").OnEvent("Click", GuiButtonViewLog_Click)
 
 	; Event handlers
 	for l_guiCtrl in g_guiSettings
@@ -534,6 +541,19 @@ GuiHK_Change(p_guiCtrl, *)
 	; Clear the corresponding DDL control if a hotkey is set
 	l_sDDLControlName := StrReplace(p_guiCtrl.Name, "hk", "ddl", , , 1)
 	g_mapControls[l_sDDLControlName].Choose(1)
+}
+
+GuiLogCreate()
+{
+	; Safety check
+	if IsSet(g_guiLog)
+		return
+
+	global g_guiLog := Gui.Call("Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Log Viewer")
+	g_guiLog.BackColor := g_guiBackColor
+	g_guiLog.SetFont("s10 " g_guiTextColor)
+	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "BackgroundBlack" : "cBlack") " r25 w600 h400")
+	g_guiLog.AddButton("Background" g_guiBackColor " x515 y425 w100", "Clear").OnEvent("Click", (*) => g_mapControls["editLog"].Text := "")
 }
 
 GuiLV_DoubleClick(p_guiCtrl, p_iPosItem)
@@ -709,6 +729,7 @@ Init()
 	RestartAsAdminIfNeeded()
 	GuiApplyTheme()
 	GuiCreate()
+	GuiLogCreate()
 	SendMode(g_mapControls["ddlSendMode"].Text)
 	StartFocusCheck()
 	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", (*) => GuiShow())
@@ -825,6 +846,20 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 		KeyWait(p_sKey)
 
 	Output(A_ThisFunc "::end")
+}
+
+Log(p_sMessage, p_bSeparator := false)
+{
+	if (g_mapControls["cbDebugMode"].Value)
+	{
+		l_sFormattedTime := FormatTime(, "HH:mm:ss")
+		l_sMilliseconds := SubStr(A_TickCount, -3)
+		g_mapControls["editLog"].Text .= l_sFormattedTime "." l_sMilliseconds ": " p_sMessage "`r`n"
+		ControlSend("^{End}", g_mapControls["editLog"])
+
+		if (p_bSeparator)
+			g_mapControls["editLog"].Text .= "--------------------------------------------------`r`n"
+	}
 }
 
 ; Handle clicking outside the window while a mouse button is toggled
@@ -1041,12 +1076,14 @@ OnKeyPress(p_sThisHotkey)
 
 Output(p_sMessage, p_bSeparator := false)
 {
-	if (g_mapSettings["bDebugMode"])
+	Log(p_sMessage, p_bSeparator)
+
+	if (g_mapControls["cbDebugMode"].Value)
 	{
-		OutputDebug(p_sMessage "`n")
+		OutputDebug(p_sMessage "`r`n")
 
 		if (p_bSeparator)
-			OutputDebug("--------------------------------------------------`n")
+			OutputDebug("--------------------------------------------------`r`n")
 	}
 }
 
@@ -1487,7 +1524,7 @@ WriteConfigFile()
 }
 
 #SuspendExempt
-#HotIf g_mapSettings["bDebugMode"]
+#HotIf g_mapControls["cbDebugMode"].Value
 ; Exit script
 *!F10::ExitApp() ; ALT+F10
 
