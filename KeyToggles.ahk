@@ -35,34 +35,7 @@ KEY_MODE_AUTOFIRE_HOLD   := 4
 
 ; Maps
 g_mapControls := Map()
-g_mapSettings := Map(
-	"sProcessName",             "",
-	"sWindowName",              "",
-	"iAutofireKeyInterval",     100,
-	"bFixSystemKeys",           true,
-	"iFocusCheckInterval",      1000,
-	"iHookDelay",               0,
-	"iKeyDelay",                0,
-	"bRestoreAutofiresOnFocus", false,
-	"bRestoreTogglesOnFocus",   false,
-	"bRunAsAdmin",              false,
-	"iShowNotifications",       0,
-	"iAimMode",                 0,
-	"iCrouchMode",              0,
-	"iSprintMode",              0,
-	"bAutorunMode",             false,
-	"bDarkMode",                true,
-	"sAimKey",                  "RButton",
-	"sCrouchKey",               "LCtrl",
-	"sSprintKey",               "LShift",
-	"sAutorunKey",              "F1",
-	"sForwardKey",              "w",
-	"sBackwardKey",             "s",
-	"sAimAutofireKey",          "F2",
-	"sCrouchAutofireKey",       "F3",
-	"sSprintAutofireKey",       "F4",
-	"bDebugMode",               false
-)
+g_mapSettings := Map()
 g_mapStates := Map(
 	"bAiming",                   false,
 	"bCrouching",                false,
@@ -97,8 +70,6 @@ g_guiTextColor := "CBlack"
 
 ; Others
 g_bToggleKeysSnapshotTaken := false
-g_guiSettings := 0
-g_guiWindowSelector := 0
 g_iWindowID := 0
 g_sConfigFileName := "KeyToggles.ini"
 
@@ -214,7 +185,7 @@ GuiButtonSelect_Click(*)
 	g_guiSettings.Opt("+Disabled")
 
 	; Create the window selector GUI if it doesn't exist
-	if (!g_guiWindowSelector)
+	if (!IsSet(g_guiWindowSelector))
 	{
 		; Gui
 		global g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Window selector")
@@ -791,7 +762,7 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 		A_ThisFunc "::bCrouching(" g_mapStates["bCrouching"] ")" : p_sKey == g_mapSettings["sSprintKey"] ? A_ThisFunc "::bSprinting("
 		g_mapStates["bSprinting"] ")" : A_ThisFunc "::bAutorunning(" g_mapStates["bAutorunning"] ")"
 	)
-	SendInput(p_bToggle ? "{Blind}{" p_sKey " down}" : "{Blind}{" p_sKey " up}")
+	SendInput("{Blind}{" p_sKey (p_bToggle ? " down}" : " up}"))
 
 	if (p_bWait)
 		KeyWait(p_sKey)
