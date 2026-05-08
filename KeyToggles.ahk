@@ -557,8 +557,8 @@ GuiLogCreate()
 
 GuiLV_DoubleClick(p_guiCtrl, p_iPosItem)
 {
-	g_guiWindowSelector.Hide()
 	g_guiSettings.Opt("-Disabled")
+	g_guiWindowSelector.Show("Hide")
 
 	; Retrieve the text from the selected row in the ListView
 	l_sItemText := p_guiCtrl.GetText(p_iPosItem)
@@ -567,9 +567,6 @@ GuiLV_DoubleClick(p_guiCtrl, p_iPosItem)
 	; Update controls in the main window
 	g_mapControls["editProcessName"].Text := l_arr[1]
 	g_mapControls["editWindowName"].Text := l_arr.Length > 1 ? l_arr[2] : ""
-
-	; Needed to bring the main window back to the foreground since it was disabled
-	GuiShow()
 }
 
 GuiLV_ReloadProcesses()
