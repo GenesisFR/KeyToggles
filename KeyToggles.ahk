@@ -214,9 +214,9 @@ GuiButtonSelect_Click(*)
 	g_guiWindowSelector.Show()
 }
 
-GuiCB_Click(GuiCtrlObj, *)
+GuiCB_Click(p_guiCtrl, *)
 {
-	switch GuiCtrlObj
+	switch p_guiCtrl
 	{
 		case g_mapControls["cbAlwaysOnTop"]:
 			WinSetAlwaysOnTop(g_mapControls["cbAlwaysOnTop"].Value, "ahk_id" g_guiSettings.Hwnd)
@@ -251,21 +251,10 @@ GuiCB_Click(GuiCtrlObj, *)
 		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
 }
 
-GuiOnSize(GuiObj, MinMax, *)
-{
-	switch GuiObj {
-		case g_guiSettings:
-			if (MinMax == -1 && g_mapControls["cbMinimizeToTray"].Value)
-				GuiObj.Hide()
-			else if (MinMax == 0)
-				WinSetAlwaysOnTop(g_mapControls["cbAlwaysOnTop"].Value, "ahk_id" g_guiSettings.Hwnd)
-	}
-}
-
 GuiCreate()
 {
 	; Safety check
-	if (g_guiSettings)
+	if IsSet(g_guiSettings)
 		return
 
 	global g_guiSettings := Gui.Call("+OwnDialogs", "Settings", )
@@ -416,7 +405,8 @@ GuiCreate()
 	; Event handlers
 	for l_guiCtrl in g_guiSettings
 	{
-		switch l_guiCtrl.Type {
+		switch l_guiCtrl.Type
+		{
 			case "Edit":
 				l_guiCtrl.OnEvent("Change", GuiEdit_Change)
 			case "Hotkey":
@@ -432,18 +422,18 @@ GuiCreate()
 }
 
 ; Set hotkey controls text based on selected DDL extra keys
-GuiDDLExtra_Change(GuiCtrlObj, *)
+GuiDDLExtra_Change(p_guiCtrl, *)
 {
 	; Set the corresponding hotkey control's text to the selected DDL value
-	l_sHkControlName := StrReplace(GuiCtrlObj.Name, "ddl", "hk", , , 1)
+	l_sHkControlName := StrReplace(p_guiCtrl.Name, "ddl", "hk", , , 1)
 	l_hkControl := g_mapControls[l_sHkControlName]
-	l_hkControl.Value := GuiCtrlObj.Value == 1 ? "" : GuiCtrlObj.Text
+	l_hkControl.Value := p_guiCtrl.Value == 1 ? "" : p_guiCtrl.Text
 }
 
 ; Prevent intervals from being out-of-bounds, otherwise timers won't work
-GuiEdit_Change(GuiCtrlObj, *)
+GuiEdit_Change(p_guiCtrl, *)
 {
-	switch GuiCtrlObj
+	switch p_guiCtrl
 	{
 		case g_mapControls["editAutofireKeyInterval"]:
 			l_iMinValue := 1
@@ -465,11 +455,11 @@ GuiEdit_Change(GuiCtrlObj, *)
 			return
 	}
 
-	if (GuiCtrlObj.Value == "")
-		GuiCtrlObj.Text := l_iMinValue
+	if (p_guiCtrl.Value == "")
+		p_guiCtrl.Text := l_iMinValue
 	else
 	{
-		l_iValue := Integer(GuiCtrlObj.Value)
+		l_iValue := Integer(p_guiCtrl.Value)
 
 		; The UpDown control will automatically clamp the value within its range
 		if (l_iValue < l_iMinValue || l_iValue > l_iMaxValue)
@@ -478,44 +468,44 @@ GuiEdit_Change(GuiCtrlObj, *)
 }
 
 ; Prevent modified keys from being used in hotkey controls (could be changed to allow them in the future)
-GuiHK_Change(GuiCtrlObj, *)
+GuiHK_Change(p_guiCtrl, *)
 {
 	; Turn MsgBox into a modal
 	g_guiSettings.Opt("+OwnDialogs")
 
-	l_sHotkey := GuiCtrlObj.Value
+	l_sHotkey := p_guiCtrl.Value
 	l_sHotkeyLength := StrLen(l_sHotkey)
-	l_bShift := InStr(GuiCtrlObj.Value, "+")
-	l_bControl := InStr(GuiCtrlObj.Value, "^")
-	l_bAlt := InStr(GuiCtrlObj.Value, "!")
+	l_bShift := InStr(p_guiCtrl.Value, "+")
+	l_bControl := InStr(p_guiCtrl.Value, "^")
+	l_bAlt := InStr(p_guiCtrl.Value, "!")
 
 	Output("l_sHotkey(" l_sHotkey ") l_bShift(" l_bShift ") l_bControl(" l_bControl ") l_bAlt(" l_bAlt ")")
 
 	if (l_bShift && !l_bControl && !l_bAlt && l_sHotkeyLength == 1)
-		GuiCtrlObj.Value := "LShift"
+		p_guiCtrl.Value := "LShift"
 	else if (!l_bShift && l_bControl && !l_bAlt && l_sHotkeyLength == 1)
-		GuiCtrlObj.Value := "LControl"
+		p_guiCtrl.Value := "LControl"
 	else if (!l_bShift && !l_bControl && l_bAlt && l_sHotkeyLength == 1)
-		GuiCtrlObj.Value := "LAlt"
+		p_guiCtrl.Value := "LAlt"
 	else if (l_bShift || l_bControl || l_bAlt && l_sHotkeyLength > 1)
 	{
-		GuiCtrlObj.Value := ""
+		p_guiCtrl.Value := ""
 		MsgBox("You can't use modified keys!", , "Icon!")
 		return
 	}
 
 	; Clear the corresponding DDL control if a hotkey is set
-	l_sDDLControlName := StrReplace(GuiCtrlObj.Name, "hk", "ddl", , , 1)
+	l_sDDLControlName := StrReplace(p_guiCtrl.Name, "hk", "ddl", , , 1)
 	g_mapControls[l_sDDLControlName].Choose(1)
 }
 
-GuiLV_DoubleClick(GuiCtrlObj, Info)
+GuiLV_DoubleClick(p_guiCtrl, p_iPosItem)
 {
 	g_guiWindowSelector.Hide()
 	g_guiSettings.Opt("-Disabled")
 
 	; Retrieve the text from the selected row in the ListView
-	l_sItemText := GuiCtrlObj.GetText(Info)
+	l_sItemText := p_guiCtrl.GetText(p_iPosItem)
 	l_arr := StrSplit(l_sItemText, " | ", , 2)
 
 	; Update controls in the main window
@@ -570,6 +560,18 @@ GuiLV_ReloadProcesses()
 	}
 
 	g_mapControls["lvWindowPicker"].Opt("+Redraw")
+}
+
+GuiOnSize(GuiObj, MinMax, *)
+{
+	switch GuiObj
+	{
+		case g_guiSettings:
+			if (MinMax == -1 && g_mapControls["cbMinimizeToTray"].Value)
+				g_guiSettings.Hide()
+			else if (MinMax == 0)
+				WinSetAlwaysOnTop(g_mapControls["cbAlwaysOnTop"].Value, "ahk_id" g_guiSettings.Hwnd)
+	}
 }
 
 ; Update GUI controls based on current settings
@@ -654,9 +656,9 @@ Init()
 	GuiApplyTheme()
 	GuiCreate()
 	StartFocusCheck()
-	A_TrayMenu.Insert("&Suspend Hotkeys", "Settings", (*) => g_guiSettings.Show())
+	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", (*) => g_guiSettings.Show())
 	A_TrayMenu.ClickCount := 1
-	A_TrayMenu.Default := "Settings"
+	A_TrayMenu.Default := "&Settings"
 }
 
 IsCommonProcess(p_sProcessName)
