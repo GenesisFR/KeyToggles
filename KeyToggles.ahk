@@ -2,7 +2,6 @@
 
 /*
 TODO
-add a setting to change the send mode
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
 add text/tooltips when mousing over GUI controls to explain what they do
@@ -142,7 +141,7 @@ GuiApplyTheme()
 	; Set theme to dark mode
 	if (g_mapSettings["bDarkMode"])
 	{
-		global g_guiBackColor := "353434"
+		global g_guiBackColor := "1F1F1F"
 		global g_guiTextColor := "CWhite"
 	}
 }
@@ -552,7 +551,7 @@ GuiLogCreate()
 	global g_guiLog := Gui.Call("Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Log Viewer")
 	g_guiLog.BackColor := g_guiBackColor
 	g_guiLog.SetFont("s10 " g_guiTextColor)
-	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "BackgroundBlack" : "cBlack") " r25 w600 h400")
+	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " r25 w600 h400")
 	g_guiLog.AddButton("Background" g_guiBackColor " x515 y425 w100", "Clear").OnEvent("Click", (*) => g_mapControls["editLog"].Text := "")
 }
 
