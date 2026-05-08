@@ -711,7 +711,7 @@ Init()
 	GuiCreate()
 	SendMode(g_mapControls["ddlSendMode"].Text)
 	StartFocusCheck()
-	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", (*) => g_guiSettings.Show())
+	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", (*) => GuiShow())
 	A_TrayMenu.ClickCount := 1
 	A_TrayMenu.Default := "&Settings"
 }
