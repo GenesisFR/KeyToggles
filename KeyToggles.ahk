@@ -291,12 +291,12 @@ GuiButtonSelect_Click(*)
 	DllCall("user32\SetWindowDisplayAffinity", "Int", g_guiWindowSelector.Hwnd, "Int", 0x00000011 * g_mapSettings["bHideFromCapture"])
 
 	GuiLV_ReloadProcesses()
-	g_guiWindowSelector.Show()
+	g_guiWindowSelector.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iSelectorWindowX"] " y" g_mapSettings["iSelectorWindowY"] : "")
 }
 
 GuiButtonViewLog_Click(*)
 {
-	g_guiLog.Show()
+	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
 	ControlSend("^{End}", g_mapControls["editLog"])
 }
 
