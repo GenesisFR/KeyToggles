@@ -72,6 +72,7 @@ g_bThemePopupShown := false
 g_bToggleKeysSnapshotTaken := false
 g_iWindowID := 0
 g_sConfigFileName := "KeyToggles.ini"
+g_sLogMessages := ""
 
 Init()
 
@@ -296,7 +297,7 @@ GuiButtonSelect_Click(*)
 
 GuiButtonViewLog_Click(*)
 {
-	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
+	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "NoActivate x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
 	ControlSend("^{End}", g_mapControls["editLog"])
 }
 
@@ -317,9 +318,9 @@ GuiCB_Click(p_guiCtrl, *)
 	; We save the changes immediately to avoid having to hit Save
 	try
 	{
-		IniWrite(g_mapControls["cbAutorun"].Value, "KeyToggles.ini", "UI", "autorunMode")
-		IniWrite(g_mapControls["cbRestoreAutofiresOnFocus"].Value, "KeyToggles.ini", "UI", "restoreAutofiresOnFocus")
-		IniWrite(g_mapControls["cbRestoreTogglesOnFocus"].Value, "KeyToggles.ini", "UI", "restoreTogglesOnFocus")
+		IniWrite(g_mapSettings["bAutorun"], "KeyToggles.ini", "UI", "autorunMode")
+		IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"], "KeyToggles.ini", "UI", "restoreAutofiresOnFocus")
+		IniWrite(g_mapSettings["bRestoreTogglesOnFocus"], "KeyToggles.ini", "UI", "restoreTogglesOnFocus")
 	}
 	catch as e
 		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -960,11 +961,18 @@ Log(p_sMessage, p_bSeparator := false)
 	{
 		l_sFormattedTime := FormatTime(, "HH:mm:ss")
 		l_sMilliseconds := SubStr(A_TickCount, -3)
-		g_mapControls["editLog"].Text .= l_sFormattedTime "." l_sMilliseconds ": " p_sMessage "`r`n"
-		ControlSend("^{End}", g_mapControls["editLog"])
+		global g_sLogMessages .= l_sFormattedTime "." l_sMilliseconds ": " p_sMessage "`r`n"
 
 		if (p_bSeparator)
-			g_mapControls["editLog"].Text .= "--------------------------------------------------`r`n"
+			global g_sLogMessages .= "--------------------------------------------------`r`n"
+
+		if !WinActive("ahk_id " g_guiLog.Hwnd)
+		{
+			g_mapControls["editLog"].Text := g_sLogMessages
+
+			; Scroll to the end of the log
+			ScrollTo(g_guiLog.Hwnd, g_mapControls["editLog"], EditGetLineCount(g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)) 
+		}
 	}
 }
 
@@ -1358,6 +1366,17 @@ RestartAsAdminIfNeeded()
 			ExitApp()
 		}
 	}
+}
+
+; https://www.autohotkey.com/board/topic/47704-scroll-to-line-in-edit-control/?p=297584
+ScrollTo(p_winID, p_editCtrl, p_iLineSel)
+{
+	l_iErrorLevel := SendMessage(0xCE, 0, 0, p_editCtrl, "ahk_id " p_winID) ; EM_GETFIRSTVISIBLELINE to get first line shown (results stored in ErrorLevel)
+	l_iLineSet := p_iLineSel - l_iErrorLevel -1	;get difference between current line and zeroth line, subtract one
+	PostMessage(0xB6, 0, l_iLineSet, p_editCtrl, "ahk_id " p_winID) ; EM_LINESCROLL to scroll target to top
+	p_iLineSel--	;EM_LINEINDEX is 0-based, so sub one
+	l_iErrorLevel := SendMessage(0xBB, p_iLineSel, 0, p_editCtrl, "ahk_id " p_winID) ; EM_LINEINDEX to get first char from line (results stored in ErrorLevel)
+	PostMessage(0xB1, l_iErrorLevel, l_iErrorLevel, p_editCtrl, "ahk_id " p_winID) ; EM_SETSEL to change caret to first character position of line 'lineSel'
 }
 
 SendAltTab(*)
