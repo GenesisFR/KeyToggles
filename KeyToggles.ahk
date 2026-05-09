@@ -551,7 +551,7 @@ GuiLogCreate()
 	global g_guiLog := Gui.Call("Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Log Viewer")
 	g_guiLog.BackColor := g_guiBackColor
 	g_guiLog.SetFont("s10 " g_guiTextColor)
-	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " r25 w600 h400")
+	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " ReadOnly r25 w600 h400")
 	g_guiLog.AddButton("Background" g_guiBackColor " x515 y425 w100", "Clear").OnEvent("Click", (*) => g_mapControls["editLog"].Text := "")
 }
 
@@ -708,7 +708,7 @@ IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 			try
 			{
 				l_iValue := l_sValue + 0
-				return (l_iValue >= SEND_MODE_INPUT && l_iValue <= SEND_MODE_PLAY) ? l_iValue : p_sDefault
+				return (l_iValue >= SEND_MODE_EVENT && l_iValue <= SEND_MODE_INPUTTHENPLAY) ? l_iValue : p_sDefault
 			}
 			catch TypeError ; not an integer
 			{
