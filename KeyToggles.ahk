@@ -83,13 +83,23 @@ ExitFunc(p_sExitReason, p_iExitCode)
 	TrayTip()
 
 	; Store the GUI position
-	if (g_mapSettings["bRememberWindowPosition"])
+	if (g_mapSettings["bRememberWindowPositions"])
 	{
 		try
 		{
 			g_guiSettings.GetPos(&l_iWinX, &l_iWinY)
-			IniWrite(l_iWinX, "KeyToggles.ini", "UI", "windowX")
-			IniWrite(l_iWinY, "KeyToggles.ini", "UI", "windowY")
+			IniWrite(l_iWinX, "KeyToggles.ini", "UI", "mainWindowX")
+			IniWrite(l_iWinY, "KeyToggles.ini", "UI", "mainWindowY")
+			g_guiLog.GetPos(&l_iWinX, &l_iWinY)
+			IniWrite(l_iWinX, "KeyToggles.ini", "UI", "logWindowX")
+			IniWrite(l_iWinY, "KeyToggles.ini", "UI", "logWindowY")
+
+			if IsSet(g_guiWindowSelector)
+			{
+				g_guiWindowSelector.GetPos(&l_iWinX, &l_iWinY)
+				IniWrite(l_iWinX, "KeyToggles.ini", "UI", "selectorWindowX")
+				IniWrite(l_iWinY, "KeyToggles.ini", "UI", "selectorWindowY")
+			}
 		}
 		catch as e
 			MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -143,7 +153,7 @@ GuiAddMenus()
 	l_viewMenu.Add("Dark mode", GuiMenuHandler)
 	l_viewMenu.Add("Hide from capture", GuiMenuHandler)
 	l_viewMenu.Add("Minimize to tray", GuiMenuHandler)
-	l_viewMenu.Add("Remember window position", GuiMenuHandler)
+	l_viewMenu.Add("Remember window positions", GuiMenuHandler)
 
 	if (g_mapSettings["bAlwaysOnTop"])
 		l_viewMenu.Check("Always on top")
@@ -155,8 +165,8 @@ GuiAddMenus()
 		l_viewMenu.Check("Hide from capture")
 	if (g_mapSettings["bMinimizeToTray"])
 		l_viewMenu.Check("Minimize to tray")
-	if (g_mapSettings["bRememberWindowPosition"])
-		l_viewMenu.Check("Remember window position")
+	if (g_mapSettings["bRememberWindowPositions"])
+		l_viewMenu.Check("Remember window positions")
 
 	l_miscMenu := Menu()
 	l_miscMenu.Add("Debug mode", GuiMenuHandler)
@@ -255,7 +265,7 @@ GuiButtonSelect_Click(*)
 	g_guiSettings.Opt("+Disabled")
 
 	; Create the window selector GUI if it doesn't exist
-	if (!IsSet(g_guiWindowSelector))
+	if !IsSet(g_guiWindowSelector)
 	{
 		; Gui
 		global g_guiWindowSelector := Gui.Call("+Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Window selector")
@@ -674,8 +684,8 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 					g_mapSettings["bHideFromCapture"] := !g_mapSettings["bHideFromCapture"]
 				case "Minimize to tray":
 					g_mapSettings["bMinimizeToTray"] := !g_mapSettings["bMinimizeToTray"]
-				case "Remember window position":
-					g_mapSettings["bRememberWindowPosition"] := !g_mapSettings["bRememberWindowPosition"] 
+				case "Remember window positions":
+					g_mapSettings["bRememberWindowPositions"] := !g_mapSettings["bRememberWindowPositions"] 
 				case "Debug mode":
 					g_mapSettings["bDebugMode"] := !g_mapSettings["bDebugMode"]
 				case "Fix system keys":
@@ -694,7 +704,7 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 				IniWrite(g_mapSettings["bDarkMode"], "KeyToggles.ini", "UI", "darkMode")
 				IniWrite(g_mapSettings["bHideFromCapture"], "KeyToggles.ini", "UI", "hideFromCapture")
 				IniWrite(g_mapSettings["bMinimizeToTray"], "KeyToggles.ini", "UI", "minimizeToTray")
-				IniWrite(g_mapSettings["bRememberWindowPosition"], "KeyToggles.ini", "UI", "rememberWindowPosition")
+				IniWrite(g_mapSettings["bRememberWindowPositions"], "KeyToggles.ini", "UI", "rememberWindowPositions")
 			}
 			catch as e
 				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -737,24 +747,15 @@ GuiOnSize(GuiObj, MinMax, *)
 
 GuiShow()
 {
-	g_guiSettings.Show(g_mapSettings["bRememberWindowPosition"] ? "x" g_mapSettings["iWindowX"] " y" g_mapSettings["iWindowY"] : "")
+	g_guiSettings.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iMainWindowX"] " y" g_mapSettings["iMainWindowY"] : "")
 }
 
 ; Update GUI controls based on current settings
 GuiUpdate()
 {
-	g_mapControls["bAlwaysOnTop"]                    := g_mapSettings["bAlwaysOnTop"]
-	g_mapControls["bAutorun"]                        := g_mapSettings["bAutorunMode"]
-	g_mapControls["bCloseToTray"]                    := g_mapSettings["bCloseToTray"]
-	g_mapControls["bDarkMode"]                       := g_mapSettings["bDarkMode"]
-	g_mapControls["bDebugMode"]                      := g_mapSettings["bDebugMode"]
-	g_mapControls["bFixSystemKeys"]                  := g_mapSettings["bFixSystemKeys"]
-	g_mapControls["bHideFromCapture"]                := g_mapSettings["bHideFromCapture"]
-	g_mapControls["bMinimizeToTray"]                 := g_mapSettings["bMinimizeToTray"]
-	g_mapControls["bRememberWindowPosition"]         := g_mapSettings["bRememberWindowPosition"]
-	g_mapControls["bRestoreAutofiresOnFocus"]        := g_mapSettings["bRestoreAutofiresOnFocus"]
-	g_mapControls["bRestoreTogglesOnFocus"]          := g_mapSettings["bRestoreTogglesOnFocus"]
-	g_mapControls["bRunAsAdmin"]                     := g_mapSettings["bRunAsAdmin"]
+	g_mapControls["cbAutorun"].Value                 := g_mapSettings["bAutorunMode"]
+	g_mapControls["cbRestoreAutofiresOnFocus"].Value := g_mapSettings["bRestoreAutofiresOnFocus"]
+	g_mapControls["cbRestoreTogglesOnFocus"].Value   := g_mapSettings["bRestoreTogglesOnFocus"]
 	g_mapControls["ddlAimAutofireKey"].Text          := IsExtraOption(g_mapSettings["sAimAutofireKey"])    ? g_mapSettings["sAimAutofireKey"] : "None"
 	g_mapControls["ddlAimKey"].Text                  := IsExtraOption(g_mapSettings["sAimKey"])            ? g_mapSettings["sAimKey"] : "None"
 	g_mapControls["ddlAimMode"].Value                := g_mapSettings["iAimMode"] + 1
@@ -1224,14 +1225,18 @@ ReadConfigFile()
 	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; UI
-	g_mapSettings["bAlwaysOnTop"]            := IniRead(g_sConfigFileName, "UI", "alwaysOnTop", false) == true
-	g_mapSettings["bCloseToTray"]            := IniRead(g_sConfigFileName, "UI", "closeToTray", false) == true
-	g_mapSettings["bDarkMode"]               := IniRead(g_sConfigFileName, "UI", "darkMode", true) == true
-	g_mapSettings["bHideFromCapture"]        := IniRead(g_sConfigFileName, "UI", "hideFromCapture", false) == true
-	g_mapSettings["bMinimizeToTray"]         := IniRead(g_sConfigFileName, "UI", "minimizeToTray", false) == true
-	g_mapSettings["bRememberWindowPosition"] := IniRead(g_sConfigFileName, "UI", "rememberWindowPosition", false) == true
-	g_mapSettings["iWindowX"]                := IniReadType(g_sConfigFileName, "UI", "windowX", 0, "int")
-	g_mapSettings["iWindowY"]                := IniReadType(g_sConfigFileName, "UI", "windowY", 0, "int")
+	g_mapSettings["bAlwaysOnTop"]             := IniRead(g_sConfigFileName, "UI", "alwaysOnTop", false) == true
+	g_mapSettings["bCloseToTray"]             := IniRead(g_sConfigFileName, "UI", "closeToTray", false) == true
+	g_mapSettings["bDarkMode"]                := IniRead(g_sConfigFileName, "UI", "darkMode", true) == true
+	g_mapSettings["bHideFromCapture"]         := IniRead(g_sConfigFileName, "UI", "hideFromCapture", false) == true
+	g_mapSettings["bMinimizeToTray"]          := IniRead(g_sConfigFileName, "UI", "minimizeToTray", false) == true
+	g_mapSettings["bRememberWindowPositions"] := IniRead(g_sConfigFileName, "UI", "rememberWindowPositions", false) == true
+	g_mapSettings["iMainWindowX"]             := IniReadType(g_sConfigFileName, "UI", "mainWindowX", 0, "int")
+	g_mapSettings["iMainWindowY"]             := IniReadType(g_sConfigFileName, "UI", "mainWindowY", 0, "int")
+	g_mapSettings["iSelectorWindowX"]         := IniReadType(g_sConfigFileName, "UI", "selectorWindowX", 0, "int")
+	g_mapSettings["iSelectorWindowY"]         := IniReadType(g_sConfigFileName, "UI", "selectorWindowY", 0, "int")
+	g_mapSettings["iLogWindowX"]              := IniReadType(g_sConfigFileName, "UI", "logWindowX", 0, "int")
+	g_mapSettings["iLogWindowY"]              := IniReadType(g_sConfigFileName, "UI", "logWindowY", 0, "int")
 
 	; Debug
 	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false) == true
@@ -1616,7 +1621,7 @@ WriteConfigFile()
 		IniWrite(g_mapSettings["bDarkMode"],                       "KeyToggles.ini", "UI",      "darkMode")
 		IniWrite(g_mapSettings["bHideFromCapture"],                "KeyToggles.ini", "UI",      "hideFromCapture")
 		IniWrite(g_mapSettings["bMinimizeToTray"],                 "KeyToggles.ini", "UI",      "minimizeToTray")
-		IniWrite(g_mapSettings["bRememberWindowPosition"],         "KeyToggles.ini", "UI",      "rememberWindowPosition")
+		IniWrite(g_mapSettings["bRememberWindowPositions"],        "KeyToggles.ini", "UI",      "rememberWindowPositions")
 		IniWrite(g_mapSettings["bDebugMode"],                      "KeyToggles.ini", "Debug",   "debugMode")
 	}
 	catch as e
