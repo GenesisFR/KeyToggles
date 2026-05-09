@@ -72,7 +72,6 @@ g_bThemePopupShown := false
 g_bToggleKeysSnapshotTaken := false
 g_iWindowID := 0
 g_sConfigFileName := "KeyToggles.ini"
-g_sLogMessages := ""
 
 Init()
 
@@ -306,7 +305,7 @@ GuiCB_Click(p_guiCtrl, *)
 	switch p_guiCtrl
 	{
 		case g_mapControls["cbAutorun"]:
-			g_mapSettings["bAutorun"] := g_mapControls["cbAutorun"].Value
+			g_mapSettings["bAutorunMode"] := g_mapControls["cbAutorun"].Value
 		case g_mapControls["cbRestoreAutofiresOnFocus"]:
 			g_mapSettings["bRestoreAutofiresOnFocus"] := g_mapControls["cbRestoreAutofiresOnFocus"].Value
 		case g_mapControls["cbRestoreTogglesOnFocus"]:
@@ -318,7 +317,7 @@ GuiCB_Click(p_guiCtrl, *)
 	; We save the changes immediately to avoid having to hit Save
 	try
 	{
-		IniWrite(g_mapSettings["bAutorun"], "KeyToggles.ini", "UI", "autorunMode")
+		IniWrite(g_mapSettings["bAutorunMode"], "KeyToggles.ini", "UI", "autorunMode")
 		IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"], "KeyToggles.ini", "UI", "restoreAutofiresOnFocus")
 		IniWrite(g_mapSettings["bRestoreTogglesOnFocus"], "KeyToggles.ini", "UI", "restoreTogglesOnFocus")
 	}
@@ -554,9 +553,9 @@ GuiHK_Change(p_guiCtrl, *)
 
 	l_sHotkey := p_guiCtrl.Value
 	l_sHotkeyLength := StrLen(l_sHotkey)
-	l_bShift := InStr(p_guiCtrl.Value, "+")
-	l_bControl := InStr(p_guiCtrl.Value, "^")
-	l_bAlt := InStr(p_guiCtrl.Value, "!")
+	l_bShift := InStr(p_guiCtrl.Value, "+") != 0
+	l_bControl := InStr(p_guiCtrl.Value, "^") != 0
+	l_bAlt := InStr(p_guiCtrl.Value, "!") != 0
 
 	Output("l_sHotkey(" l_sHotkey ") l_bShift(" l_bShift ") l_bControl(" l_bControl ") l_bAlt(" l_bAlt ")")
 
@@ -588,6 +587,7 @@ GuiLogCreate()
 	g_guiLog.BackColor := g_guiBackColor
 	g_guiLog.SetFont("s10 " g_guiTextColor)
 	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " ReadOnly r25 w600 h400")
+	g_mapControls["editLog"].OnEvent("LoseFocus", (*) => ControlSend("^{End}", g_mapControls["editLog"]))
 	g_guiLog.AddButton("Background" g_guiBackColor " x515 y425 w100", "Clear").OnEvent("Click", (*) => g_mapControls["editLog"].Text := "")
 }
 
@@ -959,19 +959,14 @@ Log(p_sMessage, p_bSeparator := false)
 {
 	if (g_mapSettings["bDebugMode"])
 	{
-		l_sFormattedTime := FormatTime(, "HH:mm:ss")
-		l_sMilliseconds := SubStr(A_TickCount, -3)
-		global g_sLogMessages .= l_sFormattedTime "." l_sMilliseconds ": " p_sMessage "`r`n"
-
-		if (p_bSeparator)
-			global g_sLogMessages .= "--------------------------------------------------`r`n"
-
-		if !WinActive("ahk_id " g_guiLog.Hwnd)
+		if (WinExist("ahk_id " g_guiLog.Hwnd) && ControlGetFocus("ahk_id " g_guiLog.Hwnd) != g_mapControls["editLog"].Hwnd)
 		{
-			g_mapControls["editLog"].Text := g_sLogMessages
+			l_sFormattedTime := FormatTime(, "HH:mm:ss")
+			l_sMilliseconds := SubStr(A_TickCount, -3)
+			EditPaste(l_sFormattedTime "." l_sMilliseconds ": " p_sMessage "`r`n", g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
 
-			; Scroll to the end of the log
-			ScrollTo(g_guiLog.Hwnd, g_mapControls["editLog"], EditGetLineCount(g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)) 
+			if (p_bSeparator)
+				EditPaste("--------------------------------------------------`r`n", g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
 		}
 	}
 }
@@ -1368,17 +1363,6 @@ RestartAsAdminIfNeeded()
 	}
 }
 
-; https://www.autohotkey.com/board/topic/47704-scroll-to-line-in-edit-control/?p=297584
-ScrollTo(p_winID, p_editCtrl, p_iLineSel)
-{
-	l_iErrorLevel := SendMessage(0xCE, 0, 0, p_editCtrl, "ahk_id " p_winID) ; EM_GETFIRSTVISIBLELINE to get first line shown (results stored in ErrorLevel)
-	l_iLineSet := p_iLineSel - l_iErrorLevel -1	;get difference between current line and zeroth line, subtract one
-	PostMessage(0xB6, 0, l_iLineSet, p_editCtrl, "ahk_id " p_winID) ; EM_LINESCROLL to scroll target to top
-	p_iLineSel--	;EM_LINEINDEX is 0-based, so sub one
-	l_iErrorLevel := SendMessage(0xBB, p_iLineSel, 0, p_editCtrl, "ahk_id " p_winID) ; EM_LINEINDEX to get first char from line (results stored in ErrorLevel)
-	PostMessage(0xB1, l_iErrorLevel, l_iErrorLevel, p_editCtrl, "ahk_id " p_winID) ; EM_SETSEL to change caret to first character position of line 'lineSel'
-}
-
 SendAltTab(*)
 {
 	;Output(A_ThisFunc "::begin")
@@ -1614,7 +1598,7 @@ WriteConfigFile()
 		IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
 		IniWrite(g_mapControls["ddlAimMode"].Value - 1,            "KeyToggles.ini", "General", "aimMode")
 		IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
-		IniWrite(g_mapSettings["bAutorun"],                        "KeyToggles.ini", "General", "autorunMode")
+		IniWrite(g_mapSettings["bAutorunMode"],                    "KeyToggles.ini", "General", "autorunMode")
 		IniWrite(g_mapControls["ddlCrouchMode"].Value - 1,         "KeyToggles.ini", "General", "crouchMode")
 		IniWrite(g_mapSettings["bFixSystemKeys"],                  "KeyToggles.ini", "General", "fixSystemKeys")
 		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
