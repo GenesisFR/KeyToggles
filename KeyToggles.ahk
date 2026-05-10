@@ -296,7 +296,7 @@ GuiButtonSelect_Click(*)
 
 GuiButtonViewLog_Click(*)
 {
-	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "NoActivate x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
+	g_guiLog.Show("NoActivate " (g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : ""))
 	GuiLogScrollToBottom()
 }
 
@@ -743,7 +743,7 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 			; We save the changes immediately to avoid having to hit Save
 			try
 			{
-				IniWrite(g_mapSettings["bDebugMode"], "KeyToggles.ini", "General", "debugMode")
+				IniWrite(g_mapSettings["bDebugMode"], "KeyToggles.ini", "Debug", "debugMode")
 				IniWrite(g_mapSettings["bFixSystemKeys"], "KeyToggles.ini", "General", "fixSystemKeys")
 				IniWrite(g_mapSettings["bRunAsAdmin"], "KeyToggles.ini", "General", "runAsAdmin")
 			}
