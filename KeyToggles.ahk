@@ -297,7 +297,7 @@ GuiButtonSelect_Click(*)
 GuiButtonViewLog_Click(*)
 {
 	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "NoActivate x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
-	ControlSend("^{End}", g_mapControls["editLog"])
+	GuiLogScrollToBottom()
 }
 
 GuiCB_Click(p_guiCtrl, *)
@@ -341,7 +341,7 @@ GuiCreate()
 	l_iCurrentRow := 0
 	l_iSpacingX := 10
 	l_iSpacingY := 25
-	l_iTopY := 10
+	l_iTopY := 5
 	; Leftmost controls
 	l_iLeftWidth := 170
 	l_iLeftX := 25
@@ -361,7 +361,7 @@ GuiCreate()
 	g_guiSettings.OnEvent("Size", GuiOnSize)
 
 	; General
-	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY " h" 8*28 + 5 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + l_iSpacingX * 4), "General")
+	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY " h" 8*28 + 7 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + l_iSpacingX * 4), "General")
 
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Process name")
 	g_mapControls["editProcessName"] := g_guiSettings.AddEdit("CBlack r1 x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
@@ -387,9 +387,9 @@ GuiCreate()
 	g_mapControls["editHookDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
 	g_mapControls["udHookDelay"] := g_guiSettings.AddUpDown("Range0-10000 0x80")
 
-	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Key delay")
-	g_mapControls["editKeyDelay"] := g_guiSettings.AddEdit("CBlack Number x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
-	g_mapControls["udKeyDelay"] := g_guiSettings.AddUpDown("Range0-1000 0x80")
+	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Press duration")
+	g_mapControls["editPressDuration"] := g_guiSettings.AddEdit("CBlack Number x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
+	g_mapControls["udPressDuration"] := g_guiSettings.AddUpDown("Range0-1000 0x80")
 
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Notifications")
 	g_mapControls["ddlNotifications"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, l_arrNotificationTypes)
@@ -398,6 +398,7 @@ GuiCreate()
 	g_mapControls["ddlSendMode"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, l_arrSendModes)
 
 	; Save states
+	l_iTopY += 2
 	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 2*35 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
 	                          "Save states")
 
@@ -493,18 +494,21 @@ GuiDDL_Change(p_guiCtrl, *)
 {
 	switch p_guiCtrl
 	{
-		case g_mapControls["ddlAimMode"]:
-		case g_mapControls["ddlCrouchMode"]:
-		case g_mapControls["ddlSprintMode"]:
-			return
-		case g_mapControls["ddlSendMode"]:
-			SendMode(g_mapControls["ddlSendMode"].Text)
-		; Hotkey DDLs
-		default:
+		case g_mapControls["ddlAimAutofireKey"]:
+		case g_mapControls["ddlAimKey"]:
+		case g_mapControls["ddlAutorunKey"]:
+		case g_mapControls["ddlBackwardKey"]:
+		case g_mapControls["ddlCrouchAutofireKey"]:
+		case g_mapControls["ddlCrouchKey"]:
+		case g_mapControls["ddlForwardKey"]:
+		case g_mapControls["ddlSprintAutofireKey"]:
+		case g_mapControls["ddlSprintKey"]:
 			; Set the corresponding hotkey control's text to the selected DDL value
 			l_sHkControlName := StrReplace(p_guiCtrl.Name, "ddl", "hk", , , 1)
 			l_hkControl := g_mapControls[l_sHkControlName]
 			l_hkControl.Value := p_guiCtrl.Value == 1 ? "" : p_guiCtrl.Text
+		case g_mapControls["ddlSendMode"]:
+			SendMode(g_mapControls["ddlSendMode"].Text)
 	}
 }
 
@@ -525,10 +529,11 @@ GuiEdit_Change(p_guiCtrl, *)
 			l_iMinValue := 0
 			l_iMaxValue := 10000
 			l_udControl := g_mapControls["udHookDelay"]
-		case g_mapControls["editKeyDelay"]:
+		case g_mapControls["editPressDuration"]:
 			l_iMinValue := 0
 			l_iMaxValue := 1000
-			l_udControl := g_mapControls["udKeyDelay"]
+			l_udControl := g_mapControls["udPressDuration"]
+			SetKeyDelay(, g_mapSettings["iPressDuration"], A_SendMode == "Play" || A_SendMode == "InputThenPlay" ? "Play" : "")
 		default:
 			return
 	}
@@ -587,8 +592,21 @@ GuiLogCreate()
 	g_guiLog.BackColor := g_guiBackColor
 	g_guiLog.SetFont("s10 " g_guiTextColor)
 	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " ReadOnly r25 w600 h400")
-	g_mapControls["editLog"].OnEvent("LoseFocus", (*) => ControlSend("^{End}", g_mapControls["editLog"]))
+	g_mapControls["editLog"].OnEvent("LoseFocus", (*) => GuiLogScrollToBottom())
 	g_guiLog.AddButton("Background" g_guiBackColor " x515 y425 w100", "Clear").OnEvent("Click", (*) => g_mapControls["editLog"].Text := "")
+}
+
+GuiLogScrollToBottom()
+{
+	; Back up previous settings
+	l_iPressDuration := InStr(A_SendMode, "Play") ? A_KeyDurationPlay : A_KeyDuration
+	l_sSendMode := A_SendMode == "Play" || A_SendMode == "InputThenPlay" ? "Play" : ""
+
+	SetKeyDelay(, 10, '')
+	ControlSend("^{End}", g_mapControls["editLog"])
+
+	; Restore previous settings
+	SetKeyDelay(, l_iPressDuration, l_sSendMode)
 }
 
 GuiLV_DoubleClick(p_guiCtrl, p_iPosItem)
@@ -785,7 +803,7 @@ GuiUpdate()
 	g_mapControls["udAutofireKeyInterval"].Value     := g_mapSettings["iAutofireKeyInterval"]
 	g_mapControls["udFocusCheckInterval"].Value      := g_mapSettings["iFocusCheckInterval"]
 	g_mapControls["udHookDelay"].Value               := g_mapSettings["iHookDelay"]
-	g_mapControls["udKeyDelay"].Value                := g_mapSettings["iKeyDelay"]
+	g_mapControls["udPressDuration"].Value           := g_mapSettings["iPressDuration"]
 }
 
 IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
@@ -833,11 +851,15 @@ Init()
 {
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
+
 	GuiApplyTheme()
 	GuiCreate()
 	GuiAddMenus()
 	GuiLogCreate()
+
 	SendMode(g_mapControls["ddlSendMode"].Text)
+	SetKeyDelay(, g_mapSettings["iPressDuration"], A_SendMode == "Play" || A_SendMode == "InputThenPlay" ? "Play" : "")
+
 	StartFocusCheck()
 	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", (*) => GuiShow())
 	A_TrayMenu.ClickCount := 1
@@ -907,11 +929,11 @@ KeyAutofire(p_sAutofireKey)
 	switch p_sAutofireKey
 	{
 		case g_mapSettings["sAimAutofireKey"]:
-			SendKey(g_mapSettings["sAimKey"], g_mapSettings["iKeyDelay"])
+			SendKey(g_mapSettings["sAimKey"], g_mapSettings["iPressDuration"])
 		case g_mapSettings["sCrouchAutofireKey"]:
-			SendKey(g_mapSettings["sCrouchKey"], g_mapSettings["iKeyDelay"])
+			SendKey(g_mapSettings["sCrouchKey"], g_mapSettings["iPressDuration"])
 		case g_mapSettings["sSprintAutofireKey"]:
-			SendKey(g_mapSettings["sSprintKey"], g_mapSettings["iKeyDelay"])
+			SendKey(g_mapSettings["sSprintKey"], g_mapSettings["iPressDuration"])
 	}
 
 	Output(A_ThisFunc "::end")
@@ -920,9 +942,9 @@ KeyAutofire(p_sAutofireKey)
 KeyHold(p_sKey)
 {
 	;Output(A_ThisFunc "::begin")
-	SendKey(p_sKey, g_mapSettings["iKeyDelay"])
+	SendKey(p_sKey, g_mapSettings["iPressDuration"])
 	KeyWait(p_sKey)
-	SendKey(p_sKey, g_mapSettings["iKeyDelay"])
+	SendKey(p_sKey, g_mapSettings["iPressDuration"])
 	;Output(A_ThisFunc "::end")
 }
 
@@ -1205,7 +1227,7 @@ ReadConfigFile()
 	g_mapSettings["bFixSystemKeys"]           :=     IniRead(g_sConfigFileName, "General", "fixSystemKeys", true) == true
 	g_mapSettings["iFocusCheckInterval"]      := IniReadType(g_sConfigFileName, "General", "focusCheckInterval", 1000, "int")
 	g_mapSettings["iHookDelay"]               := IniReadType(g_sConfigFileName, "General", "hookDelay", 0, "int")
-	g_mapSettings["iKeyDelay"]                := IniReadType(g_sConfigFileName, "General", "keyDelay", 0, "int")
+	g_mapSettings["iPressDuration"]           := IniReadType(g_sConfigFileName, "General", "pressDuration", 25, "int")
 	g_mapSettings["bRestoreAutofiresOnFocus"] :=     IniRead(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false) == true
 	g_mapSettings["bRestoreTogglesOnFocus"]   :=     IniRead(g_sConfigFileName, "General", "restoreTogglesOnFocus", false) == true
 	g_mapSettings["bRunAsAdmin"]              :=     IniRead(g_sConfigFileName, "General", "runAsAdmin", false) == true
@@ -1425,15 +1447,23 @@ SendEscape(*)
 
 SendKey(p_sKey, p_iHoldDuration := 0, p_bWait := false)
 {
-	Send("{Blind}{" p_sKey " down}")
+	switch A_SendMode
+	{
+		case "Input":
+			Send("{Blind}{" p_sKey " down}")
 
-	if (p_iHoldDuration > 0)
-		Sleep(p_iHoldDuration)
+			if (p_iHoldDuration > 0)
+				Sleep(p_iHoldDuration)
 
-	if (p_bWait)
-		KeyWait(p_sKey)
+			if (p_bWait)
+				KeyWait(p_sKey)
 
-	Send("{Blind}{" p_sKey " up}")
+			Send("{Blind}{" p_sKey " up}")
+		default:
+			Send("{Blind}{" p_sKey "}")
+			if (p_bWait)
+				KeyWait(p_sKey) 
+	}
 }
 
 SendWindows(*)
@@ -1603,7 +1633,7 @@ WriteConfigFile()
 		IniWrite(g_mapSettings["bFixSystemKeys"],                  "KeyToggles.ini", "General", "fixSystemKeys")
 		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
 		IniWrite(g_mapControls["udHookDelay"].Value,               "KeyToggles.ini", "General", "hookDelay")
-		IniWrite(g_mapControls["udKeyDelay"].Value,                "KeyToggles.ini", "General", "keyDelay")
+		IniWrite(g_mapControls["udPressDuration"].Value,           "KeyToggles.ini", "General", "pressDuration")
 		IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"],        "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
 		IniWrite(g_mapSettings["bRestoreTogglesOnFocus"],          "KeyToggles.ini", "General", "restoreTogglesOnFocus")
 		IniWrite(g_mapSettings["bRunAsAdmin"],                     "KeyToggles.ini", "General", "runAsAdmin")
