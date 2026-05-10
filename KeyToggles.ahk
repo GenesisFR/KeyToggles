@@ -9,6 +9,7 @@ add update checker (https://www.reddit.com/r/AutoHotkey/comments/1rio81z/github_
 fix "Error: Target window not found: g_iWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
 fix modifiers still toggled while clicking outside the window
 fix toggles not working when physically holding another toggle key (https://www.reddit.com/r/AutoHotkey/comments/oh65o2/comment/h4phdwu)
+look into code obfuscation https://www.autohotkey.com/boards/viewtopic.php?f=28&t=42494
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 refactor the project to use classes (https://www.reddit.com/r/AutoHotkey/comments/1sumsfy/comment/ok3us2f)
 replace "ahk_id " g_iWindowID with window name and process name
@@ -466,9 +467,9 @@ GuiCreate()
 	g_mapControls["ddlSprintAutofireKey"] := g_guiSettings.AddDropDownList("vddlSprintAutofireKey x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth,
 	                                                                       l_arrExtraKeys)
 
-	g_guiSettings.AddButton("Background" g_guiBackColor " x140 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 15 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
-	g_guiSettings.AddButton("Background" g_guiBackColor " x260 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
-	g_guiSettings.AddButton("Background" g_guiBackColor " x380 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "View log").OnEvent("Click", GuiButtonViewLog_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x90 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 15 " w100", "View log").OnEvent("Click", GuiButtonViewLog_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x210 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x330 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
 	for l_guiCtrl in g_guiSettings
@@ -981,6 +982,7 @@ Log(p_sMessage, p_bSeparator := false)
 {
 	if (g_mapSettings["bDebugMode"])
 	{
+		; Update the log only if the log window is open and the edit control isn't focused, EditPaste will automatically scroll to the bottom
 		if (WinExist("ahk_id " g_guiLog.Hwnd) && ControlGetFocus("ahk_id " g_guiLog.Hwnd) != g_mapControls["editLog"].Hwnd)
 		{
 			l_sFormattedTime := FormatTime(, "HH:mm:ss")
