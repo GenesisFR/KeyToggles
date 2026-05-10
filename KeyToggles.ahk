@@ -320,7 +320,7 @@ GuiCB_Click(p_guiCtrl, *)
 	; We save the changes immediately to avoid having to hit Save
 	try
 	{
-		IniWrite(g_mapSettings["bAutorunMode"], "KeyToggles.ini", "UI", "autorunMode")
+		IniWrite(g_mapSettings["bAutorunMode"], "KeyToggles.ini", "General", "autorunMode")
 	}
 	catch as e
 		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -733,9 +733,11 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 			; We save the changes immediately to avoid having to hit Save
 			try
 			{
-				IniWrite(g_mapSettings["bDebugMode"], "KeyToggles.ini", "Debug", "debugMode")
 				IniWrite(g_mapSettings["bFixSystemKeys"], "KeyToggles.ini", "General", "fixSystemKeys")
+				IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"], "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
+				IniWrite(g_mapSettings["bRestoreTogglesOnFocus"], "KeyToggles.ini", "General", "restoreTogglesOnFocus")
 				IniWrite(g_mapSettings["bRunAsAdmin"], "KeyToggles.ini", "General", "runAsAdmin")
+				IniWrite(g_mapSettings["bDebugMode"], "KeyToggles.ini", "Debug", "debugMode")
 			}
 			catch as e
 				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
