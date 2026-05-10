@@ -152,7 +152,7 @@ GuiAddMenus()
 	l_viewMenu.Add("Always on top", GuiMenuHandler)
 	l_viewMenu.Add("Close to tray", GuiMenuHandler)
 	l_viewMenu.Add("Dark mode", GuiMenuHandler)
-	l_viewMenu.Add("Hide from capture", GuiMenuHandler)
+	l_viewMenu.Add("Hide window selector from capture", GuiMenuHandler)
 	l_viewMenu.Add("Minimize to tray", GuiMenuHandler)
 	l_viewMenu.Add("Remember window positions", GuiMenuHandler)
 
@@ -163,7 +163,7 @@ GuiAddMenus()
 	if (g_mapSettings["bDarkMode"])
 		l_viewMenu.Check("Dark mode")
 	if (g_mapSettings["bHideFromCapture"])
-		l_viewMenu.Check("Hide from capture")
+		l_viewMenu.Check("Hide window selector from capture")
 	if (g_mapSettings["bMinimizeToTray"])
 		l_viewMenu.Check("Minimize to tray")
 	if (g_mapSettings["bRememberWindowPositions"])
@@ -172,12 +172,18 @@ GuiAddMenus()
 	l_miscMenu := Menu()
 	l_miscMenu.Add("Debug mode", GuiMenuHandler)
 	l_miscMenu.Add("Fix system keys", GuiMenuHandler)
+	l_miscMenu.Add("Restore autofires on focus", GuiMenuHandler)
+	l_miscMenu.Add("Restore toggles on focus", GuiMenuHandler)
 	l_miscMenu.Add("Run as admin", GuiMenuHandler)
 
 	if (g_mapSettings["bDebugMode"])
 		l_miscMenu.Check("Debug mode")
 	if (g_mapSettings["bFixSystemKeys"])
 		l_miscMenu.Check("Fix system keys")
+	if (g_mapSettings["bRestoreAutofiresOnFocus"])
+		l_miscMenu.Check("Restore autofires on focus")
+	if (g_mapSettings["bRestoreTogglesOnFocus"])
+		l_miscMenu.Check("Restore toggles on focus")
 	if (g_mapSettings["bRunAsAdmin"])
 		l_miscMenu.Check("Run as admin")
 
@@ -307,10 +313,6 @@ GuiCB_Click(p_guiCtrl, *)
 	{
 		case g_mapControls["cbAutorun"]:
 			g_mapSettings["bAutorunMode"] := g_mapControls["cbAutorun"].Value
-		case g_mapControls["cbRestoreAutofiresOnFocus"]:
-			g_mapSettings["bRestoreAutofiresOnFocus"] := g_mapControls["cbRestoreAutofiresOnFocus"].Value
-		case g_mapControls["cbRestoreTogglesOnFocus"]:
-			g_mapSettings["bRestoreTogglesOnFocus"] := g_mapControls["cbRestoreTogglesOnFocus"].Value
 		default:
 			return
 	}
@@ -319,8 +321,6 @@ GuiCB_Click(p_guiCtrl, *)
 	try
 	{
 		IniWrite(g_mapSettings["bAutorunMode"], "KeyToggles.ini", "UI", "autorunMode")
-		IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"], "KeyToggles.ini", "UI", "restoreAutofiresOnFocus")
-		IniWrite(g_mapSettings["bRestoreTogglesOnFocus"], "KeyToggles.ini", "UI", "restoreTogglesOnFocus")
 	}
 	catch as e
 		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -398,17 +398,8 @@ GuiCreate()
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Send mode")
 	g_mapControls["ddlSendMode"] := g_guiSettings.AddDropDownList("x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth, l_arrSendModes)
 
-	; Save states
-	l_iTopY += 2
-	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 5 " h" 2*35 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
-	                          "Save states")
-
-	g_mapControls["cbRestoreAutofiresOnFocus"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23,
-	                                                                        "Restore autofires on focus  ")
-	g_mapControls["cbRestoreTogglesOnFocus"] := g_guiSettings.AddCheckbox("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth + 23,
-	                                                                      "Restore toggles on focus  ")
-
 	; Key modes
+	l_iTopY += 7
 	g_guiSettings.AddGroupBox("x" l_iLeftX - 5 " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " h" 4*31 " w" (l_iLeftWidth + l_iMiddleWidth + l_iRightWidth + (l_iSpacingX * 4)),
 	                          "Key modes")
 
@@ -700,18 +691,12 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 						g_guiSettings.Opt("+OwnDialogs")
 						MsgBox("Please restart the script to apply the new theme.", , "Icon!")
 					}
-				case "Hide from capture":
+				case "Hide window selector from capture":
 					g_mapSettings["bHideFromCapture"] := !g_mapSettings["bHideFromCapture"]
 				case "Minimize to tray":
 					g_mapSettings["bMinimizeToTray"] := !g_mapSettings["bMinimizeToTray"]
 				case "Remember window positions":
 					g_mapSettings["bRememberWindowPositions"] := !g_mapSettings["bRememberWindowPositions"] 
-				case "Debug mode":
-					g_mapSettings["bDebugMode"] := !g_mapSettings["bDebugMode"]
-				case "Fix system keys":
-					g_mapSettings["bFixSystemKeys"] := !g_mapSettings["bFixSystemKeys"]
-				case "Run as admin":
-					g_mapSettings["bRunAsAdmin"] := !g_mapSettings["bRunAsAdmin"]
 			}
 
 			p_menu.ToggleCheck(p_sItemName)
@@ -735,6 +720,10 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 					g_mapSettings["bDebugMode"] := !g_mapSettings["bDebugMode"]
 				case "Fix system keys":
 					g_mapSettings["bFixSystemKeys"] := !g_mapSettings["bFixSystemKeys"]
+				case "Restore autofires on focus":
+					g_mapSettings["bRestoreAutofiresOnFocus"] := !g_mapSettings["bRestoreAutofiresOnFocus"]
+				case "Restore toggles on focus":
+					g_mapSettings["bRestoreTogglesOnFocus"] := !g_mapSettings["bRestoreTogglesOnFocus"]
 				case "Run as admin":
 					g_mapSettings["bRunAsAdmin"] := !g_mapSettings["bRunAsAdmin"]
 			}
@@ -774,8 +763,6 @@ GuiShow()
 GuiUpdate()
 {
 	g_mapControls["cbAutorun"].Value                 := g_mapSettings["bAutorunMode"]
-	g_mapControls["cbRestoreAutofiresOnFocus"].Value := g_mapSettings["bRestoreAutofiresOnFocus"]
-	g_mapControls["cbRestoreTogglesOnFocus"].Value   := g_mapSettings["bRestoreTogglesOnFocus"]
 	g_mapControls["ddlAimAutofireKey"].Text          := IsExtraOption(g_mapSettings["sAimAutofireKey"])    ? g_mapSettings["sAimAutofireKey"] : "None"
 	g_mapControls["ddlAimKey"].Text                  := IsExtraOption(g_mapSettings["sAimKey"])            ? g_mapSettings["sAimKey"] : "None"
 	g_mapControls["ddlAimMode"].Value                := g_mapSettings["iAimMode"] + 1
@@ -1101,6 +1088,7 @@ OnKeyPress(p_sThisHotkey)
 	;l_sCleanHotkeyNoModifiers := LTrim(p_sThisHotkey, "~*$#!^+")
 	l_iKeyMode := KEY_MODE_DISABLED
 
+	; Get the corresponding key mode for the hotkey
 	switch l_sCleanHotkey
 	{
 		case g_mapSettings["sAimKey"], g_mapSettings["sAimAutofireKey"]:
@@ -1124,6 +1112,7 @@ OnKeyPress(p_sThisHotkey)
 
 	;Output(A_ThisFunc "::" pThisHotkey " lKeyMode(" lKeyMode ")")
 
+	; Perform the corresponding action for the hotkey
 	switch l_iKeyMode
 	{
 		case KEY_MODE_TOGGLE:
