@@ -12,6 +12,7 @@ fix toggles not working when physically holding another toggle key (https://www.
 look into code obfuscation https://www.autohotkey.com/boards/viewtopic.php?f=28&t=42494
 redo window detection (https://www.reddit.com/r/AutoHotkey/comments/nmewd1/resize_and_move_a_window_every_time_it_gets/gzoogts)
 refactor the project to use classes (https://www.reddit.com/r/AutoHotkey/comments/1sumsfy/comment/ok3us2f)
+register/unregister system keys when toggling the option in the menu
 replace "ahk_id " g_iWindowID with window name and process name
 replace sleeps with timers or SetKeyDelay (SendEvent only)
 replace ternary operators with coalescing ?? operators where possible
@@ -82,29 +83,7 @@ ExitFunc(p_sExitReason, p_iExitCode)
 	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_iExitCode ")")
 	ReleaseAllKeys()
 	TrayTip()
-
-	; Store the GUI position
-	if (g_mapSettings["bRememberWindowPositions"])
-	{
-		try
-		{
-			g_guiSettings.GetPos(&l_iWinX, &l_iWinY)
-			IniWrite(l_iWinX, "KeyToggles.ini", "UI", "mainWindowX")
-			IniWrite(l_iWinY, "KeyToggles.ini", "UI", "mainWindowY")
-			g_guiLog.GetPos(&l_iWinX, &l_iWinY)
-			IniWrite(l_iWinX, "KeyToggles.ini", "UI", "logWindowX")
-			IniWrite(l_iWinY, "KeyToggles.ini", "UI", "logWindowY")
-
-			if IsSet(g_guiWindowSelector)
-			{
-				g_guiWindowSelector.GetPos(&l_iWinX, &l_iWinY)
-				IniWrite(l_iWinX, "KeyToggles.ini", "UI", "selectorWindowX")
-				IniWrite(l_iWinY, "KeyToggles.ini", "UI", "selectorWindowY")
-			}
-		}
-		catch as e
-			MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
-	}
+	WriteConfigFile()
 }
 
 GetDuplicateHotkeys(p_bFromGUI := true)
@@ -1617,38 +1596,60 @@ WriteConfigFile()
 	; Everything ok, save settings
 	try
 	{
-		IniWrite(l_procNameClean,                                  "KeyToggles.ini", "General", "processName")
-		IniWrite(l_windowNameClean,                                "KeyToggles.ini", "General", "windowName")
-		IniWrite(g_mapControls["ddlAimMode"].Value - 1,            "KeyToggles.ini", "General", "aimMode")
-		IniWrite(g_mapControls["udAutofireKeyInterval"].Value,     "KeyToggles.ini", "General", "autofireKeyInterval")
-		IniWrite(g_mapSettings["bAutorunMode"],                    "KeyToggles.ini", "General", "autorunMode")
-		IniWrite(g_mapControls["ddlCrouchMode"].Value - 1,         "KeyToggles.ini", "General", "crouchMode")
-		IniWrite(g_mapSettings["bFixSystemKeys"],                  "KeyToggles.ini", "General", "fixSystemKeys")
-		IniWrite(g_mapControls["udFocusCheckInterval"].Value,      "KeyToggles.ini", "General", "focusCheckInterval")
-		IniWrite(g_mapControls["udHookDelay"].Value,               "KeyToggles.ini", "General", "hookDelay")
-		IniWrite(g_mapControls["udPressDuration"].Value,           "KeyToggles.ini", "General", "pressDuration")
-		IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"],        "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
-		IniWrite(g_mapSettings["bRestoreTogglesOnFocus"],          "KeyToggles.ini", "General", "restoreTogglesOnFocus")
-		IniWrite(g_mapSettings["bRunAsAdmin"],                     "KeyToggles.ini", "General", "runAsAdmin")
-		IniWrite(g_mapControls["ddlSendMode"].Value - 1,           "KeyToggles.ini", "General", "sendMode")
-		IniWrite(g_mapControls["ddlNotifications"].Value - 1,      "KeyToggles.ini", "General", "showNotifications")
-		IniWrite(g_mapControls["ddlSprintMode"].Value - 1,         "KeyToggles.ini", "General", "sprintMode")
-		IniWrite(g_mapControls["hkAimAutofireKey"].Value,          "KeyToggles.ini", "Keys",    "aimAutofireKey")
-		IniWrite(g_mapControls["hkAimKey"].Value,                  "KeyToggles.ini", "Keys",    "aimKey")
-		IniWrite(g_mapControls["hkAutorunKey"].Value,              "KeyToggles.ini", "Keys",    "autorunKey")
-		IniWrite(g_mapControls["hkBackwardKey"].Value,             "KeyToggles.ini", "Keys",    "backwardKey")
-		IniWrite(g_mapControls["hkCrouchAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "crouchAutofireKey")
-		IniWrite(g_mapControls["hkCrouchKey"].Value,               "KeyToggles.ini", "Keys",    "crouchKey")
-		IniWrite(g_mapControls["hkForwardKey"].Value,              "KeyToggles.ini", "Keys",    "forwardKey")
-		IniWrite(g_mapControls["hkSprintAutofireKey"].Value,       "KeyToggles.ini", "Keys",    "sprintAutofireKey")
-		IniWrite(g_mapControls["hkSprintKey"].Value,               "KeyToggles.ini", "Keys",    "sprintKey")
-		IniWrite(g_mapSettings["bAlwaysOnTop"],                    "KeyToggles.ini", "UI",      "alwaysOnTop")
-		IniWrite(g_mapSettings["bCloseToTray"],                    "KeyToggles.ini", "UI",      "closeToTray")
-		IniWrite(g_mapSettings["bDarkMode"],                       "KeyToggles.ini", "UI",      "darkMode")
-		IniWrite(g_mapSettings["bHideFromCapture"],                "KeyToggles.ini", "UI",      "hideFromCapture")
-		IniWrite(g_mapSettings["bMinimizeToTray"],                 "KeyToggles.ini", "UI",      "minimizeToTray")
-		IniWrite(g_mapSettings["bRememberWindowPositions"],        "KeyToggles.ini", "UI",      "rememberWindowPositions")
-		IniWrite(g_mapSettings["bDebugMode"],                      "KeyToggles.ini", "Debug",   "debugMode")
+		l_sPairs := 'aimMode=' (g_mapControls["ddlAimMode"].Value - 1)
+		        . '`ncrouchMode=' (g_mapControls["ddlCrouchMode"].Value - 1)
+		        . '`nsprintMode=' (g_mapControls["ddlSprintMode"].Value - 1)
+		        . '`nautofireKeyInterval=' g_mapControls["udAutofireKeyInterval"].Value
+		        . '`nautorunMode=' g_mapSettings["bAutorunMode"]
+		        . '`nfixSystemKeys=' g_mapSettings["bFixSystemKeys"]
+		        . '`nfocusCheckInterval=' g_mapControls["udFocusCheckInterval"].Value
+		        . '`nhookDelay=' g_mapControls["udHookDelay"].Value
+		        . '`npressDuration=' g_mapControls["udPressDuration"].Value
+		        . '`nprocessName=' l_procNameClean
+		        . '`nrestoreAutofiresOnFocus=' g_mapSettings["bRestoreAutofiresOnFocus"]
+		        . '`nrestoreTogglesOnFocus=' g_mapSettings["bRestoreTogglesOnFocus"]
+		        . '`nrunAsAdmin=' g_mapSettings["bRunAsAdmin"]
+		        . '`nsendMode=' (g_mapControls["ddlSendMode"].Value - 1)
+		        . '`nshowNotifications=' (g_mapControls["ddlNotifications"].Value - 1)
+		        . '`nwindowName=' l_windowNameClean
+		IniWrite(l_sPairs, "KeyToggles.ini", "General")
+		l_sPairs := 'aimAutofireKey=' g_mapControls["hkAimAutofireKey"].Value
+		        . '`naimKey=' g_mapControls["hkAimKey"].Value
+		        . '`nautorunKey=' g_mapControls["hkAutorunKey"].Value
+		        . '`nbackwardKey=' g_mapControls["hkBackwardKey"].Value
+		        . '`ncrouchAutofireKey=' g_mapControls["hkCrouchAutofireKey"].Value
+		        . '`ncrouchKey=' g_mapControls["hkCrouchKey"].Value
+		        . '`nforwardKey=' g_mapControls["hkForwardKey"].Value
+		        . '`nsprintAutofireKey=' g_mapControls["hkSprintAutofireKey"].Value
+		        . '`nsprintKey=' g_mapControls["hkSprintKey"].Value
+		IniWrite(l_sPairs, "KeyToggles.ini", "Keys")
+		l_sPairs := 'alwaysOnTop=' g_mapSettings["bAlwaysOnTop"]
+		        . '`ncloseToTray=' g_mapSettings["bCloseToTray"]
+		        . '`ndarkMode=' g_mapSettings["bDarkMode"]
+		        . '`nhideFromCapture=' g_mapSettings["bHideFromCapture"]
+		        . '`nminimizeToTray=' g_mapSettings["bMinimizeToTray"]
+		        . '`nrememberWindowPositions=' g_mapSettings["bRememberWindowPositions"]
+
+		; Store the GUI position
+		if (g_mapSettings["bRememberWindowPositions"])
+		{
+			g_guiLog.GetPos(&l_iWinX, &l_iWinY)
+			l_sPairs .= 'logWindowX=' l_iWinX
+			        . '`nlogWindowY=' l_iWinY
+			g_guiSettings.GetPos(&l_iWinX, &l_iWinY)
+			l_sPairs .= 'mainWindowX=' l_iWinX
+			        . '`nmainWindowY=' l_iWinY
+
+			if IsSet(g_guiWindowSelector)
+			{
+				g_guiWindowSelector.GetPos(&l_iWinX, &l_iWinY)
+				l_sPairs .= 'selectorWindowX=' l_iWinX
+				        . '`nselectorWindowY=' l_iWinY
+			}
+		}
+
+		IniWrite(l_sPairs, "KeyToggles.ini", "UI")
+		IniWrite(g_mapSettings["bDebugMode"], "KeyToggles.ini", "Debug", "debugMode")
 	}
 	catch as e
 	{
