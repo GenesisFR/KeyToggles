@@ -85,7 +85,8 @@ ExitFunc(p_sExitReason, p_iExitCode)
 	UnregisterHotkeys()
 	SetTimer(OnFocusChanged, 0)
 	TrayTip()
-	WriteConfigFile(false)
+	if (p_iExitCode)
+		WriteConfigFile(false)
 }
 
 GetDuplicateHotkeys(p_bFromGUI := true)
@@ -127,6 +128,7 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 GuiAddMenus()
 {
 	l_fileMenu := Menu()
+	l_fileMenu.Add("Save and exit", GuiMenuHandler)
 	l_fileMenu.Add("Exit", GuiMenuHandler)
 
 	l_viewMenu := Menu()
@@ -338,7 +340,7 @@ GuiCreate()
 	g_guiSettings.MarginX := 20
 	g_guiSettings.MarginY := 10
 	g_guiSettings.SetFont("s10 " g_guiTextColor)
-	g_guiSettings.OnEvent("Close", (*) => g_mapSettings["bCloseToTray"] ? g_guiSettings.Hide() : ExitApp())
+	g_guiSettings.OnEvent("Close", (*) => g_mapSettings["bCloseToTray"] ? g_guiSettings.Hide() : ExitApp(1))
 	g_guiSettings.OnEvent("Size", GuiOnSize)
 
 	; General
@@ -641,6 +643,8 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 		case g_mapMenus["File"]:
 			switch p_sItemName
 			{
+				case "Save and exit":
+					ExitApp(true)
 				case "Exit":
 					ExitApp()
 			}
