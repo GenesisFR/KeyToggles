@@ -99,7 +99,7 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 		p_bFromGUI ? g_mapControls["hkBackwardKey"].Value       : g_mapSettings["sBackwardKey"],
 		p_bFromGUI ? g_mapControls["hkAimAutofireKey"].Value    : g_mapSettings["sAimAutofireKey"],
 		p_bFromGUI ? g_mapControls["hkCrouchAutofireKey"].Value : g_mapSettings["sCrouchAutofireKey"],
-		p_bFromGUI ? g_mapControls["hkSprintAutofireKey"].Value : g_mapSettings["sSprintAutofireKey"] 
+		p_bFromGUI ? g_mapControls["hkSprintAutofireKey"].Value : g_mapSettings["sSprintAutofireKey"]
 	]
 
 	l_mapHotkeys := Map()
@@ -222,12 +222,11 @@ GuiButtonBrowse_Click(*)
 	}
 }
 
-; Update the GUI controls with the values from the config file
-GuiButtonReload_Click(*)
+GuiButtonResetDefaults_Click(*)
 {
-	ReadConfigFile()
+	ReadConfigFile("")
 	GuiUpdate()
-	;StartFocusCheck()
+	SetTimer(OnFocusChanged, 0)
 }
 
 ; Validate and save settings to the config file
@@ -440,7 +439,7 @@ GuiCreate()
 	                                                                       l_arrExtraKeys)
 
 	g_guiSettings.AddButton("Background" g_guiBackColor " x90 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 15 " w100", "View log").OnEvent("Click", GuiButtonViewLog_Click)
-	g_guiSettings.AddButton("Background" g_guiBackColor " x210 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Reload").OnEvent("Click", GuiButtonReload_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x210 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Reset defaults").OnEvent("Click", GuiButtonResetDefaults_Click)
 	g_guiSettings.AddButton("Background" g_guiBackColor " x330 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
@@ -1192,53 +1191,53 @@ Output(p_sMessage, p_bSeparator := false)
 	}
 }
 
-ReadConfigFile()
+ReadConfigFile(p_sFileName := g_sConfigFileName)
 {
 	; General
-	g_mapSettings["sProcessName"]             :=     IniRead(g_sConfigFileName, "General", "processName", "")
-	g_mapSettings["sWindowName"]              :=     IniRead(g_sConfigFileName, "General", "windowName", "")
-	g_mapSettings["iAutofireKeyInterval"]     := IniReadType(g_sConfigFileName, "General", "autofireKeyInterval", 100, "int")
-	g_mapSettings["bFixSystemKeys"]           :=     IniRead(g_sConfigFileName, "General", "fixSystemKeys", true) == true
-	g_mapSettings["iFocusCheckInterval"]      := IniReadType(g_sConfigFileName, "General", "focusCheckInterval", 1000, "int")
-	g_mapSettings["iHookDelay"]               := IniReadType(g_sConfigFileName, "General", "hookDelay", 0, "int")
-	g_mapSettings["iPressDuration"]           := IniReadType(g_sConfigFileName, "General", "pressDuration", 25, "int")
-	g_mapSettings["bRestoreAutofiresOnFocus"] :=     IniRead(g_sConfigFileName, "General", "restoreAutofiresOnFocus", false) == true
-	g_mapSettings["bRestoreTogglesOnFocus"]   :=     IniRead(g_sConfigFileName, "General", "restoreTogglesOnFocus", false) == true
-	g_mapSettings["bRunAsAdmin"]              :=     IniRead(g_sConfigFileName, "General", "runAsAdmin", false) == true
-	g_mapSettings["iSendMode"]                := IniReadType(g_sConfigFileName, "General", "sendMode", SEND_MODE_INPUT, "sendMode")
-	g_mapSettings["iShowNotifications"]       := IniReadType(g_sConfigFileName, "General", "showNotifications", 0, "int")
-	g_mapSettings["iAimMode"]                 := IniReadType(g_sConfigFileName, "General", "aimMode", 0, "keyMode")
-	g_mapSettings["iCrouchMode"]              := IniReadType(g_sConfigFileName, "General", "crouchMode", 0, "keyMode")
-	g_mapSettings["iSprintMode"]              := IniReadType(g_sConfigFileName, "General", "sprintMode", 0, "keyMode")
-	g_mapSettings["bAutorunMode"]             :=     IniRead(g_sConfigFileName, "General", "autorunMode", false) == true
+	g_mapSettings["iAimMode"]                 := IniReadType(p_sFileName, "General", "aimMode", 0, "keyMode")
+	g_mapSettings["iAutofireKeyInterval"]     := IniReadType(p_sFileName, "General", "autofireKeyInterval", 100, "int")
+	g_mapSettings["bAutorunMode"]             :=     IniRead(p_sFileName, "General", "autorunMode", false) == true
+	g_mapSettings["iCrouchMode"]              := IniReadType(p_sFileName, "General", "crouchMode", 0, "keyMode")
+	g_mapSettings["bFixSystemKeys"]           :=     IniRead(p_sFileName, "General", "fixSystemKeys", true) == true
+	g_mapSettings["iFocusCheckInterval"]      := IniReadType(p_sFileName, "General", "focusCheckInterval", 1000, "int")
+	g_mapSettings["iHookDelay"]               := IniReadType(p_sFileName, "General", "hookDelay", 0, "int")
+	g_mapSettings["iPressDuration"]           := IniReadType(p_sFileName, "General", "pressDuration", 25, "int")
+	g_mapSettings["sProcessName"]             :=     IniRead(p_sFileName, "General", "processName", "")
+	g_mapSettings["bRestoreAutofiresOnFocus"] :=     IniRead(p_sFileName, "General", "restoreAutofiresOnFocus", false) == true
+	g_mapSettings["bRestoreTogglesOnFocus"]   :=     IniRead(p_sFileName, "General", "restoreTogglesOnFocus", false) == true
+	g_mapSettings["bRunAsAdmin"]              :=     IniRead(p_sFileName, "General", "runAsAdmin", false) == true
+	g_mapSettings["iSendMode"]                := IniReadType(p_sFileName, "General", "sendMode", SEND_MODE_INPUT, "sendMode")
+	g_mapSettings["iShowNotifications"]       := IniReadType(p_sFileName, "General", "showNotifications", 0, "int")
+	g_mapSettings["iSprintMode"]              := IniReadType(p_sFileName, "General", "sprintMode", 0, "keyMode")
+	g_mapSettings["sWindowName"]              :=     IniRead(p_sFileName, "General", "windowName", "")
 
 	; Keys
-	g_mapSettings["sAimKey"]    := IniRead(g_sConfigFileName, "Keys", "aimKey", "RButton")
-	g_mapSettings["sCrouchKey"] := IniRead(g_sConfigFileName, "Keys", "crouchKey", "LCtrl")
-	g_mapSettings["sSprintKey"] := IniRead(g_sConfigFileName, "Keys", "sprintKey", "LShift")
-	g_mapSettings["sAutorunKey"]  := IniRead(g_sConfigFileName, "Keys", "autorunKey", "F1")
-	g_mapSettings["sForwardKey"]  := IniRead(g_sConfigFileName, "Keys", "forwardKey", "w")
-	g_mapSettings["sBackwardKey"] := IniRead(g_sConfigFileName, "Keys", "backwardKey", "s")
-	g_mapSettings["sAimAutofireKey"]    := IniRead(g_sConfigFileName, "Keys", "aimAutofireKey", "F2")
-	g_mapSettings["sCrouchAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "crouchAutofireKey", "F3")
-	g_mapSettings["sSprintAutofireKey"] := IniRead(g_sConfigFileName, "Keys", "sprintAutofireKey", "F4")
+	g_mapSettings["sAimKey"]                  :=     IniRead(p_sFileName, "Keys", "aimKey", "RButton")
+	g_mapSettings["sCrouchKey"]               :=     IniRead(p_sFileName, "Keys", "crouchKey", "LCtrl")
+	g_mapSettings["sSprintKey"]               :=     IniRead(p_sFileName, "Keys", "sprintKey", "LShift")
+	g_mapSettings["sAutorunKey"]              :=     IniRead(p_sFileName, "Keys", "autorunKey", "F1")
+	g_mapSettings["sForwardKey"]              :=     IniRead(p_sFileName, "Keys", "forwardKey", "w")
+	g_mapSettings["sBackwardKey"]             :=     IniRead(p_sFileName, "Keys", "backwardKey", "s")
+	g_mapSettings["sAimAutofireKey"]          :=     IniRead(p_sFileName, "Keys", "aimAutofireKey", "F2")
+	g_mapSettings["sCrouchAutofireKey"]       :=     IniRead(p_sFileName, "Keys", "crouchAutofireKey", "F3")
+	g_mapSettings["sSprintAutofireKey"]       :=     IniRead(p_sFileName, "Keys", "sprintAutofireKey", "F4")
 
 	; UI
-	g_mapSettings["bAlwaysOnTop"]             := IniRead(g_sConfigFileName, "UI", "alwaysOnTop", false) == true
-	g_mapSettings["bCloseToTray"]             := IniRead(g_sConfigFileName, "UI", "closeToTray", false) == true
-	g_mapSettings["bDarkMode"]                := IniRead(g_sConfigFileName, "UI", "darkMode", true) == true
-	g_mapSettings["bHideFromCapture"]         := IniRead(g_sConfigFileName, "UI", "hideFromCapture", false) == true
-	g_mapSettings["bMinimizeToTray"]          := IniRead(g_sConfigFileName, "UI", "minimizeToTray", false) == true
-	g_mapSettings["bRememberWindowPositions"] := IniRead(g_sConfigFileName, "UI", "rememberWindowPositions", false) == true
-	g_mapSettings["iMainWindowX"]             := IniReadType(g_sConfigFileName, "UI", "mainWindowX", 0, "int")
-	g_mapSettings["iMainWindowY"]             := IniReadType(g_sConfigFileName, "UI", "mainWindowY", 0, "int")
-	g_mapSettings["iSelectorWindowX"]         := IniReadType(g_sConfigFileName, "UI", "selectorWindowX", 0, "int")
-	g_mapSettings["iSelectorWindowY"]         := IniReadType(g_sConfigFileName, "UI", "selectorWindowY", 0, "int")
-	g_mapSettings["iLogWindowX"]              := IniReadType(g_sConfigFileName, "UI", "logWindowX", 0, "int")
-	g_mapSettings["iLogWindowY"]              := IniReadType(g_sConfigFileName, "UI", "logWindowY", 0, "int")
+	g_mapSettings["bAlwaysOnTop"]             :=     IniRead(p_sFileName, "UI", "alwaysOnTop", false) == true
+	g_mapSettings["bCloseToTray"]             :=     IniRead(p_sFileName, "UI", "closeToTray", false) == true
+	g_mapSettings["bDarkMode"]                :=     IniRead(p_sFileName, "UI", "darkMode", true) == true
+	g_mapSettings["bHideFromCapture"]         :=     IniRead(p_sFileName, "UI", "hideFromCapture", false) == true
+	g_mapSettings["bMinimizeToTray"]          :=     IniRead(p_sFileName, "UI", "minimizeToTray", false) == true
+	g_mapSettings["bRememberWindowPositions"] :=     IniRead(p_sFileName, "UI", "rememberWindowPositions", false) == true
+	g_mapSettings["iMainWindowX"]             := IniReadType(p_sFileName, "UI", "mainWindowX", 0, "int")
+	g_mapSettings["iMainWindowY"]             := IniReadType(p_sFileName, "UI", "mainWindowY", 0, "int")
+	g_mapSettings["iSelectorWindowX"]         := IniReadType(p_sFileName, "UI", "selectorWindowX", 0, "int")
+	g_mapSettings["iSelectorWindowY"]         := IniReadType(p_sFileName, "UI", "selectorWindowY", 0, "int")
+	g_mapSettings["iLogWindowX"]              := IniReadType(p_sFileName, "UI", "logWindowX", 0, "int")
+	g_mapSettings["iLogWindowY"]              := IniReadType(p_sFileName, "UI", "logWindowY", 0, "int")
 
 	; Debug
-	g_mapSettings["bDebugMode"] := IniRead(g_sConfigFileName, "Debug", "debugMode", false) == true
+	g_mapSettings["bDebugMode"]               := IniRead(p_sFileName, "Debug", "debugMode", false) == true
 
 	; Prevent intervals from being set to 0, otherwise timers won't work
 	g_mapSettings["iAutofireKeyInterval"] := Max(g_mapSettings["iAutofireKeyInterval"], 1)
@@ -1490,7 +1489,7 @@ StartFocusCheck()
 	g_mapSettings["sProcessName"] := Trim(g_mapSettings["sProcessName"], '" `t')
 	l_bIsProcessNameValid := IsProcessNameValid(g_mapSettings["sProcessName"])
 	if (l_bIsProcessNameValid != 1)
-		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : "The process name `"" g_mapSettings["sProcessName"] '" must end with ".exe".'
+		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : 'The process name "' g_mapSettings["sProcessName"] '" must end with ".exe".'
 
 	; Validate hotkeys (no duplicates allowed)
 	l_sDuplicateHotkeys := GetDuplicateHotkeys(false)
