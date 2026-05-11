@@ -466,15 +466,8 @@ GuiDDL_Change(p_guiCtrl, *)
 {
 	switch p_guiCtrl
 	{
-		case g_mapControls["ddlAimAutofireKey"]:
-		case g_mapControls["ddlAimKey"]:
-		case g_mapControls["ddlAutorunKey"]:
-		case g_mapControls["ddlBackwardKey"]:
-		case g_mapControls["ddlCrouchAutofireKey"]:
-		case g_mapControls["ddlCrouchKey"]:
-		case g_mapControls["ddlForwardKey"]:
-		case g_mapControls["ddlSprintAutofireKey"]:
-		case g_mapControls["ddlSprintKey"]:
+		case g_mapControls["ddlAimAutofireKey"], g_mapControls["ddlAimKey"], g_mapControls["ddlAutorunKey"], g_mapControls["ddlBackwardKey"], g_mapControls["ddlCrouchAutofireKey"],
+		     g_mapControls["ddlCrouchKey"], g_mapControls["ddlForwardKey"], g_mapControls["ddlSprintAutofireKey"], g_mapControls["ddlSprintKey"]:
 			; Set the corresponding hotkey control's text to the selected DDL value
 			l_sHkControlName := StrReplace(p_guiCtrl.Name, "ddl", "hk", , , 1)
 			l_hkControl := g_mapControls[l_sHkControlName]
