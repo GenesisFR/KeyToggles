@@ -82,8 +82,10 @@ ExitFunc(p_sExitReason, p_iExitCode)
 {
 	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_iExitCode ")")
 	ReleaseAllKeys()
+	UnregisterHotkeys()
+	SetTimer(OnFocusChanged, 0)
 	TrayTip()
-	WriteConfigFile()
+	WriteConfigFile(false)
 }
 
 GetDuplicateHotkeys(p_bFromGUI := true)
@@ -1563,30 +1565,34 @@ UnregisterHotkeys()
 	HotIf()
 }
 
-WriteConfigFile()
+WriteConfigFile(p_bValidate := true)
 {
 	; Strip double quotes and spaces/tabs
 	l_procNameClean := Trim(g_mapControls["editProcessName"].Value, '" `t')
 	l_windowNameClean := Trim(g_mapControls["editWindowName"].Value, '" `t')
-	l_sMsgBoxText := ""
 
-	; Validate process name
-	l_bIsProcessNameValid := IsProcessNameValid(l_procNameClean)
-	if (l_bIsProcessNameValid != 1)
-		l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : 'The process name "' l_procNameClean '" must end with ".exe".'
-
-	; Validate hotkeys (no duplicates allowed)
-	l_sDuplicateHotkeys := GetDuplicateHotkeys()
-	if (l_sDuplicateHotkeys)
+	if (p_bValidate)
 	{
-		l_sMsgBoxText .= l_sMsgBoxText ? "`n`n" : ""
-		l_sMsgBoxText .= "Duplicate hotkeys detected: " l_sDuplicateHotkeys
-	}
+		l_sMsgBoxText := ""
 
-	if (l_sMsgBoxText)
-	{
-		MsgBox(l_sMsgBoxText, , "Icon!")
-		return false
+		; Validate process name
+		l_bIsProcessNameValid := IsProcessNameValid(l_procNameClean)
+		if (l_bIsProcessNameValid != 1)
+			l_sMsgBoxText := l_bIsProcessNameValid == -1 ? "You must specify a process name." : 'The process name "' l_procNameClean '" must end with ".exe".'
+
+		; Validate hotkeys (no duplicates allowed)
+		l_sDuplicateHotkeys := GetDuplicateHotkeys()
+		if (l_sDuplicateHotkeys)
+		{
+			l_sMsgBoxText .= l_sMsgBoxText ? "`n`n" : ""
+			l_sMsgBoxText .= "Duplicate hotkeys detected: " l_sDuplicateHotkeys
+		}
+
+		if (l_sMsgBoxText)
+		{
+			MsgBox(l_sMsgBoxText, , "Icon!")
+			return false
+		}
 	}
 
 	; Surround with double quotes
