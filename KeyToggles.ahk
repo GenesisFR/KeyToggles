@@ -1499,8 +1499,8 @@ StartFocusCheck()
 	; Process name not valid or duplicate hotkeys, show the settings configurator
 	if (l_sMsgBoxText)
 	{
-		MsgBox(l_sMsgBoxText, , "Icon!")
 		GuiShow()
+		MsgBox(l_sMsgBoxText, , "Icon!")
 		return
 	}
 
