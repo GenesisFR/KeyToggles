@@ -4,7 +4,6 @@
 TODO
 add application profiles (https://stackoverflow.com/questions/45190170/how-can-i-make-this-ini-file-into-a-listview-in-autohotkey)
 add support for hotkey modifiers (e.g., Ctrl+F1) https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols
-add text/tooltips when mousing over GUI controls to explain what they do
 add update checker (https://www.reddit.com/r/AutoHotkey/comments/1rio81z/github_repo_update_checker_for_ahk_any_anything)
 fix "Error: Target window not found: g_iWindowID := WinGetID(l_sWinTitle)" in OnFocusChanged()
 fix modifiers still toggled while clicking outside the window
@@ -24,9 +23,6 @@ https://dev.to/manikandan/how-to-use-ai-models-locally-in-vs-code-with-the-conti
 #SingleInstance force     ; Allow only a single instance of the script to run.
 #Warn                     ; Enable warnings to assist with detecting common errors.
 
-; Register a function to be called on exit
-OnExit(ExitFunc)
-
 ; Constants
 KEY_MODE_DISABLED        := 0
 KEY_MODE_TOGGLE          := 1
@@ -38,6 +34,9 @@ SEND_MODE_EVENT          := 0
 SEND_MODE_INPUT          := 1
 SEND_MODE_PLAY           := 2
 SEND_MODE_INPUTTHENPLAY  := 3
+
+; Messages
+WM_MOUSEMOVE := 0x200
 
 ; Maps
 g_mapControls := Map()
@@ -76,18 +75,6 @@ g_iWindowID := 0
 g_sConfigFileName := "KeyToggles.ini"
 
 Init()
-
-; Exit script
-ExitFunc(p_sExitReason, p_iExitCode)
-{
-	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_iExitCode ")")
-	ReleaseAllKeys()
-	UnregisterHotkeys()
-	SetTimer(OnFocusChanged, 0)
-	TrayTip()
-	if (p_iExitCode)
-		WriteConfigFile(false)
-}
 
 GetDuplicateHotkeys(p_bFromGUI := true)
 {
@@ -816,6 +803,9 @@ IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 
 Init()
 {
+	OnExit(OnExitCallback)
+	OnMessage(WM_MOUSEMOVE, OnMouseMove)
+
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
 
@@ -967,6 +957,17 @@ OnClickOutsideWindow(p_sThisHotkey)
 	l_sCleanHotkey := LTrim(p_sThisHotkey, "*$")
 	Output(A_ThisFunc "::" l_sCleanHotkey)
 	SendClickOutsideWindow(l_sCleanHotkey)
+}
+
+OnExitCallback(p_sExitReason, p_iExitCode)
+{
+	Output(A_ThisFunc "::pExitReason(" p_sExitReason ") pExitCode(" p_iExitCode ")")
+	ReleaseAllKeys()
+	UnregisterHotkeys()
+	SetTimer(OnFocusChanged, 0)
+	TrayTip()
+	if (p_iExitCode)
+		WriteConfigFile(false)
 }
 
 ; Hook the window and register hotkeys if necessary, disable toggles on focus lost and optionally restore them on focus
@@ -1172,6 +1173,86 @@ OnKeyPress(p_sThisHotkey)
 
 			; Fixes a weird bug where the autofire key would stay permanently pressed after holding it down for a few seconds
 			Send("{Blind}{" l_sCleanHotkey " up}")
+	}
+}
+
+OnMouseMove(wParam, lParam, msg, hwnd)
+{
+	static s_bTooltipVisible := false
+
+	;Output(A_ThisFunc "::wParam(" wParam ") lParam(" lParam ") msg(" msg ") hwnd(" hwnd ") s_bTooltipVisible(" s_bTooltipVisible ")")
+
+	l_guiCtrl := GuiCtrlFromHwnd(hwnd)
+
+	switch l_guiCtrl
+	{
+		case g_mapControls["cbAutorun"]:
+			l_sTooltipMsg := "Autorun: press once to start autorunning, press again to stop."
+		case g_mapControls["ddlAimMode"], g_mapControls["ddlCrouchMode"], g_mapControls["ddlSprintMode"]:
+			l_sTooltipMsg := "Key mode`n"
+			             . "`nToggle: converts keys that must be held down into toggle keys."
+			             . "`nHold: converts keys that must be toggled into hold keys."
+			             . "`nAutofire toggle: pressed by toggling the corresponding autofire key."
+			             . "`nAutofire hold: pressed by holding the corresponding autofire key."
+		case g_mapControls["ddlSendMode"]:
+			l_sTooltipMsg := "Method used to send inputs (some games may only work with a specific method)`n"
+			             . "`nEvent: traditional but slower method."
+			             . "`nInput: default, fastest and most reliable method, works in most cases."
+			             . "`nPlay: faster than Event and can work in cases where the other modes fail, particularly in some games or applications with unusual input handling."
+			             . "`nInputThenPlay: same as Input except that rather than falling back to Event when Input is unavailable, it reverts to Play."
+		case g_mapControls["ddlNotifications"]:
+			l_sTooltipMsg := "Show notifications when certain events occur (only works in windowed mode)."
+		case g_mapControls["editAutofireKeyInterval"]:
+			l_sTooltipMsg := "How much time (in milliseconds) to wait before sending another input in autofire mode."
+		case g_mapControls["editFocusCheckInterval"]:
+			l_sTooltipMsg := "How much time (in milliseconds) to wait before checking if the window is active (again)."
+			             . "`nIncrease this delay in case keystrokes aren't registered in some games."
+			             . "`nIf the window is no longer active, all keys will be released."
+		case g_mapControls["editHookDelay"]:
+			l_sTooltipMsg := "How much time (in milliseconds) to wait before hooking the window once it becomes active."
+			             . "`nIncrease this delay if the window you're trying to hook isn't the right one (or use windowName)."
+		case g_mapControls["editPressDuration"]:
+			l_sTooltipMsg := "How much time (in milliseconds) to wait between key press and release in hold/autofire/autofire hold modes."
+			             . "`nIncrease this delay in case keystrokes aren't registered in some games."
+		case g_mapControls["editProcessName"]:
+			l_sTooltipMsg := "Name of the process to hook (mandatory, case sensitive)."
+		case g_mapControls["editWindowName"]:
+			l_sTooltipMsg := "Title of the window to hook (optional, case sensitive)."
+		case g_mapControls["hkAimKey"], g_mapControls["hkCrouchKey"], g_mapControls["hkSprintKey"]:
+			l_sTooltipMsg := "Main keys (automatically disabled if set to autofire mode)`n"
+			             . "`nEven though their name suggests their typical use case, they can be set to other actions (ex: walk)."
+		case g_mapControls["hkAutorunKey"], g_mapControls["hkForwardKey"], g_mapControls["hkBackwardKey"]:
+			l_sTooltipMsg := "Autorun keys (disabled if not set to autorun mode)`n"
+			             . "`nAutorunning is automatically disengaged when pressing the forward or backward key"
+		case g_mapControls["hkAimAutofireKey"], g_mapControls["hkCrouchAutofireKey"], g_mapControls["hkSprintAutofireKey"]:
+			l_sTooltipMsg := "Autofire keys (disabled if not set to autofire mode)`n"
+			             . "`nAutofire toggle mode: repeatedly simulates pressing the corresponding main key until pressed again."
+			             . "`nAutofire hold mode: repeatedly simulates pressing the corresponding main key while held down."
+		case g_mapControls["ddlAimKey"], g_mapControls["ddlCrouchKey"], g_mapControls["ddlSprintKey"], g_mapControls["ddlAutorunKey"], g_mapControls["ddlForwardKey"],
+		     g_mapControls["ddlBackwardKey"], g_mapControls["ddlAimAutofireKey"], g_mapControls["ddlCrouchAutofireKey"], g_mapControls["ddlSprintAutofireKey"]:
+			l_sTooltipMsg := "Extra hotkeys`n"
+			             . "`nHotkey controls don't support all available keys, therefore you can specify unsupported keys from here."
+		default:
+			ToolTip(,,, 2)
+			s_bTooltipVisible := false
+			return
+	}
+
+	; Don't display a tooltip if the main window is not active or the control is disabled
+	if (!WinActive("ahk_id " g_guiSettings.Hwnd) || !l_guiCtrl.Enabled)
+		return
+
+	; Avoid showing the tooltip again if it's already visible to prevent it from flickering when moving the mouse inside the control
+	if (!s_bTooltipVisible)
+	{
+		; Calculate the offset based on the number of lines in the message to line it up with the top of the control
+		l_iTooltipMsgNumLineBreaks := StrSplit(l_sTooltipMsg, "`n").Length - 1
+		l_iTooltipOffsetY := l_iTooltipMsgNumLineBreaks * 15
+
+		l_guiCtrl.GetPos(&l_iX, &l_iY, , &l_iHeight)
+		ToolTip(l_sTooltipMsg, l_iX, l_iY - l_iHeight - l_iTooltipOffsetY, 2)
+
+		s_bTooltipVisible := true
 	}
 }
 
