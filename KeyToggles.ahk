@@ -1579,7 +1579,7 @@ StartFocusCheck()
 	if (l_sMsgBoxText)
 	{
 		GuiShow()
-		MsgBox(l_sMsgBoxText, , "Icon!")
+		MsgBox(l_sMsgBoxText, , "Icon! Owner" g_guiSettings.Hwnd)
 		return
 	}
 
