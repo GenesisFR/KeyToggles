@@ -779,6 +779,8 @@ GuiUpdate()
 	g_mapControls["hkForwardKey"].Enabled        := g_mapControls["ddlForwardKey"].Enabled        := g_mapControls["cbAutorun"].Value
 	g_mapControls["hkSprintAutofireKey"].Enabled := g_mapControls["ddlSprintAutofireKey"].Enabled := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
 	g_mapControls["hkSprintKey"].Enabled         := g_mapControls["ddlSprintKey"].Enabled         := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
+
+	g_guiSettings.Opt((g_mapSettings["bAlwaysOnTop"] ? "+" : "-") "AlwaysOnTop")
 }
 
 IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
