@@ -241,6 +241,9 @@ GuiCB_Click(p_guiCtrl, *)
 	{
 		case g_mapControls["cbAutorun"]:
 			g_mapSettings["bAutorunMode"] := g_mapControls["cbAutorun"].Value
+			g_mapControls["hkAutorunKey"].Enabled  := g_mapControls["ddlAutorunKey"].Enabled  := g_mapSettings["cbAutorun"]
+			g_mapControls["hkBackwardKey"].Enabled := g_mapControls["ddlBackwardKey"].Enabled := g_mapSettings["cbAutorun"]
+			g_mapControls["hkForwardKey"].Enabled  := g_mapControls["ddlForwardKey"].Enabled  := g_mapSettings["cbAutorun"]
 		default:
 			return
 	}
@@ -412,6 +415,15 @@ GuiDDL_Change(p_guiCtrl, *)
 {
 	switch p_guiCtrl
 	{
+		case g_mapControls["ddlAimMode"]:
+			g_mapControls["hkAimKey"].Enabled := g_mapControls["ddlAimKey"].Enabled := g_mapControls["ddlAimMode"].Value > KEY_MODE_TOGGLE
+			g_mapControls["hkAimAutofireKey"].Enabled := g_mapControls["ddlAimAutofireKey"].Enabled := g_mapControls["ddlAimMode"].Value > KEY_MODE_TOGGLE
+		case g_mapControls["ddlCrouchMode"]:
+			g_mapControls["hkCrouchKey"].Enabled := g_mapControls["ddlCrouchKey"].Enabled := g_mapControls["ddlCrouchMode"].Value > KEY_MODE_TOGGLE
+			g_mapControls["hkCrouchAutofireKey"].Enabled := g_mapControls["ddlCrouchAutofireKey"].Enabled := g_mapControls["ddlCrouchMode"].Value > KEY_MODE_TOGGLE
+		case g_mapControls["ddlSprintMode"]:
+			g_mapControls["hkSprintKey"].Enabled := g_mapControls["ddlSprintKey"].Enabled := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
+			g_mapControls["hkSprintAutofireKey"].Enabled := g_mapControls["ddlSprintAutofireKey"].Enabled := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
 		case g_mapControls["ddlAimAutofireKey"], g_mapControls["ddlAimKey"], g_mapControls["ddlAutorunKey"], g_mapControls["ddlBackwardKey"], g_mapControls["ddlCrouchAutofireKey"],
 		     g_mapControls["ddlCrouchKey"], g_mapControls["ddlForwardKey"], g_mapControls["ddlSprintAutofireKey"], g_mapControls["ddlSprintKey"]:
 			; Set the corresponding hotkey control's text to the selected DDL value
@@ -757,6 +769,16 @@ GuiUpdate()
 	g_mapControls["udFocusCheckInterval"].Value      := g_mapSettings["iFocusCheckInterval"]
 	g_mapControls["udHookDelay"].Value               := g_mapSettings["iHookDelay"]
 	g_mapControls["udPressDuration"].Value           := g_mapSettings["iPressDuration"]
+
+	g_mapControls["hkAimAutofireKey"].Enabled    := g_mapControls["ddlAimAutofireKey"].Enabled    := g_mapControls["ddlAimMode"].Value > KEY_MODE_TOGGLE
+	g_mapControls["hkAimKey"].Enabled            := g_mapControls["ddlAimKey"].Enabled            := g_mapControls["ddlAimMode"].Value > KEY_MODE_TOGGLE
+	g_mapControls["hkAutorunKey"].Enabled        := g_mapControls["ddlAutorunKey"].Enabled        := g_mapControls["cbAutorun"].Value
+	g_mapControls["hkBackwardKey"].Enabled       := g_mapControls["ddlBackwardKey"].Enabled       := g_mapControls["cbAutorun"].Value
+	g_mapControls["hkCrouchAutofireKey"].Enabled := g_mapControls["ddlCrouchAutofireKey"].Enabled := g_mapControls["ddlCrouchMode"].Value > KEY_MODE_TOGGLE
+	g_mapControls["hkCrouchKey"].Enabled         := g_mapControls["ddlCrouchKey"].Enabled         := g_mapControls["ddlCrouchMode"].Value > KEY_MODE_TOGGLE
+	g_mapControls["hkForwardKey"].Enabled        := g_mapControls["ddlForwardKey"].Enabled        := g_mapControls["cbAutorun"].Value
+	g_mapControls["hkSprintAutofireKey"].Enabled := g_mapControls["ddlSprintAutofireKey"].Enabled := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
+	g_mapControls["hkSprintKey"].Enabled         := g_mapControls["ddlSprintKey"].Enabled         := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
 }
 
 IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
