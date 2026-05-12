@@ -272,7 +272,7 @@ GuiButtonSelect_Click(*)
 
 GuiButtonViewLog_Click(*)
 {
-	g_guiLog.Show("NoActivate " (g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : ""))
+	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
 	GuiLogScrollToBottom()
 }
 
@@ -335,8 +335,6 @@ GuiCreate()
 
 	g_guiSettings.AddText("Right x" l_iLeftX " y" l_iTopY + l_iSpacingY * ++l_iCurrentRow " w" l_iLeftWidth, "Process name")
 	g_mapControls["editProcessName"] := g_guiSettings.AddEdit("CBlack r1 x" l_iMiddleX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iMiddleWidth)
-	;g_mapSettings["editProcessName"].OnEvent("Focus", (*) => ToolTip("Enter the name of the target process executable (e.g., game.exe)."))
-	;g_mapSettings["editProcessName"].OnEvent("LoseFocus", (*) => ToolTip())
 	g_guiSettings.AddButton("Background" g_guiBackColor " x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " h23 w" l_iRightWidth, "Browse").OnEvent("Click",
 	                        GuiButtonBrowse_Click)
 
@@ -545,7 +543,7 @@ GuiLogCreate()
 	global g_guiLog := Gui.Call("Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Log Viewer")
 	g_guiLog.BackColor := g_guiBackColor
 	g_guiLog.SetFont("s10 " g_guiTextColor)
-	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " ReadOnly r25 w600 h400")
+	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " ReadOnly -Tabstop r25 w600 h400")
 	g_mapControls["editLog"].OnEvent("LoseFocus", (*) => GuiLogScrollToBottom())
 	g_guiLog.AddButton("Background" g_guiBackColor " x515 y425 w100", "Clear").OnEvent("Click", (*) => g_mapControls["editLog"].Text := "")
 }
@@ -939,7 +937,7 @@ Log(p_sMessage, p_bSeparator := false)
 	if (g_mapSettings["bDebugMode"])
 	{
 		; Update the log only if the log window is open and the edit control isn't focused, EditPaste will automatically scroll to the bottom
-		if (WinExist("ahk_id " g_guiLog.Hwnd) && ControlGetFocus("ahk_id " g_guiLog.Hwnd) != g_mapControls["editLog"].Hwnd)
+		if (WinExist("ahk_id " g_guiLog.Hwnd) && ControlGetFocus() != g_mapControls["editLog"].Hwnd)
 		{
 			l_sFormattedTime := FormatTime(, "HH:mm:ss")
 			l_sMilliseconds := SubStr(A_TickCount, -3)
