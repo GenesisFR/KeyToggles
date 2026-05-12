@@ -1704,32 +1704,39 @@ WriteConfigFile(p_bValidate := true)
 		        . '`nsprintAutofireKey=' g_mapControls["hkSprintAutofireKey"].Value
 		        . '`nsprintKey=' g_mapControls["hkSprintKey"].Value
 		IniWrite(l_sPairs, "KeyToggles.ini", "Keys")
+
+		; Store the GUI position
+		if (g_mapSettings["bRememberWindowPositions"])
+		{
+			g_guiLog.GetPos(&l_iWinX, &l_iWinY)
+			g_mapSettings["iLogWindowX"] := l_iWinX
+			g_mapSettings["iLogWindowY"] := l_iWinY
+			g_guiSettings.GetPos(&l_iWinX, &l_iWinY)
+			g_mapSettings["iMainWindowX"] := l_iWinX
+			g_mapSettings["iMainWindowY"] := l_iWinY
+
+			if IsSet(g_guiWindowSelector)
+			{
+				g_guiWindowSelector.GetPos(&l_iWinX, &l_iWinY)
+				g_mapSettings["iSelectorWindowX"] := l_iWinX
+				g_mapSettings["iSelectorWindowY"] := l_iWinY
+			}
+		}
+
 		l_sPairs := 'alwaysOnTop=' g_mapSettings["bAlwaysOnTop"]
 		        . '`ncloseToTray=' g_mapSettings["bCloseToTray"]
 		        . '`ndarkMode=' g_mapSettings["bDarkMode"]
 		        . '`nhideFromCapture=' g_mapSettings["bHideFromCapture"]
 		        . '`nminimizeToTray=' g_mapSettings["bMinimizeToTray"]
 		        . '`nrememberWindowPositions=' g_mapSettings["bRememberWindowPositions"]
-
-		; Store the GUI position
-		if (g_mapSettings["bRememberWindowPositions"])
-		{
-			g_guiLog.GetPos(&l_iWinX, &l_iWinY)
-			l_sPairs .= 'logWindowX=' l_iWinX
-			        . '`nlogWindowY=' l_iWinY
-			g_guiSettings.GetPos(&l_iWinX, &l_iWinY)
-			l_sPairs .= 'mainWindowX=' l_iWinX
-			        . '`nmainWindowY=' l_iWinY
-
-			if IsSet(g_guiWindowSelector)
-			{
-				g_guiWindowSelector.GetPos(&l_iWinX, &l_iWinY)
-				l_sPairs .= 'selectorWindowX=' l_iWinX
-				        . '`nselectorWindowY=' l_iWinY
-			}
-		}
-
+			    . '`nlogWindowX=' g_mapSettings["iLogWindowX"]
+			    . '`nlogWindowY=' g_mapSettings["iLogWindowY"]
+			    . '`nmainWindowX=' g_mapSettings["iMainWindowX"]
+			    . '`nmainWindowY=' g_mapSettings["iMainWindowY"]
+				. '`nselectorWindowX=' g_mapSettings["iSelectorWindowX"]
+				. '`nselectorWindowY=' g_mapSettings["iSelectorWindowY"]
 		IniWrite(l_sPairs, "KeyToggles.ini", "UI")
+
 		IniWrite(g_mapSettings["bDebugMode"], "KeyToggles.ini", "Debug", "debugMode")
 	}
 	catch as e
