@@ -111,68 +111,26 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 	return l_sDuplicateHotkeys
 }
 
-
 GuiAddMenus()
 {
-	l_fileMenu := Menu()
+	g_mapMenus["File"] := l_fileMenu := Menu()
 	l_fileMenu.Add("Save and exit", GuiMenuHandler)
 	l_fileMenu.Add("Exit", GuiMenuHandler)
 
-	l_viewMenu := Menu()
-	l_viewMenu.Add("Always on top", GuiMenuHandler)
-	l_viewMenu.Add("Close to tray", GuiMenuHandler)
-	l_viewMenu.Add("Dark mode", GuiMenuHandler)
-	l_viewMenu.Add("Hide window selector from capture", GuiMenuHandler)
-	l_viewMenu.Add("Minimize to tray", GuiMenuHandler)
-	l_viewMenu.Add("Remember window positions", GuiMenuHandler)
+	g_mapMenus["View"] := l_viewMenu := Menu()
+	g_mapMenus["Misc"] := l_miscMenu := Menu()
 
-	if (g_mapSettings["bAlwaysOnTop"])
-		l_viewMenu.Check("Always on top")
-	if (g_mapSettings["bCloseToTray"])
-		l_viewMenu.Check("Close to tray")
-	if (g_mapSettings["bDarkMode"])
-		l_viewMenu.Check("Dark mode")
-	if (g_mapSettings["bHideFromCapture"])
-		l_viewMenu.Check("Hide window selector from capture")
-	if (g_mapSettings["bMinimizeToTray"])
-		l_viewMenu.Check("Minimize to tray")
-	if (g_mapSettings["bRememberWindowPositions"])
-		l_viewMenu.Check("Remember window positions")
-
-	l_miscMenu := Menu()
-	l_miscMenu.Add("Debug mode", GuiMenuHandler)
-	l_miscMenu.Add("Fix system keys", GuiMenuHandler)
-	l_miscMenu.Add("Restore autofires on focus", GuiMenuHandler)
-	l_miscMenu.Add("Restore toggles on focus", GuiMenuHandler)
-	l_miscMenu.Add("Run as admin", GuiMenuHandler)
-
-	if (g_mapSettings["bDebugMode"])
-		l_miscMenu.Check("Debug mode")
-	if (g_mapSettings["bFixSystemKeys"])
-		l_miscMenu.Check("Fix system keys")
-	if (g_mapSettings["bRestoreAutofiresOnFocus"])
-		l_miscMenu.Check("Restore autofires on focus")
-	if (g_mapSettings["bRestoreTogglesOnFocus"])
-		l_miscMenu.Check("Restore toggles on focus")
-	if (g_mapSettings["bRunAsAdmin"])
-		l_miscMenu.Check("Run as admin")
-
-	;l_helpMenu := Menu()
+	;g_mapMenus["Help"] := l_helpMenu := Menu()
 	;l_helpMenu.Add("AHK documentation", GuiMenuHandler)
 	;l_helpMenu.Add("About", GuiMenuHandler)
 
-	l_menuBar := MenuBar()
+	g_guiSettings.MenuBar := l_menuBar := MenuBar()
 	l_menuBar.Add("&File", l_fileMenu)
 	l_menuBar.Add("&View", l_viewMenu)
 	l_menuBar.Add("&Misc", l_miscMenu)
 	;l_menuBar.Add("&Help", l_helpMenu)
 
-	g_mapMenus["File"] := l_fileMenu
-	g_mapMenus["View"] := l_viewMenu
-	g_mapMenus["Misc"] := l_miscMenu
-	;g_mapMenus["Help"] := l_helpMenu
-
-	g_guiSettings.MenuBar := l_menuBar
+	GuiMenuUpdate()
 }
 
 GuiApplyTheme()
@@ -214,6 +172,7 @@ GuiButtonBrowse_Click(*)
 GuiButtonResetDefaults_Click(*)
 {
 	ReadConfigFile("")
+	GuiMenuUpdate()
 	GuiUpdate()
 	SetTimer(OnFocusChanged, 0)
 }
@@ -706,6 +665,50 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 	}
 }
 
+GuiMenuUpdate()
+{
+	; We have to recreate the menus with toggleable menu items since there's no way to know if a menu item is checked
+	g_mapMenus["View"].Delete()
+	g_mapMenus["Misc"].Delete()
+
+	g_mapMenus["View"].Add("Always on top", GuiMenuHandler)
+	g_mapMenus["View"].Add("Close to tray", GuiMenuHandler)
+	g_mapMenus["View"].Add("Dark mode", GuiMenuHandler)
+	g_mapMenus["View"].Add("Hide window selector from capture", GuiMenuHandler)
+	g_mapMenus["View"].Add("Minimize to tray", GuiMenuHandler)
+	g_mapMenus["View"].Add("Remember window positions", GuiMenuHandler)
+
+	g_mapMenus["Misc"].Add("Debug mode", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Fix system keys", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Restore autofires on focus", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Restore toggles on focus", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Run as admin", GuiMenuHandler)
+
+	if (g_mapSettings["bAlwaysOnTop"])
+		g_mapMenus["View"].Check("Always on top")
+	if (g_mapSettings["bCloseToTray"])
+		g_mapMenus["View"].Check("Close to tray")
+	if (g_mapSettings["bDarkMode"])
+		g_mapMenus["View"].Check("Dark mode")
+	if (g_mapSettings["bHideFromCapture"])
+		g_mapMenus["View"].Check("Hide window selector from capture")
+	if (g_mapSettings["bMinimizeToTray"])
+		g_mapMenus["View"].Check("Minimize to tray")
+	if (g_mapSettings["bRememberWindowPositions"])
+		g_mapMenus["View"].Check("Remember window positions")
+
+	if (g_mapSettings["bDebugMode"])
+		g_mapMenus["Misc"].Check("Debug mode")
+	if (g_mapSettings["bFixSystemKeys"])
+		g_mapMenus["Misc"].Check("Fix system keys")
+	if (g_mapSettings["bRestoreAutofiresOnFocus"])
+		g_mapMenus["Misc"].Check("Restore autofires on focus")
+	if (g_mapSettings["bRestoreTogglesOnFocus"])
+		g_mapMenus["Misc"].Check("Restore toggles on focus")
+	if (g_mapSettings["bRunAsAdmin"])
+		g_mapMenus["Misc"].Check("Run as admin")
+}
+
 GuiOnSize(GuiObj, MinMax, *)
 {
 	switch GuiObj
@@ -713,8 +716,6 @@ GuiOnSize(GuiObj, MinMax, *)
 		case g_guiSettings:
 			if (MinMax == -1 && g_mapSettings["bMinimizeToTray"])
 				g_guiSettings.Hide()
-			else if (MinMax == 0)
-				WinSetAlwaysOnTop(g_mapSettings["bAlwaysOnTop"], "ahk_id" g_guiSettings.Hwnd)
 	}
 }
 
