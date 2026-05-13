@@ -73,6 +73,7 @@ g_bThemePopupShown := false
 g_bToggleKeysSnapshotTaken := false
 g_iWindowID := 0
 g_sConfigFileName := "KeyToggles.ini"
+g_sLogFileName := "KeyToggles.log"
 
 Init()
 
@@ -251,7 +252,7 @@ GuiCB_Click(p_guiCtrl, *)
 	; We save the changes immediately to avoid having to hit Save
 	try
 	{
-		IniWrite(g_mapSettings["bAutorunMode"], "KeyToggles.ini", "General", "autorunMode")
+		IniWrite(g_mapSettings["bAutorunMode"], g_sConfigFileName, "General", "autorunMode")
 	}
 	catch as e
 		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -514,8 +515,10 @@ GuiLogCreate()
 	global g_guiLog := Gui.Call("Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Log Viewer")
 	g_guiLog.BackColor := g_guiBackColor
 	g_guiLog.SetFont("s10 " g_guiTextColor)
-	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " ReadOnly -Tabstop r25 w600 h400")
+	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " ReadOnly -Tabstop r25 w600")
 	g_mapControls["editLog"].OnEvent("LoseFocus", (*) => GuiLogScrollToBottom())
+	g_guiLog.AddButton("Background" g_guiBackColor " x295 y425 w100", "Open file").OnEvent("Click", (*) => Run(g_sLogFileName))
+	g_guiLog.AddButton("Background" g_guiBackColor " x405 y425 w100", "Copy").OnEvent("Click", (*) => ShowNotification("Text copied to clipboard!") A_Clipboard := g_mapControls["editLog"].Text)
 	g_guiLog.AddButton("Background" g_guiBackColor " x515 y425 w100", "Clear").OnEvent("Click", (*) => g_mapControls["editLog"].Text := "")
 }
 
@@ -637,12 +640,12 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 			; We save the changes immediately to avoid having to hit Save
 			try
 			{
-				IniWrite(g_mapSettings["bAlwaysOnTop"], "KeyToggles.ini", "UI", "alwaysOnTop")
-				IniWrite(g_mapSettings["bCloseToTray"], "KeyToggles.ini", "UI", "closeToTray")
-				IniWrite(g_mapSettings["bDarkMode"], "KeyToggles.ini", "UI", "darkMode")
-				IniWrite(g_mapSettings["bHideFromCapture"], "KeyToggles.ini", "UI", "hideFromCapture")
-				IniWrite(g_mapSettings["bMinimizeToTray"], "KeyToggles.ini", "UI", "minimizeToTray")
-				IniWrite(g_mapSettings["bRememberWindowPositions"], "KeyToggles.ini", "UI", "rememberWindowPositions")
+				IniWrite(g_mapSettings["bAlwaysOnTop"], g_sConfigFileName, "UI", "alwaysOnTop")
+				IniWrite(g_mapSettings["bCloseToTray"], g_sConfigFileName, "UI", "closeToTray")
+				IniWrite(g_mapSettings["bDarkMode"], g_sConfigFileName, "UI", "darkMode")
+				IniWrite(g_mapSettings["bHideFromCapture"], g_sConfigFileName, "UI", "hideFromCapture")
+				IniWrite(g_mapSettings["bMinimizeToTray"], g_sConfigFileName, "UI", "minimizeToTray")
+				IniWrite(g_mapSettings["bRememberWindowPositions"], g_sConfigFileName, "UI", "rememberWindowPositions")
 			}
 			catch as e
 				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -666,11 +669,11 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 			; We save the changes immediately to avoid having to hit Save
 			try
 			{
-				IniWrite(g_mapSettings["bFixSystemKeys"], "KeyToggles.ini", "General", "fixSystemKeys")
-				IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"], "KeyToggles.ini", "General", "restoreAutofiresOnFocus")
-				IniWrite(g_mapSettings["bRestoreTogglesOnFocus"], "KeyToggles.ini", "General", "restoreTogglesOnFocus")
-				IniWrite(g_mapSettings["bRunAsAdmin"], "KeyToggles.ini", "General", "runAsAdmin")
-				IniWrite(g_mapSettings["bDebugMode"], "KeyToggles.ini", "Debug", "debugMode")
+				IniWrite(g_mapSettings["bFixSystemKeys"], g_sConfigFileName, "General", "fixSystemKeys")
+				IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"], g_sConfigFileName, "General", "restoreAutofiresOnFocus")
+				IniWrite(g_mapSettings["bRestoreTogglesOnFocus"], g_sConfigFileName, "General", "restoreTogglesOnFocus")
+				IniWrite(g_mapSettings["bRunAsAdmin"], g_sConfigFileName, "General", "runAsAdmin")
+				IniWrite(g_mapSettings["bDebugMode"], g_sConfigFileName, "Debug", "debugMode")
 			}
 			catch as e
 				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -832,6 +835,9 @@ Init()
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
 
+	FileEncoding("UTF-8")
+	try FileDelete(g_sLogFileName)
+
 	GuiApplyTheme()
 	GuiCreate()
 	GuiAddMenus()
@@ -961,12 +967,18 @@ Log(p_sMessage, p_bSeparator := false)
 {
 	if (g_mapSettings["bDebugMode"])
 	{
+		l_sFormattedTime := FormatTime(, "HH:mm:ss")
+		l_sMilliseconds := SubStr(A_TickCount, -3)
+		l_sLogMessage := l_sFormattedTime "." l_sMilliseconds ": " p_sMessage "`r`n"
+		FileAppend(l_sLogMessage, g_sLogFileName)
+
+		if (p_bSeparator)
+			FileAppend("--------------------------------------------------`r`n", g_sLogFileName)
+
 		; Update the log only if the log window is open and the edit control isn't focused, EditPaste will automatically scroll to the bottom
 		if (WinExist("ahk_id " g_guiLog.Hwnd) && ControlGetFocus() != g_mapControls["editLog"].Hwnd)
 		{
-			l_sFormattedTime := FormatTime(, "HH:mm:ss")
-			l_sMilliseconds := SubStr(A_TickCount, -3)
-			EditPaste(l_sFormattedTime "." l_sMilliseconds ": " p_sMessage "`r`n", g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
+			EditPaste(l_sLogMessage, g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
 
 			if (p_bSeparator)
 				EditPaste("--------------------------------------------------`r`n", g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
@@ -1718,7 +1730,7 @@ WriteConfigFile(p_bValidate := true)
 		        . '`nsendMode=' (g_mapControls["ddlSendMode"].Value - 1)
 		        . '`nshowNotifications=' (g_mapControls["ddlNotifications"].Value - 1)
 		        . '`nwindowName=' l_windowNameClean
-		IniWrite(l_sPairs, "KeyToggles.ini", "General")
+		IniWrite(l_sPairs, g_sConfigFileName, "General")
 		l_sPairs := 'aimAutofireKey=' g_mapControls["hkAimAutofireKey"].Value
 		        . '`naimKey=' g_mapControls["hkAimKey"].Value
 		        . '`nautorunKey=' g_mapControls["hkAutorunKey"].Value
@@ -1728,7 +1740,7 @@ WriteConfigFile(p_bValidate := true)
 		        . '`nforwardKey=' g_mapControls["hkForwardKey"].Value
 		        . '`nsprintAutofireKey=' g_mapControls["hkSprintAutofireKey"].Value
 		        . '`nsprintKey=' g_mapControls["hkSprintKey"].Value
-		IniWrite(l_sPairs, "KeyToggles.ini", "Keys")
+		IniWrite(l_sPairs, g_sConfigFileName, "Keys")
 
 		; Store the GUI position
 		if (g_mapSettings["bRememberWindowPositions"])
@@ -1760,9 +1772,9 @@ WriteConfigFile(p_bValidate := true)
 			    . '`nmainWindowY=' g_mapSettings["iMainWindowY"]
 				. '`nselectorWindowX=' g_mapSettings["iSelectorWindowX"]
 				. '`nselectorWindowY=' g_mapSettings["iSelectorWindowY"]
-		IniWrite(l_sPairs, "KeyToggles.ini", "UI")
+		IniWrite(l_sPairs, g_sConfigFileName, "UI")
 
-		IniWrite(g_mapSettings["bDebugMode"], "KeyToggles.ini", "Debug", "debugMode")
+		IniWrite(g_mapSettings["bDebugMode"], g_sConfigFileName, "Debug", "debugMode")
 	}
 	catch as e
 	{
