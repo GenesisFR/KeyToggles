@@ -428,6 +428,8 @@ GuiDDL_Change(p_guiCtrl, *)
 			l_sHkControlName := StrReplace(p_guiCtrl.Name, "ddl", "hk", , , 1)
 			l_hkControl := g_mapControls[l_sHkControlName]
 			l_hkControl.Value := p_guiCtrl.Value == 1 ? "" : p_guiCtrl.Text
+		case g_mapControls["ddlNotifications"]:
+			g_mapSettings["iShowNotifications"] := g_mapControls["ddlNotifications"].Value - 1
 		case g_mapControls["ddlSendMode"]:
 			SendMode(g_mapControls["ddlSendMode"].Text)
 	}
