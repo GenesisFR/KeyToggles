@@ -1588,7 +1588,7 @@ ShowNotification(p_sMessage)
 		case 2:
 			ToolTip(p_sMessage)
 			SoundPlay("*64")
-			SetTimer(() => ToolTip(), -5000)
+			SetTimer(() => ToolTip(), -2000)
 	}
 }
 
