@@ -652,8 +652,8 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 		case g_mapMenus["Misc"]:
 			switch p_sItemName
 			{
-				case "Debug mode":
-					g_mapSettings["bDebugMode"] := !g_mapSettings["bDebugMode"]
+				case "Enable logging":
+					g_mapSettings["bLog"] := !g_mapSettings["bLog"]
 				case "Fix system keys":
 					g_mapSettings["bFixSystemKeys"] := !g_mapSettings["bFixSystemKeys"]
 				case "Restore autofires on focus":
@@ -673,7 +673,7 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 				IniWrite(g_mapSettings["bRestoreAutofiresOnFocus"], g_sConfigFileName, "General", "restoreAutofiresOnFocus")
 				IniWrite(g_mapSettings["bRestoreTogglesOnFocus"], g_sConfigFileName, "General", "restoreTogglesOnFocus")
 				IniWrite(g_mapSettings["bRunAsAdmin"], g_sConfigFileName, "General", "runAsAdmin")
-				IniWrite(g_mapSettings["bDebugMode"], g_sConfigFileName, "Debug", "debugMode")
+				IniWrite(g_mapSettings["bLog"], g_sConfigFileName, "Debug", "log")
 			}
 			catch as e
 				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
@@ -693,7 +693,7 @@ GuiMenuUpdate()
 	g_mapMenus["View"].Add("Minimize to tray", GuiMenuHandler)
 	g_mapMenus["View"].Add("Remember window positions", GuiMenuHandler)
 
-	g_mapMenus["Misc"].Add("Debug mode", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Enable logging", GuiMenuHandler)
 	g_mapMenus["Misc"].Add("Fix system keys", GuiMenuHandler)
 	g_mapMenus["Misc"].Add("Restore autofires on focus", GuiMenuHandler)
 	g_mapMenus["Misc"].Add("Restore toggles on focus", GuiMenuHandler)
@@ -712,8 +712,8 @@ GuiMenuUpdate()
 	if (g_mapSettings["bRememberWindowPositions"])
 		g_mapMenus["View"].Check("Remember window positions")
 
-	if (g_mapSettings["bDebugMode"])
-		g_mapMenus["Misc"].Check("Debug mode")
+	if (g_mapSettings["bLog"])
+		g_mapMenus["Misc"].Check("Enable logging")
 	if (g_mapSettings["bFixSystemKeys"])
 		g_mapMenus["Misc"].Check("Fix system keys")
 	if (g_mapSettings["bRestoreAutofiresOnFocus"])
@@ -965,7 +965,7 @@ KeyToggle(p_sKey, p_bToggle, p_bWait := false)
 
 Log(p_sMessage, p_bSeparator := false)
 {
-	if (g_mapSettings["bDebugMode"])
+	if (g_mapSettings["bLog"])
 	{
 		l_sFormattedTime := FormatTime(, "HH:mm:ss")
 		l_sMilliseconds := SubStr(A_TickCount, -3)
@@ -1293,15 +1293,13 @@ OnMouseMove(wParam, lParam, msg, hwnd)
 
 Output(p_sMessage, p_bSeparator := false)
 {
-	Log(p_sMessage, p_bSeparator)
+	if (g_mapSettings["bLog"])
+		Log(p_sMessage, p_bSeparator)
 
-	if (g_mapSettings["bDebugMode"])
-	{
-		OutputDebug(p_sMessage "`r`n")
+	OutputDebug(p_sMessage "`r`n")
 
-		if (p_bSeparator)
-			OutputDebug("--------------------------------------------------`r`n")
-	}
+	if (p_bSeparator)
+		OutputDebug("--------------------------------------------------`r`n")
 }
 
 ReadConfigFile(p_sFileName := g_sConfigFileName)
@@ -1350,7 +1348,7 @@ ReadConfigFile(p_sFileName := g_sConfigFileName)
 	g_mapSettings["iLogWindowY"]              := IniReadType(p_sFileName, "UI", "logWindowY", 0, "int")
 
 	; Debug
-	g_mapSettings["bDebugMode"]               := IniRead(p_sFileName, "Debug", "debugMode", false) == true
+	g_mapSettings["bLog"]                     := IniRead(p_sFileName, "Debug", "log", false) == true
 
 	; Prevent intervals from being set to 0, otherwise timers won't work
 	g_mapSettings["iAutofireKeyInterval"] := Max(g_mapSettings["iAutofireKeyInterval"], 1)
@@ -1774,7 +1772,7 @@ WriteConfigFile(p_bValidate := true)
 				. '`nselectorWindowY=' g_mapSettings["iSelectorWindowY"]
 		IniWrite(l_sPairs, g_sConfigFileName, "UI")
 
-		IniWrite(g_mapSettings["bDebugMode"], g_sConfigFileName, "Debug", "debugMode")
+		IniWrite(g_mapSettings["bLog"], g_sConfigFileName, "Debug", "log")
 	}
 	catch as e
 	{
@@ -1786,13 +1784,11 @@ WriteConfigFile(p_bValidate := true)
 }
 
 #SuspendExempt
-#HotIf g_mapSettings["bDebugMode"]
 ; Exit script
 *!F10::ExitApp() ; ALT+F10
 
 ; Reload script
 *!F11::Reload() ; ALT+F11
-#HotIf
 
 ; Suspend script (useful in menus)
 *!F12:: ; ALT+F12
