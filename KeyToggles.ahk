@@ -181,9 +181,6 @@ GuiButtonResetDefaults_Click(*)
 ; Validate and save settings to the config file
 GuiButtonSave_Click(*)
 {
-	; Turn MsgBoxes into modals
-	g_guiSettings.Opt("+OwnDialogs")
-
 	if (WriteConfigFile())
 	{
 		UnregisterHotkeys()
@@ -191,7 +188,7 @@ GuiButtonSave_Click(*)
 		global g_iWindowID := 0
 		ReadConfigFile()
 		StartFocusCheck()
-		MsgBox("Settings saved!", , "Iconi")
+		MsgBox("Settings saved!", , "Iconi Owner" g_guiSettings.Hwnd)
 	}
 }
 
@@ -255,7 +252,7 @@ GuiCB_Click(p_guiCtrl, *)
 		IniWrite(g_mapSettings["bAutorunMode"], g_sConfigFileName, "General", "autorunMode")
 	}
 	catch as e
-		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
+		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon! Owner" g_guiSettings.Hwnd)
 }
 
 GuiCreate()
@@ -477,9 +474,6 @@ GuiEdit_Change(p_guiCtrl, *)
 ; Prevent modified keys from being used in hotkey controls (could be changed to allow them in the future)
 GuiHK_Change(p_guiCtrl, *)
 {
-	; Turn MsgBox into a modal
-	g_guiSettings.Opt("+OwnDialogs")
-
 	l_sHotkey := p_guiCtrl.Value
 	l_sHotkeyLength := StrLen(l_sHotkey)
 	l_bShift := InStr(p_guiCtrl.Value, "+") != 0
@@ -497,7 +491,7 @@ GuiHK_Change(p_guiCtrl, *)
 	else if (l_bShift || l_bControl || l_bAlt && l_sHotkeyLength > 1)
 	{
 		p_guiCtrl.Value := ""
-		MsgBox("You can't use modified keys!", , "Icon!")
+		MsgBox("You can't use modified keys!", , "Icon! Owner" g_guiSettings.Hwnd)
 		return
 	}
 
@@ -622,10 +616,7 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 					if (!g_bThemePopupShown)
 					{
 						global g_bThemePopupShown := true
-
-						; Turn MsgBox into a modal
-						g_guiSettings.Opt("+OwnDialogs")
-						MsgBox("Please restart the script to apply the new theme.", , "Icon!")
+						MsgBox("Please restart the script to apply the new theme.", , "Icon! Owner" g_guiSettings.Hwnd)
 					}
 				case "Hide window selector from capture":
 					g_mapSettings["bHideFromCapture"] := !g_mapSettings["bHideFromCapture"]
@@ -648,7 +639,7 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 				IniWrite(g_mapSettings["bRememberWindowPositions"], g_sConfigFileName, "UI", "rememberWindowPositions")
 			}
 			catch as e
-				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
+				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon! Owner" g_guiSettings.Hwnd)
 		case g_mapMenus["Misc"]:
 			switch p_sItemName
 			{
@@ -676,7 +667,7 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 				IniWrite(g_mapSettings["bLog"], g_sConfigFileName, "Debug", "log")
 			}
 			catch as e
-				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
+				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon! Owner" g_guiSettings.Hwnd)
 	}
 }
 
@@ -1700,7 +1691,7 @@ WriteConfigFile(p_bValidate := true)
 
 		if (l_sMsgBoxText)
 		{
-			MsgBox(l_sMsgBoxText, , "Icon!")
+			MsgBox(l_sMsgBoxText, , "Icon! Owner" g_guiSettings.Hwnd)
 			return false
 		}
 	}
@@ -1776,7 +1767,7 @@ WriteConfigFile(p_bValidate := true)
 	}
 	catch as e
 	{
-		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon!")
+		MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon! Owner" g_guiSettings.Hwnd)
 		return false
 	}
 
