@@ -1605,7 +1605,10 @@ StartFocusCheck()
 	if (l_sMsgBoxText)
 	{
 		GuiShow()
+		g_guiSettings.Flash()
+		SetTimer(l_fnFlash := () => g_guiSettings.Flash(), 1000)
 		MsgBox(l_sMsgBoxText, , "Icon! Owner" g_guiSettings.Hwnd)
+		SetTimer(l_fnFlash, 0)
 		return
 	}
 
