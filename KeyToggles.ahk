@@ -35,9 +35,6 @@ SEND_MODE_INPUT          := 1
 SEND_MODE_PLAY           := 2
 SEND_MODE_INPUTTHENPLAY  := 3
 
-; Messages
-WM_MOUSEMOVE := 0x200
-
 ; Maps
 g_mapControls := Map()
 g_mapMenus := Map()
@@ -206,7 +203,7 @@ GuiButtonSave_Click(*)
 
 GuiButtonSelect_Click(*)
 {
-	; Turn the window selector GUI into a modal
+	; Disable the main window to turn the window selector into a modal
 	g_guiSettings.Opt("+Disabled")
 
 	; Create the window selector GUI if it doesn't exist
@@ -238,6 +235,7 @@ GuiButtonSelect_Click(*)
 		DetectHiddenWindows(false)
 	}
 
+	; Set whether to hide the window selector from capture
 	DllCall("user32\SetWindowDisplayAffinity", "Int", g_guiWindowSelector.Hwnd, "Int", WDA_EXCLUDEFROMCAPTURE := 0x00000011 * g_mapSettings["bHideFromCapture"])
 
 	GuiLV_ReloadProcesses()
@@ -493,13 +491,12 @@ GuiEdit_Change(p_guiCtrl, *)
 ; Prevent modified keys from being used in hotkey controls (could be changed to allow them in the future)
 GuiHK_Change(p_guiCtrl, *)
 {
-	l_sHotkey := p_guiCtrl.Value
-	l_sHotkeyLength := StrLen(l_sHotkey)
+	l_sHotkeyLength := StrLen(p_guiCtrl.Value)
 	l_bShift := InStr(p_guiCtrl.Value, "+") != 0
 	l_bControl := InStr(p_guiCtrl.Value, "^") != 0
 	l_bAlt := InStr(p_guiCtrl.Value, "!") != 0
 
-	Output("l_sHotkey(" l_sHotkey ") l_bShift(" l_bShift ") l_bControl(" l_bControl ") l_bAlt(" l_bAlt ")")
+	Output("l_sHotkey(" p_guiCtrl.Value ") l_bShift(" l_bShift ") l_bControl(" l_bControl ") l_bAlt(" l_bAlt ")")
 
 	if (l_bShift && !l_bControl && !l_bAlt && l_sHotkeyLength == 1)
 		p_guiCtrl.Value := "LShift"
@@ -550,6 +547,7 @@ GuiLogScrollToBottom()
 
 GuiLV_DoubleClick(p_guiCtrl, p_iPosItem)
 {
+	; Reenable the main window
 	g_guiSettings.Opt("-Disabled")
 	g_guiWindowSelector.Show("Hide")
 
@@ -585,24 +583,27 @@ GuiLV_ReloadProcesses()
 	; Create all rows
 	for l_hwnd in l_arrHwnds
 	{
-		; Retrieve process info
-		l_sProcName := WinGetProcessName("ahk_id" l_hwnd)
-		l_sProcPath := WinGetProcessPath("ahk_id" l_hwnd)
-		l_sWinClass := WinGetClass("ahk_id" l_hwnd)
-		l_sWinTitle := WinGetTitle("ahk_id" l_hwnd)
+		try 
+		{
+			; Retrieve process info
+			l_sProcName := WinGetProcessName("ahk_id" l_hwnd)
+			l_sProcPath := WinGetProcessPath("ahk_id" l_hwnd)
+			;l_sWinClass := WinGetClass("ahk_id" l_hwnd)
+			l_sWinTitle := WinGetTitle("ahk_id" l_hwnd)
 
-		; Skip this iteration if the process is in the exclusion list
-		if (g_mapControls["cbExcludeProcesses"].Value && IsCommonProcess(l_sProcName))
-			continue
+			; Skip this iteration if the process is in the exclusion list
+			if (g_mapControls["cbExcludeProcesses"].Value && IsCommonProcess(l_sProcName))
+				continue
 
-		/*
-		Output("process: " l_sProcName)
-		Output("path: "    l_sProcPath)
-		Output("title: "   l_sWinTitle)
-		Output("class: "   l_sWinClass, true)
-		*/
+			/*
+			Output("process: " l_sProcName)
+			Output("path: "    l_sProcPath)
+			Output("title: "   l_sWinTitle)
+			Output("class: "   l_sWinClass, true)
+			*/
 
-		g_mapControls["lvWindowPicker"].Add("Icon" IL_Add(g_mapControls["ilWindowPicker"], l_sProcPath), l_sProcName (l_sWinTitle != "" ? " | " l_sWinTitle : ""))
+			g_mapControls["lvWindowPicker"].Add("Icon" IL_Add(g_mapControls["ilWindowPicker"], l_sProcPath), l_sProcName (l_sWinTitle != "" ? " | " l_sWinTitle : ""))
+		}
 	}
 
 	g_mapControls["lvWindowPicker"].Opt("+Redraw")
@@ -730,12 +731,12 @@ GuiMenuUpdate()
 		g_mapMenus["Misc"].Check("Run as admin")
 }
 
-GuiOnSize(GuiObj, MinMax, *)
+GuiOnSize(p_guiCtrl, p_iMinMax, *)
 {
-	switch GuiObj
+	switch p_guiCtrl
 	{
 		case g_guiSettings:
-			if (MinMax == -1 && g_mapSettings["bMinimizeToTray"])
+			if (p_iMinMax == -1 && g_mapSettings["bMinimizeToTray"])
 				g_guiSettings.Hide()
 	}
 }
@@ -745,40 +746,42 @@ GuiShow()
 	g_guiSettings.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iMainWindowX"] " y" g_mapSettings["iMainWindowY"] : "")
 }
 
-; Update GUI controls based on current settings
+; Update main window controls based on current settings
 GuiUpdate()
 {
-	g_mapControls["cbAutorun"].Value                 := g_mapSettings["bAutorunMode"]
-	g_mapControls["ddlAimAutofireKey"].Text          := IsExtraOption(g_mapSettings["sAimAutofireKey"])    ? g_mapSettings["sAimAutofireKey"] : "None"
-	g_mapControls["ddlAimKey"].Text                  := IsExtraOption(g_mapSettings["sAimKey"])            ? g_mapSettings["sAimKey"] : "None"
-	g_mapControls["ddlAimMode"].Value                := g_mapSettings["iAimMode"] + 1
-	g_mapControls["ddlAutorunKey"].Text              := IsExtraOption(g_mapSettings["sAutorunKey"])        ? g_mapSettings["sAutorunKey"] : "None"
-	g_mapControls["ddlBackwardKey"].Text             := IsExtraOption(g_mapSettings["sBackwardKey"])       ? g_mapSettings["sBackwardKey"] : "None"
-	g_mapControls["ddlCrouchAutofireKey"].Text       := IsExtraOption(g_mapSettings["sCrouchAutofireKey"]) ? g_mapSettings["sCrouchAutofireKey"] : "None"
-	g_mapControls["ddlCrouchKey"].Text               := IsExtraOption(g_mapSettings["sCrouchKey"])         ? g_mapSettings["sCrouchKey"] : "None"
-	g_mapControls["ddlCrouchMode"].Value             := g_mapSettings["iCrouchMode"] + 1
-	g_mapControls["ddlForwardKey"].Text              := IsExtraOption(g_mapSettings["sForwardKey"])        ? g_mapSettings["sForwardKey"] : "None"
-	g_mapControls["ddlNotifications"].Value          := g_mapSettings["iShowNotifications"] + 1
-	g_mapControls["ddlSendMode"].Value               := g_mapSettings["iSendMode"] + 1
-	g_mapControls["ddlSprintAutofireKey"].Text       := IsExtraOption(g_mapSettings["sSprintAutofireKey"]) ? g_mapSettings["sSprintAutofireKey"] : "None"
-	g_mapControls["ddlSprintKey"].Text               := IsExtraOption(g_mapSettings["sSprintKey"])         ? g_mapSettings["sSprintKey"] : "None"
-	g_mapControls["ddlSprintMode"].Value             := g_mapSettings["iSprintMode"] + 1
-	g_mapControls["editProcessName"].Value           := g_mapSettings["sProcessName"]
-	g_mapControls["editWindowName"].Value            := g_mapSettings["sWindowName"]
-	g_mapControls["hkAimAutofireKey"].Value          := g_mapSettings["sAimAutofireKey"]
-	g_mapControls["hkAimKey"].Value                  := g_mapSettings["sAimKey"]
-	g_mapControls["hkAutorunKey"].Value              := g_mapSettings["sAutorunKey"]
-	g_mapControls["hkBackwardKey"].Value             := g_mapSettings["sBackwardKey"]
-	g_mapControls["hkCrouchAutofireKey"].Value       := g_mapSettings["sCrouchAutofireKey"]
-	g_mapControls["hkCrouchKey"].Value               := g_mapSettings["sCrouchKey"]
-	g_mapControls["hkForwardKey"].Value              := g_mapSettings["sForwardKey"]
-	g_mapControls["hkSprintAutofireKey"].Value       := g_mapSettings["sSprintAutofireKey"]
-	g_mapControls["hkSprintKey"].Value               := g_mapSettings["sSprintKey"]
-	g_mapControls["udAutofireKeyInterval"].Value     := g_mapSettings["iAutofireKeyInterval"]
-	g_mapControls["udFocusCheckInterval"].Value      := g_mapSettings["iFocusCheckInterval"]
-	g_mapControls["udHookDelay"].Value               := g_mapSettings["iHookDelay"]
-	g_mapControls["udPressDuration"].Value           := g_mapSettings["iPressDuration"]
+	; Update control values
+	g_mapControls["cbAutorun"].Value             := g_mapSettings["bAutorunMode"]
+	g_mapControls["ddlAimAutofireKey"].Text      := IsExtraOption(g_mapSettings["sAimAutofireKey"])    ? g_mapSettings["sAimAutofireKey"] : "None"
+	g_mapControls["ddlAimKey"].Text              := IsExtraOption(g_mapSettings["sAimKey"])            ? g_mapSettings["sAimKey"] : "None"
+	g_mapControls["ddlAimMode"].Value            := g_mapSettings["iAimMode"] + 1
+	g_mapControls["ddlAutorunKey"].Text          := IsExtraOption(g_mapSettings["sAutorunKey"])        ? g_mapSettings["sAutorunKey"] : "None"
+	g_mapControls["ddlBackwardKey"].Text         := IsExtraOption(g_mapSettings["sBackwardKey"])       ? g_mapSettings["sBackwardKey"] : "None"
+	g_mapControls["ddlCrouchAutofireKey"].Text   := IsExtraOption(g_mapSettings["sCrouchAutofireKey"]) ? g_mapSettings["sCrouchAutofireKey"] : "None"
+	g_mapControls["ddlCrouchKey"].Text           := IsExtraOption(g_mapSettings["sCrouchKey"])         ? g_mapSettings["sCrouchKey"] : "None"
+	g_mapControls["ddlCrouchMode"].Value         := g_mapSettings["iCrouchMode"] + 1
+	g_mapControls["ddlForwardKey"].Text          := IsExtraOption(g_mapSettings["sForwardKey"])        ? g_mapSettings["sForwardKey"] : "None"
+	g_mapControls["ddlNotifications"].Value      := g_mapSettings["iShowNotifications"] + 1
+	g_mapControls["ddlSendMode"].Value           := g_mapSettings["iSendMode"] + 1
+	g_mapControls["ddlSprintAutofireKey"].Text   := IsExtraOption(g_mapSettings["sSprintAutofireKey"]) ? g_mapSettings["sSprintAutofireKey"] : "None"
+	g_mapControls["ddlSprintKey"].Text           := IsExtraOption(g_mapSettings["sSprintKey"])         ? g_mapSettings["sSprintKey"] : "None"
+	g_mapControls["ddlSprintMode"].Value         := g_mapSettings["iSprintMode"] + 1
+	g_mapControls["editProcessName"].Value       := g_mapSettings["sProcessName"]
+	g_mapControls["editWindowName"].Value        := g_mapSettings["sWindowName"]
+	g_mapControls["hkAimAutofireKey"].Value      := g_mapSettings["sAimAutofireKey"]
+	g_mapControls["hkAimKey"].Value              := g_mapSettings["sAimKey"]
+	g_mapControls["hkAutorunKey"].Value          := g_mapSettings["sAutorunKey"]
+	g_mapControls["hkBackwardKey"].Value         := g_mapSettings["sBackwardKey"]
+	g_mapControls["hkCrouchAutofireKey"].Value   := g_mapSettings["sCrouchAutofireKey"]
+	g_mapControls["hkCrouchKey"].Value           := g_mapSettings["sCrouchKey"]
+	g_mapControls["hkForwardKey"].Value          := g_mapSettings["sForwardKey"]
+	g_mapControls["hkSprintAutofireKey"].Value   := g_mapSettings["sSprintAutofireKey"]
+	g_mapControls["hkSprintKey"].Value           := g_mapSettings["sSprintKey"]
+	g_mapControls["udAutofireKeyInterval"].Value := g_mapSettings["iAutofireKeyInterval"]
+	g_mapControls["udFocusCheckInterval"].Value  := g_mapSettings["iFocusCheckInterval"]
+	g_mapControls["udHookDelay"].Value           := g_mapSettings["iHookDelay"]
+	g_mapControls["udPressDuration"].Value       := g_mapSettings["iPressDuration"]
 
+	; Enable/disable controls
 	g_mapControls["hkAimAutofireKey"].Enabled    := g_mapControls["ddlAimAutofireKey"].Enabled    := g_mapControls["ddlAimMode"].Value > KEY_MODE_AUTOFIRE_TOGGLE
 	g_mapControls["hkAimKey"].Enabled            := g_mapControls["ddlAimKey"].Enabled            := g_mapControls["ddlAimMode"].Value > KEY_MODE_TOGGLE
 	g_mapControls["hkAutorunKey"].Enabled        := g_mapControls["ddlAutorunKey"].Enabled        := g_mapControls["cbAutorun"].Value
@@ -789,6 +792,7 @@ GuiUpdate()
 	g_mapControls["hkSprintAutofireKey"].Enabled := g_mapControls["ddlSprintAutofireKey"].Enabled := g_mapControls["ddlSprintMode"].Value > KEY_MODE_AUTOFIRE_TOGGLE
 	g_mapControls["hkSprintKey"].Enabled         := g_mapControls["ddlSprintKey"].Enabled         := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
 
+	; Update always on top status
 	g_guiSettings.Opt((g_mapSettings["bAlwaysOnTop"] ? "+" : "-") "AlwaysOnTop")
 }
 
@@ -836,7 +840,7 @@ IniReadType(p_sFile, p_sSection, p_sKey, p_sDefault, p_sType)
 Init()
 {
 	OnExit(OnExitCallback)
-	OnMessage(WM_MOUSEMOVE, OnMouseMove)
+	OnMessage(WM_MOUSEMOVE := 0x200, OnMouseMove)
 
 	ReadConfigFile()
 	RestartAsAdminIfNeeded()
@@ -911,7 +915,7 @@ IsProcessNameValid(p_sProcessName)
 IsWindowVisible(p_hwnd)
 {
 	;return DllCall("IsWindowVisible", "Ptr", p_hwnd)
-	return WinGetStyle("ahk_id " p_hwnd) & 0x10000000 ; WS_VISIBLE
+	return WinGetStyle("ahk_id " p_hwnd) & WS_VISIBLE := 0x10000000
 }
 
 KeyAutofire(p_sAutofireKey)
@@ -1217,6 +1221,7 @@ OnKeyPress(p_sThisHotkey)
 	}
 }
 
+; Taken from https://www.youtube.com/watch?v=AvsAt4nVSiI
 OnMouseMove(wParam, lParam, msg, hwnd)
 {
 	static s_bTooltipVisible := false
@@ -1279,8 +1284,8 @@ OnMouseMove(wParam, lParam, msg, hwnd)
 			return
 	}
 
-	; Don't display a tooltip if the main window is not active or the control is disabled
-	if (!WinActive("ahk_id " g_guiSettings.Hwnd) || !l_guiCtrl.Enabled)
+	; Don't display a tooltip if the main window is not active (disabled controls don't show tooltips either)
+	if !WinActive("ahk_id " g_guiSettings.Hwnd)
 		return
 
 	; Avoid showing the tooltip again if it's already visible to prevent it from flickering when moving the mouse inside the control
@@ -1585,6 +1590,8 @@ ShouldRestoreTogglesOnFocus()
 
 ShowNotification(p_sMessage)
 {
+	Output(p_sMessage)
+
 	switch g_mapSettings["iShowNotifications"]
 	{
 		case 1:
