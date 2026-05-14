@@ -119,7 +119,19 @@ GuiAddMenus()
 	l_fileMenu.Add("Exit", GuiMenuHandler)
 
 	g_mapMenus["View"] := l_viewMenu := Menu()
+	g_mapMenus["View"].Add("Always on top", GuiMenuHandler)
+	g_mapMenus["View"].Add("Close to tray", GuiMenuHandler)
+	g_mapMenus["View"].Add("Dark mode", GuiMenuHandler)
+	g_mapMenus["View"].Add("Hide window selector from capture", GuiMenuHandler)
+	g_mapMenus["View"].Add("Minimize to tray", GuiMenuHandler)
+	g_mapMenus["View"].Add("Remember window positions", GuiMenuHandler)
+
 	g_mapMenus["Misc"] := l_miscMenu := Menu()
+	g_mapMenus["Misc"].Add("Enable logging", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Fix system keys", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Restore autofires on focus", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Restore toggles on focus", GuiMenuHandler)
+	g_mapMenus["Misc"].Add("Run as admin", GuiMenuHandler)
 
 	;g_mapMenus["Help"] := l_helpMenu := Menu()
 	;l_helpMenu.Add("AHK documentation", GuiMenuHandler)
@@ -599,7 +611,7 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 			switch p_sItemName
 			{
 				case "Save and exit":
-					ExitApp(true)
+					ExitApp(1)
 				case "Exit":
 					ExitApp()
 			}
@@ -675,22 +687,18 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 
 GuiMenuUpdate()
 {
-	; We have to recreate the menus with toggleable menu items since there's no way to know if a menu item is checked
-	g_mapMenus["View"].Delete()
-	g_mapMenus["Misc"].Delete()
-
-	g_mapMenus["View"].Add("Always on top", GuiMenuHandler)
-	g_mapMenus["View"].Add("Close to tray", GuiMenuHandler)
-	g_mapMenus["View"].Add("Dark mode", GuiMenuHandler)
-	g_mapMenus["View"].Add("Hide window selector from capture", GuiMenuHandler)
-	g_mapMenus["View"].Add("Minimize to tray", GuiMenuHandler)
-	g_mapMenus["View"].Add("Remember window positions", GuiMenuHandler)
-
-	g_mapMenus["Misc"].Add("Enable logging", GuiMenuHandler)
-	g_mapMenus["Misc"].Add("Fix system keys", GuiMenuHandler)
-	g_mapMenus["Misc"].Add("Restore autofires on focus", GuiMenuHandler)
-	g_mapMenus["Misc"].Add("Restore toggles on focus", GuiMenuHandler)
-	g_mapMenus["Misc"].Add("Run as admin", GuiMenuHandler)
+	; We have to uncheck all toggleable menu items since there's no way to know which one was checked
+	g_mapMenus["View"].Uncheck("Always on top")
+	g_mapMenus["View"].Uncheck("Close to tray")
+	g_mapMenus["View"].Uncheck("Dark mode")
+	g_mapMenus["View"].Uncheck("Hide window selector from capture")
+	g_mapMenus["View"].Uncheck("Minimize to tray")
+	g_mapMenus["View"].Uncheck("Remember window positions")
+	g_mapMenus["Misc"].Uncheck("Enable logging")
+	g_mapMenus["Misc"].Uncheck("Fix system keys")
+	g_mapMenus["Misc"].Uncheck("Restore autofires on focus")
+	g_mapMenus["Misc"].Uncheck("Restore toggles on focus")
+	g_mapMenus["Misc"].Uncheck("Run as admin")
 
 	if (g_mapSettings["bAlwaysOnTop"])
 		g_mapMenus["View"].Check("Always on top")
