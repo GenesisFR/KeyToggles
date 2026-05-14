@@ -135,15 +135,15 @@ GuiAddMenus()
 	g_mapMenus["Misc"].Add("Restore toggles on focus", GuiMenuHandler)
 	g_mapMenus["Misc"].Add("Run as admin", GuiMenuHandler)
 
-	;g_mapMenus["Help"] := l_helpMenu := Menu()
-	;l_helpMenu.Add("AHK documentation", GuiMenuHandler)
+	g_mapMenus["Help"] := l_helpMenu := Menu()
+	l_helpMenu.Add("View log", GuiMenuHandler)
 	;l_helpMenu.Add("About", GuiMenuHandler)
 
 	g_guiSettings.MenuBar := l_menuBar := MenuBar()
 	l_menuBar.Add("&File", l_fileMenu)
 	l_menuBar.Add("&View", l_viewMenu)
 	l_menuBar.Add("&Misc", l_miscMenu)
-	;l_menuBar.Add("&Help", l_helpMenu)
+	l_menuBar.Add("&Help", l_helpMenu)
 
 	GuiMenuUpdate()
 }
@@ -245,19 +245,6 @@ GuiButtonSelect_Click(*)
 
 	GuiLV_ReloadProcesses()
 	g_guiWindowSelector.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iSelectorWindowX"] " y" g_mapSettings["iSelectorWindowY"] : "")
-}
-
-GuiButtonViewLog_Click(*)
-{
-	; Fill the edit log control with everything that has been logged before the creation of the log Gui object
-	if (g_mapSettings["bLog"] && !g_mapControls["editLog"].Text && !States.bPreviousLogMessagesAdded)
-	{
-		EditPaste(FileRead(g_sLogFileName), g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
-		States.bPreviousLogMessagesAdded := true
-	}
-
-	if !WinExist("ahk_id " g_guiLog.Hwnd)
-		g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
 }
 
 GuiCB_Click(p_guiCtrl, *)
@@ -412,9 +399,8 @@ GuiCreate()
 	g_mapControls["ddlSprintAutofireKey"] := g_guiSettings.AddDropDownList("vddlSprintAutofireKey x" l_iRightX " y" l_iTopY + l_iSpacingY * l_iCurrentRow - 5 " w" l_iRightWidth,
 	                                                                       l_arrExtraKeys)
 
-	g_guiSettings.AddButton("Background" g_guiBackColor " x90 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 15 " w100", "View log").OnEvent("Click", GuiButtonViewLog_Click)
-	g_guiSettings.AddButton("Background" g_guiBackColor " x210 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Reset defaults").OnEvent("Click", GuiButtonResetDefaults_Click)
-	g_guiSettings.AddButton("Background" g_guiBackColor " x330 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x150 y" l_iTopY + l_iSpacingY * ++l_iCurrentRow + 15 " w100", "Reset defaults").OnEvent("Click", GuiButtonResetDefaults_Click)
+	g_guiSettings.AddButton("Background" g_guiBackColor " x270 y" l_iTopY + l_iSpacingY * l_iCurrentRow + 15 " w100", "Save").OnEvent("Click", GuiButtonSave_Click)
 
 	; Event handlers
 	for l_guiCtrl in g_guiSettings
@@ -704,6 +690,20 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 			}
 			catch as e
 				MsgBox(Format("{1}: {2}.`n`nFile:`t{3}`nLine:`t{4}`nWhat:`t{5}`nStack:`n{6}", type(e), e.Message, e.File, e.Line, e.What, e.Stack), , "Icon! Owner" g_guiSettings.Hwnd)
+		case g_mapMenus["Help"]:
+			switch p_sItemName
+			{
+				case "View log":
+					; Fill the edit log control with everything that has been logged before the creation of the log Gui object
+					if (g_mapSettings["bLog"] && !g_mapControls["editLog"].Text && !States.bPreviousLogMessagesAdded)
+					{
+						EditPaste(FileRead(g_sLogFileName), g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
+						States.bPreviousLogMessagesAdded := true
+					}
+
+					if !WinExist("ahk_id " g_guiLog.Hwnd)
+						g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
+			} 
 	}
 }
 
@@ -930,8 +930,7 @@ IsProcessNameValid(p_sProcessName)
 
 IsWindowVisible(p_hwnd)
 {
-	;return DllCall("IsWindowVisible", "Ptr", p_hwnd)
-	return WinGetStyle("ahk_id " p_hwnd) & WS_VISIBLE := 0x10000000
+	return DllCall("IsWindowVisible", "Ptr", p_hwnd)
 }
 
 KeyAutofire(p_sAutofireKey)
