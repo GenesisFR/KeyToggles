@@ -137,7 +137,8 @@ GuiAddMenus()
 
 	g_mapMenus["Help"] := l_helpMenu := Menu()
 	l_helpMenu.Add("View log", GuiMenuHandler)
-	;l_helpMenu.Add("About", GuiMenuHandler)
+	l_helpMenu.Add("Visit website", GuiMenuHandler)
+	l_helpMenu.Add("About", GuiMenuHandler)
 
 	g_guiSettings.MenuBar := l_menuBar := MenuBar()
 	l_menuBar.Add("&File", l_fileMenu)
@@ -703,7 +704,11 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 
 					if !WinExist("ahk_id " g_guiLog.Hwnd)
 						g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
-			} 
+				case "Visit website":
+					Run("https://github.com/GenesisFR/KeyToggles")
+				case "About":
+					GuiShowAbout()
+			}
 	}
 }
 
@@ -757,7 +762,18 @@ GuiOnSize(p_guiCtrl, p_iMinMax, *)
 	}
 }
 
-GuiShow()
+GuiShowAbout(*)
+{
+	MsgBox(
+		"KeyToggles v2.5`n"
+		"Author: Genesis`n",
+		"About",
+		"Iconi Owner" g_guiSettings.Hwnd
+	)
+
+}
+
+GuiShowMain(*)
 {
 	g_guiSettings.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iMainWindowX"] " y" g_mapSettings["iMainWindowY"] : "")
 }
@@ -872,10 +888,13 @@ Init()
 	SendMode(g_mapControls["ddlSendMode"].Text)
 	SetKeyDelay(, g_mapSettings["iPressDuration"], A_SendMode == "Play" || A_SendMode == "InputThenPlay" ? "Play" : "")
 
-	StartFocusCheck()
-	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", (*) => GuiShow())
+	l_iMenuItemCount := DllCall("GetMenuItemCount", "ptr", A_TrayMenu.Handle)
+	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", GuiShowMain)
+	A_TrayMenu.Insert(++l_iMenuItemCount "&", "About", GuiShowAbout)
 	A_TrayMenu.ClickCount := 1
 	A_TrayMenu.Default := "&Settings"
+
+	StartFocusCheck()
 }
 
 IsCommonProcess(p_sProcessName)
@@ -1642,7 +1661,7 @@ StartFocusCheck()
 	; Process name not valid or duplicate hotkeys, show the settings configurator
 	if (l_sMsgBoxText)
 	{
-		GuiShow()
+		GuiShowMain()
 		g_guiSettings.Flash()
 		SetTimer(l_fnFlash := () => g_guiSettings.Flash(), 1000)
 		MsgBox(l_sMsgBoxText, , "Icon! Owner" g_guiSettings.Hwnd)
