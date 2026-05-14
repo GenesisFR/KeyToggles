@@ -428,15 +428,16 @@ GuiDDL_Change(p_guiCtrl, *)
 {
 	switch p_guiCtrl
 	{
-		case g_mapControls["ddlAimMode"]:
-			g_mapControls["hkAimKey"].Enabled := g_mapControls["ddlAimKey"].Enabled := g_mapControls["ddlAimMode"].Value > KEY_MODE_TOGGLE
-			g_mapControls["hkAimAutofireKey"].Enabled := g_mapControls["ddlAimAutofireKey"].Enabled := g_mapControls["ddlAimMode"].Value > KEY_MODE_AUTOFIRE_TOGGLE
-		case g_mapControls["ddlCrouchMode"]:
-			g_mapControls["hkCrouchKey"].Enabled := g_mapControls["ddlCrouchKey"].Enabled := g_mapControls["ddlCrouchMode"].Value > KEY_MODE_TOGGLE
+		case g_mapControls["ddlAimMode"], g_mapControls["ddlCrouchMode"], g_mapControls["ddlSprintMode"]:
+			g_mapControls["hkAimKey"].Enabled            := g_mapControls["ddlAimKey"].Enabled            := g_mapControls["ddlAimMode"].Value > KEY_MODE_TOGGLE
+			g_mapControls["hkCrouchKey"].Enabled         := g_mapControls["ddlCrouchKey"].Enabled         := g_mapControls["ddlCrouchMode"].Value > KEY_MODE_TOGGLE
+			g_mapControls["hkSprintKey"].Enabled         := g_mapControls["ddlSprintKey"].Enabled         := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
+			g_mapControls["hkAimAutofireKey"].Enabled    := g_mapControls["ddlAimAutofireKey"].Enabled    := g_mapControls["ddlAimMode"].Value > KEY_MODE_AUTOFIRE_TOGGLE
 			g_mapControls["hkCrouchAutofireKey"].Enabled := g_mapControls["ddlCrouchAutofireKey"].Enabled := g_mapControls["ddlCrouchMode"].Value > KEY_MODE_AUTOFIRE_TOGGLE
-		case g_mapControls["ddlSprintMode"]:
-			g_mapControls["hkSprintKey"].Enabled := g_mapControls["ddlSprintKey"].Enabled := g_mapControls["ddlSprintMode"].Value > KEY_MODE_TOGGLE
 			g_mapControls["hkSprintAutofireKey"].Enabled := g_mapControls["ddlSprintAutofireKey"].Enabled := g_mapControls["ddlSprintMode"].Value > KEY_MODE_AUTOFIRE_TOGGLE
+			g_mapSettings["iAimMode"]                    := g_mapControls["ddlAimMode"].Value - 1
+			g_mapSettings["iCrouchMode"]                 := g_mapControls["ddlCrouchMode"].Value - 1
+			g_mapSettings["iSprintMode"]                 := g_mapControls["ddlSprintMode"].Value - 1
 		case g_mapControls["ddlAimAutofireKey"], g_mapControls["ddlAimKey"], g_mapControls["ddlAutorunKey"], g_mapControls["ddlBackwardKey"], g_mapControls["ddlCrouchAutofireKey"],
 		     g_mapControls["ddlCrouchKey"], g_mapControls["ddlForwardKey"], g_mapControls["ddlSprintAutofireKey"], g_mapControls["ddlSprintKey"]:
 			; Set the corresponding hotkey control's text to the selected DDL value
@@ -446,6 +447,7 @@ GuiDDL_Change(p_guiCtrl, *)
 		case g_mapControls["ddlNotifications"]:
 			g_mapSettings["iShowNotifications"] := g_mapControls["ddlNotifications"].Value - 1
 		case g_mapControls["ddlSendMode"]:
+			g_mapSettings["iSendMode"] := g_mapControls["ddlSendMode"].Text
 			SendMode(g_mapControls["ddlSendMode"].Text)
 	}
 }
@@ -1728,9 +1730,9 @@ WriteConfigFile(p_bValidate := true)
 	; Everything ok, save settings
 	try
 	{
-		l_sPairs := 'aimMode=' (g_mapControls["ddlAimMode"].Value - 1)
-		        . '`ncrouchMode=' (g_mapControls["ddlCrouchMode"].Value - 1)
-		        . '`nsprintMode=' (g_mapControls["ddlSprintMode"].Value - 1)
+		l_sPairs := 'aimMode=' g_mapSettings["iAimMode"]
+		        . '`ncrouchMode=' g_mapSettings["iCrouchMode"]
+		        . '`nsprintMode=' g_mapSettings["iSprintMode"]
 		        . '`nautofireKeyInterval=' g_mapControls["udAutofireKeyInterval"].Value
 		        . '`nautorunMode=' g_mapSettings["bAutorunMode"]
 		        . '`nfixSystemKeys=' g_mapSettings["bFixSystemKeys"]
@@ -1741,8 +1743,8 @@ WriteConfigFile(p_bValidate := true)
 		        . '`nrestoreAutofiresOnFocus=' g_mapSettings["bRestoreAutofiresOnFocus"]
 		        . '`nrestoreTogglesOnFocus=' g_mapSettings["bRestoreTogglesOnFocus"]
 		        . '`nrunAsAdmin=' g_mapSettings["bRunAsAdmin"]
-		        . '`nsendMode=' (g_mapControls["ddlSendMode"].Value - 1)
-		        . '`nshowNotifications=' (g_mapControls["ddlNotifications"].Value - 1)
+		        . '`nsendMode=' g_mapSettings["iSendMode"]
+		        . '`nshowNotifications=' g_mapSettings["iShowNotifications"]
 		        . '`nwindowName=' l_windowNameClean
 		IniWrite(l_sPairs, g_sConfigFileName, "General")
 		l_sPairs := 'aimAutofireKey=' g_mapControls["hkAimAutofireKey"].Value
