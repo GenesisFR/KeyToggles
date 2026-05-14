@@ -230,10 +230,15 @@ GuiButtonSelect_Click(*)
 		l_iLvWidth := A_ScreenWidth * .41
 		g_mapControls["lvWindowPicker"] := g_guiWindowSelector.AddListView("Background" g_guiBackColor " -Multi ReadOnly Sort Tile w" l_iLvWidth)
 		g_mapControls["lvWindowPicker"].OnEvent("DoubleClick", GuiLV_DoubleClick)
+
+		; Set the ListView's tooltip to be always on top (https://www.autohotkey.com/boards/viewtopic.php?t=28792)
+		DetectHiddenWindows(true)
+		l_iLVTooltipHwnd := DllCall("SendMessage", "ptr", g_mapControls["lvWindowPicker"].Hwnd, "uint", LVM_GETTOOLTIPS := 0x104E, "ptr", 0, "ptr", 0, "ptr")
+		WinSetAlwaysOnTop(1, "ahk_id " l_iLVTooltipHwnd)
+		DetectHiddenWindows(false)
 	}
 
-	; 0x00000011 = WDA_EXCLUDEFROMCAPTURE
-	DllCall("user32\SetWindowDisplayAffinity", "Int", g_guiWindowSelector.Hwnd, "Int", 0x00000011 * g_mapSettings["bHideFromCapture"])
+	DllCall("user32\SetWindowDisplayAffinity", "Int", g_guiWindowSelector.Hwnd, "Int", WDA_EXCLUDEFROMCAPTURE := 0x00000011 * g_mapSettings["bHideFromCapture"])
 
 	GuiLV_ReloadProcesses()
 	g_guiWindowSelector.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iSelectorWindowX"] " y" g_mapSettings["iSelectorWindowY"] : "")
