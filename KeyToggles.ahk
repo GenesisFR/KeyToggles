@@ -244,8 +244,11 @@ GuiButtonSelect_Click(*)
 
 GuiButtonViewLog_Click(*)
 {
+	; Fill the edit log control with everything that has been logged before the creation of the log Gui object
+	if (g_mapSettings["bLog"] && !g_mapControls["editLog"].Text)
+		EditPaste(FileRead(g_sLogFileName), g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
+
 	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
-	GuiLogScrollToBottom()
 }
 
 GuiCB_Click(p_guiCtrl, *)
@@ -527,8 +530,10 @@ GuiLogCreate()
 	global g_guiLog := Gui.Call("Owner" g_guiSettings.Hwnd " -MinimizeBox -MaximizeBox", "Log Viewer")
 	g_guiLog.BackColor := g_guiBackColor
 	g_guiLog.SetFont("s10 " g_guiTextColor)
+
 	g_mapControls["editLog"] := g_guiLog.AddEdit((g_mapSettings["bDarkMode"] ? "Background" g_guiBackColor : "cBlack") " ReadOnly -Tabstop r25 w600")
 	g_mapControls["editLog"].OnEvent("LoseFocus", (*) => GuiLogScrollToBottom())
+
 	g_guiLog.AddButton("Background" g_guiBackColor " x295 y425 w100", "Open file").OnEvent("Click", (*) => Run(g_sLogFileName))
 	g_guiLog.AddButton("Background" g_guiBackColor " x405 y425 w100", "Copy").OnEvent("Click", (*) => ShowNotification("Text copied to clipboard!") A_Clipboard := g_mapControls["editLog"].Text)
 	g_guiLog.AddButton("Background" g_guiBackColor " x515 y425 w100", "Clear").OnEvent("Click", (*) => g_mapControls["editLog"].Text := "")
@@ -987,9 +992,10 @@ Log(p_sMessage, p_bSeparator := false)
 		if (p_bSeparator)
 			FileAppend("--------------------------------------------------`r`n", g_sLogFileName)
 
-		; Update the log only if the log window is open and the edit control isn't focused, EditPaste will automatically scroll to the bottom
-		if (WinExist("ahk_id " g_guiLog.Hwnd) && ControlGetFocus() != g_mapControls["editLog"].Hwnd)
+		; Update the edit log control only if the log window exists and the control isn't focused
+		if (IsSet(g_guiLog) && WinExist("ahk_id " g_guiLog.Hwnd) && ControlGetFocus() != g_mapControls["editLog"].Hwnd)
 		{
+			; EditPaste automatically scrolls to the bottom
 			EditPaste(l_sLogMessage, g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
 
 			if (p_bSeparator)
