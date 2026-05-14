@@ -256,7 +256,8 @@ GuiButtonViewLog_Click(*)
 		States.bPreviousLogMessagesAdded := true
 	}
 
-	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
+	if !WinExist("ahk_id " g_guiLog.Hwnd)
+		g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
 }
 
 GuiCB_Click(p_guiCtrl, *)
