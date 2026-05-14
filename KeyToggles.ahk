@@ -1800,12 +1800,12 @@ WriteConfigFile(p_bValidate := true)
 	Suspend()
 
 	; Single beep when suspended
-	SoundBeep(1000)
+	SoundBeep(1000, 100)
 
 	if (A_IsSuspended)
 		ReleaseAllKeys()
 	; Double beep when resumed
 	else
-		SoundBeep(1000)
+		SoundBeep(1000, 100)
 }
 #SuspendExempt False
