@@ -35,6 +35,13 @@ SEND_MODE_INPUT          := 1
 SEND_MODE_PLAY           := 2
 SEND_MODE_INPUTTHENPLAY  := 3
 
+class States
+{
+	static bPreviousLogMessagesAdded := false
+	static bThemePopupShown := false
+	static bToggleKeysSnapshotTaken := false
+}
+
 ; Maps
 g_mapControls := Map()
 g_mapMenus := Map()
@@ -66,8 +73,6 @@ g_guiBackColor := "White"
 g_guiTextColor := "CBlack"
 
 ; Others
-g_bThemePopupShown := false
-g_bToggleKeysSnapshotTaken := false
 g_iWindowID := 0
 g_sConfigFileName := "KeyToggles.ini"
 g_sLogFileName := "KeyToggles.log"
@@ -245,8 +250,11 @@ GuiButtonSelect_Click(*)
 GuiButtonViewLog_Click(*)
 {
 	; Fill the edit log control with everything that has been logged before the creation of the log Gui object
-	if (g_mapSettings["bLog"] && !g_mapControls["editLog"].Text)
+	if (g_mapSettings["bLog"] && !g_mapControls["editLog"].Text && !States.bPreviousLogMessagesAdded)
+	{
 		EditPaste(FileRead(g_sLogFileName), g_mapControls["editLog"], "ahk_id " g_guiLog.Hwnd)
+		States.bPreviousLogMessagesAdded := true
+	}
 
 	g_guiLog.Show(g_mapSettings["bRememberWindowPositions"] ? "x" g_mapSettings["iLogWindowX"] " y" g_mapSettings["iLogWindowY"] : "")
 }
@@ -640,9 +648,9 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 					g_mapSettings["bDarkMode"] := !g_mapSettings["bDarkMode"]
 
 					; Avoid showing the MsgBox multiple times
-					if (!g_bThemePopupShown)
+					if (!States.bThemePopupShown)
 					{
-						global g_bThemePopupShown := true
+						States.bThemePopupShown := true
 						MsgBox("Please restart the script to apply the new theme.", , "Icon! Owner" g_guiSettings.Hwnd)
 					}
 				case "Hide window selector from capture":
@@ -1095,8 +1103,8 @@ OnFocusChanged()
 		if (ShouldRestoreTogglesOnFocus())
 		{
 			; A snapshot of the toggle states was already taken elsewhere, don't take another one
-			if (g_bToggleKeysSnapshotTaken)
-				global g_bToggleKeysSnapshotTaken := false
+			if (States.bToggleKeysSnapshotTaken)
+				States.bToggleKeysSnapshotTaken := false
 			else
 			{
 				Output(A_ThisFunc "::saveToggleStates(" g_mapStates["bRestoreAiming"] ", " g_mapStates["bRestoreCrouching"] ", " g_mapStates["bRestoreSprinting"] ")")
@@ -1661,7 +1669,7 @@ TakeToggleKeysSnapshot()
 	g_mapStates["bRestoreAutofireCrouching"] := g_mapStates["bAutofireCrouching"]
 	g_mapStates["bRestoreAutofireSprinting"] := g_mapStates["bAutofireSprinting"]
 
-	global g_bToggleKeysSnapshotTaken := true
+	States.bToggleKeysSnapshotTaken := true
 }
 
 UnregisterHotkeys()
