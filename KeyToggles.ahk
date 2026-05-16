@@ -129,6 +129,7 @@ GuiAddMenus()
 	g_mapMenus["View"].Add("Remember window positions", GuiMenuHandler)
 
 	g_mapMenus["Misc"] := l_miscMenu := Menu()
+	g_mapMenus["Misc"].Add("Beep on suspend", GuiMenuHandler)
 	g_mapMenus["Misc"].Add("Enable logging", GuiMenuHandler)
 	g_mapMenus["Misc"].Add("Fix system keys", GuiMenuHandler)
 	g_mapMenus["Misc"].Add("Restore autofires on focus", GuiMenuHandler)
@@ -666,6 +667,8 @@ GuiMenuHandler(p_sItemName, p_iItemPos, p_menu)
 		case g_mapMenus["Misc"]:
 			switch p_sItemName
 			{
+				case "Beep on suspend":
+					g_mapSettings["bBeepOnSuspend"] := !g_mapSettings["bBeepOnSuspend"]
 				case "Enable logging":
 					g_mapSettings["bLog"] := !g_mapSettings["bLog"]
 				case "Fix system keys":
@@ -721,6 +724,7 @@ GuiMenuUpdate()
 	g_mapMenus["View"].Uncheck("Hide window selector from capture")
 	g_mapMenus["View"].Uncheck("Minimize to tray")
 	g_mapMenus["View"].Uncheck("Remember window positions")
+	g_mapMenus["Misc"].Uncheck("Beep on suspend")
 	g_mapMenus["Misc"].Uncheck("Enable logging")
 	g_mapMenus["Misc"].Uncheck("Fix system keys")
 	g_mapMenus["Misc"].Uncheck("Restore autofires on focus")
@@ -740,6 +744,8 @@ GuiMenuUpdate()
 	if (g_mapSettings["bRememberWindowPositions"])
 		g_mapMenus["View"].Check("Remember window positions")
 
+	if (g_mapSettings["bBeepOnSuspend"])
+		g_mapMenus["Misc"].Check("Beep on suspend")
 	if (g_mapSettings["bLog"])
 		g_mapMenus["Misc"].Check("Enable logging")
 	if (g_mapSettings["bFixSystemKeys"])
@@ -1354,6 +1360,7 @@ ReadConfigFile(p_sFileName := g_sConfigFileName)
 	g_mapSettings["iAimMode"]                 := IniReadType(p_sFileName, "General", "aimMode", 0, "keyMode")
 	g_mapSettings["iAutofireKeyInterval"]     := IniReadType(p_sFileName, "General", "autofireKeyInterval", 100, "int")
 	g_mapSettings["bAutorunMode"]             :=     IniRead(p_sFileName, "General", "autorunMode", false) == true
+	g_mapSettings["bBeepOnSuspend"]           :=     IniRead(p_sFileName, "General", "beepOnSuspend", true) == true
 	g_mapSettings["iCrouchMode"]              := IniReadType(p_sFileName, "General", "crouchMode", 0, "keyMode")
 	g_mapSettings["bFixSystemKeys"]           :=     IniRead(p_sFileName, "General", "fixSystemKeys", true) == true
 	g_mapSettings["iFocusCheckInterval"]      := IniReadType(p_sFileName, "General", "focusCheckInterval", 1000, "int")
@@ -1768,6 +1775,7 @@ WriteConfigFile(p_bValidate := true)
 		        . '`nsprintMode=' g_mapSettings["iSprintMode"]
 		        . '`nautofireKeyInterval=' g_mapControls["udAutofireKeyInterval"].Value
 		        . '`nautorunMode=' g_mapSettings["bAutorunMode"]
+		        . '`nbeepOnSuspend=' g_mapSettings["bBeepOnSuspend"]
 		        . '`nfixSystemKeys=' g_mapSettings["bFixSystemKeys"]
 		        . '`nfocusCheckInterval=' g_mapControls["udFocusCheckInterval"].Value
 		        . '`nhookDelay=' g_mapControls["udHookDelay"].Value
@@ -1846,13 +1854,16 @@ WriteConfigFile(p_bValidate := true)
 {
 	Suspend()
 
-	; Single beep when suspended
-	SoundBeep(1000, 100)
-
-	if (A_IsSuspended)
-		ReleaseAllKeys()
-	; Double beep when resumed
-	else
+	if (g_mapSettings["bSoundBeep"])
+	{
+		; Single beep when suspended
 		SoundBeep(1000, 100)
+
+		if (A_IsSuspended)
+			ReleaseAllKeys()
+		; Double beep when resumed
+		else
+			SoundBeep(1000, 100)
+	}
 }
 #SuspendExempt False
