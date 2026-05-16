@@ -98,7 +98,7 @@ GetDuplicateHotkeys(p_bFromGUI := true)
 
 	for l_sValue in l_arrHotkeys
 	{
-		if (l_sValue != "")
+		if (l_sValue)
 		{
 			; That's a duplicate
 			if (l_mapHotkeys.Has(l_sValue))
@@ -169,7 +169,7 @@ GuiButtonBrowse_Click(*)
 	; Only allow selecting executables by default
 	l_sSelectedFile := FileSelect("3", , "Select the target executable file", "Executable Files (*.exe)")
 
-	if (l_sSelectedFile != "")
+	if (l_sSelectedFile)
 	{
 		SplitPath(l_sSelectedFile, &l_sFileName)
 		l_bIsProcessNameValid := IsProcessNameValid(l_sFileName)
@@ -478,7 +478,7 @@ GuiEdit_Change(p_guiCtrl, *)
 			return
 	}
 
-	if (p_guiCtrl.Value == "")
+	if (!p_guiCtrl.Value)
 		p_guiCtrl.Text := l_iMinValue
 	else
 	{
@@ -606,7 +606,7 @@ GuiLV_ReloadProcesses()
 			Output("class: "   l_sWinClass, true)
 			*/
 
-			g_mapControls["lvWindowPicker"].Add("Icon" IL_Add(g_mapControls["ilWindowPicker"], l_sProcPath), l_sProcName (l_sWinTitle != "" ? " | " l_sWinTitle : ""))
+			g_mapControls["lvWindowPicker"].Add("Icon" IL_Add(g_mapControls["ilWindowPicker"], l_sProcPath), l_sProcName (l_sWinTitle ? " | " l_sWinTitle : ""))
 		}
 	}
 
@@ -894,9 +894,9 @@ Init()
 	SendMode(g_mapControls["ddlSendMode"].Text)
 	SetKeyDelay(, g_mapSettings["iPressDuration"], A_SendMode == "Play" || A_SendMode == "InputThenPlay" ? "Play" : "")
 
-	l_iMenuItemCount := DllCall("GetMenuItemCount", "ptr", A_TrayMenu.Handle)
 	A_TrayMenu.Insert("&Suspend Hotkeys", "&Settings", GuiShowMain)
-	A_TrayMenu.Insert(++l_iMenuItemCount "&", "About", GuiShowAbout)
+	l_iMenuItemCount := DllCall("GetMenuItemCount", "ptr", A_TrayMenu.Handle)
+	A_TrayMenu.Insert(l_iMenuItemCount "&", "About", GuiShowAbout)
 	A_TrayMenu.ClickCount := 1
 	A_TrayMenu.Default := "&Settings"
 
@@ -946,7 +946,7 @@ IsProcessNameValid(p_sProcessName)
 {
 	p_sProcessName := Trim(p_sProcessName)
 
-	if (p_sProcessName == "")
+	if (!p_sProcessName)
 		return -1
 
 	SplitPath(p_sProcessName, , , &l_sExt)
@@ -1676,7 +1676,7 @@ StartFocusCheck()
 		return
 	}
 
-	if (g_mapSettings["sWindowName"] == "")
+	if (!g_mapSettings["sWindowName"])
 		ShowNotification('Waiting for the process "' g_mapSettings["sProcessName"] '" to become active.')
 	else
 		ShowNotification('Waiting for the window "' g_mapSettings["sWindowName"] '" of the process "' g_mapSettings["sProcessName"] '" to become active.')
