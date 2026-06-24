@@ -1,55 +1,49 @@
-# KeyToggles
-An AutoHotkey 2 script that can change the input mode of keys and mouse buttons.
-
-5 input modes are currently supported:
-- toggle: converts keys that must be held down into toggle keys.
-- hold: converts keys that must be toggled into hold keys.
-- autofire toggle: same as toggle except it will repeatedly perform the action of another key.
-- autofire hold: same as autofire except you need to hold the autofire key.
-- autorun: toggle key that holds the forward key until pressed again (or pressing the forward/backward key)
+# GothicMacros
+An AutoHotkey 2 script that brings quality-of-life features to the classic version of _Gothic 1_.
 
 ## Installation
 
-You can run the script from anywhere, as long as "KeyToggles.ini" is in the same directory.  
+You can run the script from anywhere, as long as `GothicMacros.ini` is in the same directory.
 
 ## Usage
 
-The hotkeys will only be active when the specified process (and optionally window) is in focus.
+It features the following macros, that are only active when the game's window is active, but also automatically disabled/stopped when alt-tabbing or bringing up the Steam overlay.
 
-You can edit the script settings using the built-in configurator (accessible from the tray menu). Please read "KeyToggles.ini" for more information about settings.
+- **autobuy (toggle)**: holds `Shift + LButton + Action` to allow you to buy stacks of 100 items faster. It can also be used to sell items faster and use consumables. The clicking speed is customizable. Automatically disabled when manually pressing `Escape`, `LButton`, `RButton` or `Shift`.
+- **autocook (toggle)**: your character can only cook meat one at a time, so you can start the macro and come back later. You need to make sure you're looking at a pan beforehand.
+- **autojump (toggle)**: combine it with autorun to cover long distances faster without having to hold any key. Drawing your weapon while going up makes it even more effective. Automatically disabled when manually pressing `Jump`.
+- **autorun (toggle)**: self-explanatory. Automatically disabled when manually pressing `Forward`.
+- **fast attack (hold)**: holds the `Action` + `Backward` + `Forward` to let you attack the fastest way possible, therefore maximizing your DPS. You need to make sure your weapon is drawn out beforehand. The drawback is you can't parry while doing it, so use it sparingly.
+- **walk (toggle)**: there's already a hard-coded in-game walk toggle (`Caps Lock`) so this one customizable.
 
-Make sure your hotkeys are the same than the ones in-game and that the input modes are different (otherwise unexpected behavior will occur).
+All keys are configurable in the config file. Setting the optional keys to blank disables them.
 
-For games run as admin, you must also run the script as admin for hotkeys to work.
+Make sure your hotkeys are the same than the ones in-game (otherwise they won't work and unexpected behavior may occur).
 
-Default hotkeys:
+If the game is run as admin, you must also run the script as admin for hotkeys to work.
 
-Right-click: aim  
-Left CTRL: crouch  
-Left SHIFT: sprint  
-F1: toggle autorun  
-F2: aim autofire  
-F3: crouch autofire  
-F4: sprint autofire  
-w: move forward  
-s: move backward  
-Left ALT + F10: close the script (debug mode)  
-Left ALT + F11: reload the script (debug mode)  
-Left ALT + F12: suspend the script (disables all hotkeys)
+## Default hotkeys
 
-<img width="522" height="868" alt="built-in configurator" src="https://github.com/user-attachments/assets/81aa654e-7f7d-473a-bc93-e8a2e86b3a65" />
+`F1`: toggle autorun  
+`F2`: toggle autojump  
+`l`: toggle autocook  
+`k`: toggle autobuy  
+`ScrollLock`: toggle Steam overlay  
+`Shift`: toggle walk  
+`Middle-click`: fast attack  
+`f`: action  
+`Space`: jump  
+`s`: move backward  
+`w`: move forward  
+`Left ALT + F10`: close the script  
+`Left ALT + F11`: reload the script  
+`Left ALT + F12`: suspend the script (disables all hotkeys)
 
 ## Limitations
 
-- Hotkeys using modifiers (ex: Ctrl + K) aren't supported at the moment.
-- Notifications only work if the game is not running in exclusive fullscreen mode.
-- The hotkey controls in the built-in configurator don't support some keys. Use the extra keys drop-down lists for that (mouse buttons won't show up though).
-- It will not work in games that prevent keys from being simulated (ex: games using anti-cheats).
-
-## Credits
-
-- [Keeyra_](https://www.reddit.com/user/Keeyra_)
+- Hotkeys using modifiers (ex: `Ctrl + K`) may not work.
+- The autobuy macro doesn't work without `Gothic2_Control=1` in `SystemPack.ini`.
 
 ## Disclaimer
-- I've only tested the script in Aliens: Colonial Marines, Half-Life 1, Half-Life 2 and some Unity games but it should work in most cases. If it doesn't, feel free to post an issue about it.
-- I won't be held responsible for unexpected behavior such as game bans or loss of data. Use at your own risk!
+
+- I won't be held responsible for unexpected behavior such as loss of items. Use at your own risk!
